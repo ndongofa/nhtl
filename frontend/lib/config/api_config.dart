@@ -10,18 +10,18 @@ class ApiConfig {
   static String get baseUrl {
     if (kIsWeb) {
       logger.i('🌐 Plateforme Web détectée');
-      return 'http://localhost:8080/api';
+      return 'https://nhtl-production.up.railway.app/api';
     } else if (Platform.isAndroid) {
       logger.i('🤖 Plateforme Android détectée');
-      return 'http://10.0.2.2:8080/api';
+      return 'https://nhtl-production.up.railway.app/api';
     } else if (Platform.isIOS) {
       logger.i('🍎 Plateforme iOS détectée');
-      return 'http://localhost:8080/api';
+      return 'https://nhtl-production.up.railway.app/api';
     } else if (Platform.isWindows) {
       logger.i('💻 Plateforme Windows détectée');
-      return 'http://localhost:8080/api';
+      return 'https://nhtl-production.up.railway.app/api';
     } else {
-      return 'http://localhost:8080/api';
+      return 'https://nhtl-production.up.railway.app/api';
     }
   }
 
