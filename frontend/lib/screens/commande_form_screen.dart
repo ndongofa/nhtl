@@ -146,7 +146,9 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
           nom: nomController.text.trim(),
           prenom: prenomController.text.trim(),
           numeroTelephone: numeroTelephoneController.text.trim(),
-          email: emailController.text.trim().isEmpty ? null : emailController.text.trim(),
+          email: emailController.text.trim().isEmpty
+              ? null
+              : emailController.text.trim(),
           paysLivraison: paysLivraisonController.text.trim(),
           villeLivraison: villeLivraisonController.text.trim(),
           adresseLivraison: adresseLivraisonController.text.trim(),
@@ -249,7 +251,7 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
                 'Plateforme',
                 _platformeSelectionnee,
                 _plateformes,
-                    (value) {
+                (value) {
                   setState(() => _platformeSelectionnee = value!);
                 },
               ),
@@ -290,7 +292,7 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
                 'Devise',
                 _deviseSelectionnee,
                 _devises,
-                    (value) {
+                (value) {
                   setState(() => _deviseSelectionnee = value!);
                 },
               ),
@@ -308,10 +310,10 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
                   onPressed: _isLoading ? null : _submitForm,
                   child: _isLoading
                       ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
                       : const Text('Créer la commande'),
                 ),
               ),
@@ -333,13 +335,13 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
   }
 
   Widget _buildTextField(
-      TextEditingController controller,
-      String label, {
-        TextInputType keyboardType = TextInputType.text,
-        int maxLines = 1,
-        String? hintText,
-        String? Function(String?)? validator,
-      }) {
+    TextEditingController controller,
+    String label, {
+    TextInputType keyboardType = TextInputType.text,
+    int maxLines = 1,
+    String? hintText,
+    String? Function(String?)? validator,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: TextFormField(
@@ -351,17 +353,18 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
         ),
         keyboardType: keyboardType,
         maxLines: maxLines,
-        validator: validator ?? (v) => v?.isEmpty ?? true ? 'Obligatoire' : null,
+        validator:
+            validator ?? (v) => v?.isEmpty ?? true ? 'Obligatoire' : null,
       ),
     );
   }
 
   Widget _buildDropdown(
-      String label,
-      String value,
-      List<String> items,
-      Function(String?) onChanged,
-      ) {
+    String label,
+    String value,
+    List<String> items,
+    Function(String?) onChanged,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: DropdownButtonFormField<String>(
@@ -380,4 +383,4 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
       ),
     );
   }
-}q
+}
