@@ -20,8 +20,20 @@ dependencies:
   # Logging
   logger: ^2.0.1
 
-  # ← Pour les dates
+  # Pour les dates
   intl: ^0.20.2
+  
+  # Storage local
+  shared_preferences: ^2.2.0
+  
+  # State Management
+  provider: ^6.0.0
+  
+  # Navigation
+  go_router: ^10.0.0
+  
+  # UI - Responsive design
+  flutter_screenutil: ^5.8.0
 
 dev_dependencies:
   flutter_test:
