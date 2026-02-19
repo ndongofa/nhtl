@@ -56,3 +56,7 @@ coverage/
 
 # Dependencies
 .m2/
+
+# Keep env examples in git
+!.env.example
+!.env.exemple
