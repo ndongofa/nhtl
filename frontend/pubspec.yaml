@@ -1,0 +1,44 @@
+name: nhtl_mobile
+description: "Application Flutter pour transport et commandes en ligne"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # HTTP Client pour API
+  http: ^1.1.0
+  
+  # Notifications Toast
+  fluttertoast: ^9.0.0
+  
+  # Logging
+  logger: ^2.0.1
+
+  # Pour les dates
+  intl: ^0.20.2
+  
+  # Storage local
+  shared_preferences: ^2.2.0
+  
+  # State Management
+  provider: ^6.0.0
+  
+  # Navigation
+  go_router: ^10.0.0
+  
+  # UI - Responsive design
+  flutter_screenutil: ^5.8.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

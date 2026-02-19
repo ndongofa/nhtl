@@ -1,0 +1,58 @@
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+*.iml
+
+# Maven
+target/
+.classpath
+.project
+.settings/
+*.jar
+*.war
+*.ear
+
+# Gradle
+.gradle/
+build/
+.gradletasknamecache
+
+# Spring Boot
+spring-boot-devtools.properties
+application-local.properties
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Node/npm
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# System
+*.log
+*.pid
+*.seed
+.DS_Store
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Build output
+dist/
+out/
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Dependencies
+.m2/
