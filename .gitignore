@@ -1,20 +1,52 @@
-# Backend
+# ===== Backend (Java/Spring) =====
 backend/target/
+backend/.classpath
+backend/.project
+backend/.settings/
 backend/.idea/
 backend/*.iml
-backend/.DS_Store
 
-# Frontend
+# ===== Frontend (Flutter) =====
 frontend/build/
 frontend/.dart_tool/
-frontend/pubspec.lock
-frontend/.env
-frontend/.DS_Store
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
 
-# Général
+# Flutter local env files
+frontend/.env
+frontend/.env.*
+# keep examples if you create them
+!frontend/.env.example
+
+# iOS / macOS (Flutter)
+frontend/ios/Pods/
+frontend/ios/.symlinks/
+frontend/ios/Flutter/.last_build_id
+frontend/macos/Pods/
+frontend/macos/.symlinks/
+
+# Android / Gradle
+frontend/android/.gradle/
+frontend/android/local.properties
+frontend/android/key.properties
+
+# Windows/Linux build artifacts (safe to ignore)
+frontend/windows/flutter/ephemeral/
+frontend/linux/flutter/ephemeral/
+frontend/macos/Flutter/ephemeral/
+frontend/ios/Flutter/ephemeral/
+
+# ===== IDE / OS =====
+.vscode/
+.idea/
+*.iml
 .DS_Store
+Thumbs.db
 *.log
 *.swp
 *.swo
-.vscode/
+
+# ===== Env at repo root (if you use it) =====
 .env
+.env.*
+!.env.example
