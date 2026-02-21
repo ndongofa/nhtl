@@ -41,13 +41,6 @@
 			<artifactId>spring-boot-starter-validation</artifactId>
 		</dependency>
 
-		<!-- H2 Database (TEST only; for local dev use Maven profile dev) -->
-		<dependency>
-			<groupId>com.h2database</groupId>
-			<artifactId>h2</artifactId>
-			<scope>test</scope>
-		</dependency>
-
 		<!-- Base de données PostgresSQL -->
 		<dependency>
 			<groupId>org.postgresql</groupId>
@@ -143,18 +136,18 @@
 		</plugins>
 	</build>
 
-	<!-- Maven profiles -->
-	<profiles>
-		<!-- Local development profile: adds H2 at runtime for Spring profile "dev" -->
-		<profile>
-			<id>dev</id>
-			<dependencies>
-				<dependency>
-					<groupId>com.h2database</groupId>
-					<artifactId>h2</artifactId>
-					<scope>runtime</scope>
-				</dependency>
-			</dependencies>
-		</profile>
-	</profiles>
+		<!-- Maven profiles -->
+		<profiles>
+			<!-- Local development profile: adds H2 at runtime for Spring profile "dev" -->
+			<profile>
+				<id>dev</id>
+				<dependencies>
+					<dependency>
+						<groupId>com.h2database</groupId>
+						<artifactId>h2</artifactId>
+						<scope>runtime</scope>
+					</dependency>
+				</dependencies>
+			</profile>
+		</profiles>
 </project>

@@ -1,5 +1,7 @@
 package com.nhtl.repositories;
 
-public class UserRepository {
+import com.nhtl.models.User;
+import org.springframework.data.jpa.repository.JpaRepository;
 
+public interface UserRepository extends JpaRepository<User, Long> {
 }
