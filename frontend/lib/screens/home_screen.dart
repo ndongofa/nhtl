@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import '../services/auth_service.dart';
 import 'transport_form_screen.dart';
 import 'commande_form_screen.dart';
 import 'transports_list_screen.dart';
 import 'commandes_list_screen.dart';
+import 'admin/admin_page.dart'; // <-- import AdminPage
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -68,7 +68,7 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               const Text(
-                'Gérez vos transports et commandes',
+                'Gérez vos transports, commandes et utilisateurs',
                 style: TextStyle(fontSize: 16, color: Colors.grey),
                 textAlign: TextAlign.center,
               ),
@@ -99,6 +99,13 @@ class HomeScreen extends StatelessWidget {
                 'Mes Commandes',
                 Icons.receipt,
                 const CommandesListScreen(),
+              ),
+              const SizedBox(height: 12),
+              _buildButton(
+                context,
+                'Gestion des Utilisateurs',
+                Icons.people,
+                AdminPage(), // <-- nouvel écran CRUD User
               ),
             ],
           ),

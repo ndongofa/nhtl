@@ -5,6 +5,7 @@ import 'screens/auth/forgot_password_screen.dart';
 import 'screens/auth/otp_verification_screen.dart';
 import 'screens/auth/reset_password_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/admin/admin_page.dart'; // <-- import AdminPage
 import 'services/auth_service.dart';
 
 void main() async {
@@ -57,6 +58,7 @@ class MyApp extends StatelessWidget {
         '/signup': (context) => const SignupScreen(),
         '/forgot-password': (context) => const ForgotPasswordScreen(),
         '/home': (context) => const HomeScreen(),
+        '/admin': (context) => AdminPage(), // <-- nouvelle route
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/otp-verification') {
