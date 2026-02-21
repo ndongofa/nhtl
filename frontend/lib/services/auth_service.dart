@@ -54,6 +54,55 @@ class AuthService {
     }
   }
 
+  // SEND RESET OTP (Forgot Password) - Email OU Téléphone
+  static Future<void> sendResetOtp(String identifier) async {
+    final response = await ApiClient.post(
+      '/auth/forgot-password',
+      {'identifier': identifier}, // Email OU Téléphone
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Erreur OTP: ${response.statusCode}');
+    }
+  }
+
+  // VERIFY OTP - Email OU Téléphone
+  static Future<bool> verifyOtp(String identifier, String otp) async {
+    final response = await ApiClient.post(
+      '/auth/verify-otp',
+      {
+        'identifier': identifier, // Email OU Téléphone
+        'otp': otp
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      throw Exception('OTP invalide');
+    }
+  }
+
+  // RESET PASSWORD - Email OU Téléphone
+  static Future<void> resetPassword(
+    String identifier, // Email OU Téléphone
+    String otp,
+    String newPassword,
+  ) async {
+    final response = await ApiClient.post(
+      '/auth/reset-password',
+      {
+        'identifier': identifier,
+        'otp': otp,
+        'newPassword': newPassword,
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Erreur reset password: ${response.statusCode}');
+    }
+  }
+
   // LOGOUT
   static Future<void> logout() async {
     await ApiClient.deleteToken();
