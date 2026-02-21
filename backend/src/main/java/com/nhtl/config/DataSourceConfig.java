@@ -12,9 +12,14 @@ import com.zaxxer.hikari.HikariDataSource;
 @Configuration
 public class DataSourceConfig {
 
+    // Configuration pour PROD / Railway
     @Bean
     @Profile("prod")
     public DataSource prodDataSource() {
+        // Check très simple pour valider que Railway injecte bien les variables du backend service
+        String check = System.getenv("ENV_CHECK");
+        System.out.println("[ENV] ENV_CHECK=" + check);
+
         String jdbcUrl = System.getenv("DATABASE_URL");
         String pgHost = System.getenv("PGHOST");
         String pgUser = System.getenv("PGUSER");
@@ -24,7 +29,6 @@ public class DataSourceConfig {
         System.out.println("[ENV] PGUSER present=" + (pgUser != null && !pgUser.isBlank()));
 
         if (jdbcUrl != null) {
-            // évite d'afficher le password complet si présent
             String safe = jdbcUrl.replaceAll("password=[^&]+", "password=***");
             System.out.println("[ENV] DATABASE_URL value=" + safe);
         }
@@ -42,6 +46,7 @@ public class DataSourceConfig {
         return new HikariDataSource(config);
     }
 
+    // Configuration pour DEV local (H2)
     @Bean
     @Profile("dev")
     public DataSource devDataSource() {
