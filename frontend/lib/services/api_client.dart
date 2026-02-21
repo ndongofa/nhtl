@@ -1,9 +1,10 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'api_config.dart';
 
 class ApiClient {
-  static const String baseUrl = 'http://localhost:8080/api';
+  static String get baseUrl => ApiConfig.baseUrl;
 
   // Récupérer le token stocké
   static Future<String?> getToken() async {
