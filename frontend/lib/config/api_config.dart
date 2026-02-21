@@ -5,6 +5,7 @@ import 'package:logger/logger.dart';
 class ApiConfig {
   static final logger = Logger();
 
+  /// Retourne l'URL de base selon la plateforme
   static String get baseUrl {
     if (kIsWeb) {
       logger.i('🌐 Plateforme Web détectée');
@@ -33,8 +34,11 @@ class ApiConfig {
     }
   }
 
+  /// Endpoints spécifiques
   static const String transportEndpoint = '/transports';
   static const String commandeEndpoint = '/commandes';
+
+  /// Timeout
   static const Duration connectTimeout = Duration(seconds: 30);
   static const Duration receiveTimeout = Duration(seconds: 30);
 }

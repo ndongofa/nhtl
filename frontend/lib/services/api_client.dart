@@ -1,7 +1,7 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'api_config.dart';
+import '../config/api_config.dart';
 
 class ApiClient {
   static String get baseUrl => ApiConfig.baseUrl;
