@@ -71,10 +71,4 @@ public class SupabaseJwtFilter extends OncePerRequestFilter {
         }
         filterChain.doFilter(request, response);
     }
-    
-    @PostConstruct
-    public void checkSecret() {
-        System.out.println("SUPABASE_JWT_SECRET = " + supabaseJwtSecret);
-    }
-
 }
