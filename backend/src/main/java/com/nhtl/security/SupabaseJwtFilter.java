@@ -11,6 +11,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -70,4 +71,10 @@ public class SupabaseJwtFilter extends OncePerRequestFilter {
         }
         filterChain.doFilter(request, response);
     }
+    
+    @PostConstruct
+    public void checkSecret() {
+        System.out.println("SUPABASE_JWT_SECRET = " + supabaseJwtSecret);
+    }
+
 }
