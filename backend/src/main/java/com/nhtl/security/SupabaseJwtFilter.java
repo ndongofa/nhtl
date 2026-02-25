@@ -21,7 +21,7 @@ import java.util.*;
 @Component
 public class SupabaseJwtFilter extends OncePerRequestFilter {
 
-    @Value("${SUPABASE_JWT_SECRET}")
+    @Value("${supabase.jwt.secret}")
     private String supabaseJwtSecret;
 
     @Override
