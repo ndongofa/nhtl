@@ -34,6 +34,7 @@ dependencies:
   
   # UI - Responsive design
   flutter_screenutil: ^5.8.0
+  supabase_flutter: ^2.12.0
 
 dev_dependencies:
   flutter_test:

@@ -3,9 +3,19 @@ import 'dart:convert';
 import '../models/commande.dart';
 import '../config/api_config.dart';
 import 'package:logger/logger.dart';
+import 'auth_service.dart';
 
 class CommandeService {
   final logger = Logger();
+
+  /// Helper pour les headers HTTP avec JWT Supabase
+  Map<String, String> _headers() {
+    final jwt = AuthService.jwt;
+    return {
+      'Authorization': 'Bearer $jwt',
+      'Content-Type': 'application/json',
+    };
+  }
 
   // Créer une commande
   Future<Commande?> createCommande(Commande commande) async {
@@ -15,17 +25,16 @@ class CommandeService {
 
       final response = await http
           .post(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(commande.toJson()),
-      )
+            Uri.parse(url),
+            headers: _headers(),
+            body: jsonEncode(commande.toJson()),
+          )
           .timeout(ApiConfig.connectTimeout);
 
       logger.i('Status: ${response.statusCode}');
       logger.i('Body: ${response.body}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        // ✅ Extrayez le champ 'data' de la réponse
         final json = jsonDecode(response.body);
         logger.i('✅ Commande créée avec succès');
         return Commande.fromJson(json['data']);
@@ -46,15 +55,16 @@ class CommandeService {
       final url = '${ApiConfig.baseUrl}${ApiConfig.commandeEndpoint}';
       logger.i('GET $url');
 
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-      ).timeout(ApiConfig.receiveTimeout);
+      final response = await http
+          .get(
+            Uri.parse(url),
+            headers: _headers(),
+          )
+          .timeout(ApiConfig.receiveTimeout);
 
       logger.i('Status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
-        // ✅ Extrayez le champ 'data' de la réponse
         final json = jsonDecode(response.body);
         final List<dynamic> data = json['data'];
         logger.i('✅ Commandes récupérées');
@@ -75,15 +85,16 @@ class CommandeService {
       final url = '${ApiConfig.baseUrl}${ApiConfig.commandeEndpoint}/$id';
       logger.i('GET $url');
 
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-      ).timeout(ApiConfig.receiveTimeout);
+      final response = await http
+          .get(
+            Uri.parse(url),
+            headers: _headers(),
+          )
+          .timeout(ApiConfig.receiveTimeout);
 
       logger.i('Status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
-        // ✅ Extrayez le champ 'data' de la réponse
         final json = jsonDecode(response.body);
         logger.i('✅ Commande $id récupérée');
         return Commande.fromJson(json['data']);
@@ -105,16 +116,15 @@ class CommandeService {
 
       final response = await http
           .put(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(commande.toJson()),
-      )
+            Uri.parse(url),
+            headers: _headers(),
+            body: jsonEncode(commande.toJson()),
+          )
           .timeout(ApiConfig.connectTimeout);
 
       logger.i('Status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
-        // ✅ Extrayez le champ 'data' de la réponse
         final json = jsonDecode(response.body);
         logger.i('✅ Commande $id mise à jour');
         return Commande.fromJson(json['data']);
@@ -134,10 +144,12 @@ class CommandeService {
       final url = '${ApiConfig.baseUrl}${ApiConfig.commandeEndpoint}/$id';
       logger.i('DELETE $url');
 
-      final response = await http.delete(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-      ).timeout(ApiConfig.connectTimeout);
+      final response = await http
+          .delete(
+            Uri.parse(url),
+            headers: _headers(),
+          )
+          .timeout(ApiConfig.connectTimeout);
 
       logger.i('Status: ${response.statusCode}');
 
@@ -157,13 +169,16 @@ class CommandeService {
   // Récupérer les commandes par statut
   Future<List<Commande>?> getCommandesByStatut(String statut) async {
     try {
-      final url = '${ApiConfig.baseUrl}${ApiConfig.commandeEndpoint}/search/statut?statut=$statut';
+      final url =
+          '${ApiConfig.baseUrl}${ApiConfig.commandeEndpoint}/search/statut?statut=$statut';
       logger.i('GET $url');
 
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-      ).timeout(ApiConfig.receiveTimeout);
+      final response = await http
+          .get(
+            Uri.parse(url),
+            headers: _headers(),
+          )
+          .timeout(ApiConfig.receiveTimeout);
 
       logger.i('Status: ${response.statusCode}');
 

@@ -1,116 +1,67 @@
-import 'dart:convert';
-import 'api_client.dart';
-import '../models/auth/login_request.dart';
-import '../models/auth/login_response.dart';
-import '../models/auth/signup_request.dart';
-import '../models/auth/signup_response.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthService {
-  // LOGIN
-  static Future<LoginResponse> login(LoginRequest request) async {
-    final response = await ApiClient.post('/auth/login', request.toJson());
+  static final SupabaseClient _supabase = Supabase.instance.client;
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      final loginResponse = LoginResponse.fromJson(data);
-
-      // Sauvegarder le token
-      await ApiClient.saveToken(loginResponse.accessToken);
-
-      return loginResponse;
-    } else {
-      throw Exception('Erreur login: ${response.statusCode}');
-    }
-  }
-
-  // SIGNUP
-  static Future<SignupResponse> signup(SignupRequest request) async {
-    final response = await ApiClient.post('/auth/signup', request.toJson());
-
-    if (response.statusCode == 201 || response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return SignupResponse.fromJson(data);
-    } else {
-      throw Exception('Erreur signup: ${response.statusCode}');
-    }
-  }
-
-  // REFRESH TOKEN
-  static Future<LoginResponse> refreshToken(String refreshToken) async {
-    final response = await ApiClient.post('/auth/refresh', {
-      "refreshToken": refreshToken,
-    });
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      final loginResponse = LoginResponse.fromJson(data);
-
-      // Sauvegarder le nouveau token
-      await ApiClient.saveToken(loginResponse.accessToken);
-
-      return loginResponse;
-    } else {
-      throw Exception('Erreur refresh: ${response.statusCode}');
-    }
-  }
-
-  // SEND RESET OTP (Forgot Password) - Email OU Téléphone
-  static Future<void> sendResetOtp(String identifier) async {
-    final response = await ApiClient.post(
-      '/auth/forgot-password',
-      {'identifier': identifier}, // Email OU Téléphone
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception('Erreur OTP: ${response.statusCode}');
-    }
-  }
-
-  // VERIFY OTP - Email OU Téléphone
-  static Future<bool> verifyOtp(String identifier, String otp) async {
-    final response = await ApiClient.post(
-      '/auth/verify-otp',
-      {
-        'identifier': identifier, // Email OU Téléphone
-        'otp': otp
+  // SIGN UP avec role=user par défaut
+  static Future<void> signupWithMetadata({
+    required String email,
+    required String password,
+    required String fullName,
+    String? username,
+    String? phone,
+    String? role, // 'user' si non précisé
+  }) async {
+    final res = await _supabase.auth.signUp(
+      email: email,
+      password: password,
+      data: {
+        'full_name': fullName,
+        'role': role ?? 'user',
+        if (username != null) 'username': username,
+        if (phone != null) 'phone': phone,
       },
     );
-
-    if (response.statusCode == 200) {
-      return true;
-    } else {
-      throw Exception('OTP invalide');
+    if (res.user == null) {
+      throw Exception('Erreur lors de l\'inscription');
     }
   }
 
-  // RESET PASSWORD - Email OU Téléphone
-  static Future<void> resetPassword(
-    String identifier, // Email OU Téléphone
-    String otp,
-    String newPassword,
-  ) async {
-    final response = await ApiClient.post(
-      '/auth/reset-password',
-      {
-        'identifier': identifier,
-        'otp': otp,
-        'newPassword': newPassword,
-      },
+  static Future<void> login(String email, String password) async {
+    final res = await _supabase.auth.signInWithPassword(
+      email: email,
+      password: password,
     );
-
-    if (response.statusCode != 200) {
-      throw Exception('Erreur reset password: ${response.statusCode}');
+    if (res.user == null || res.session == null) {
+      throw Exception('Connexion échouée. Vérifiez vos identifiants.');
     }
   }
 
-  // LOGOUT
+  static Future<void> resetPasswordForEmail(String email) async {
+    await _supabase.auth.resetPasswordForEmail(email);
+  }
+
   static Future<void> logout() async {
-    await ApiClient.deleteToken();
+    await _supabase.auth.signOut();
   }
 
-  // CHECK IF LOGGED IN
-  static Future<bool> isLoggedIn() async {
-    final token = await ApiClient.getToken();
-    return token != null && token.isNotEmpty;
+  static Future<bool> isLoggedIn() async =>
+      _supabase.auth.currentSession != null;
+
+  static Future<String?> getJwt() async {
+    final session = _supabase.auth.currentSession;
+    return session?.accessToken;
   }
+
+  static String? get jwt => _supabase.auth.currentSession?.accessToken;
+
+  static String? get userId => _supabase.auth.currentUser?.id;
+
+  static User? get currentUser => _supabase.auth.currentUser;
+
+  static Map<String, dynamic>? get userMetadata =>
+      _supabase.auth.currentUser?.userMetadata;
+
+  static String getCurrentRole() =>
+      _supabase.auth.currentUser?.userMetadata?['role']?.toString() ?? 'user';
 }

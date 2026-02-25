@@ -2,41 +2,45 @@ import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:logger/logger.dart';
 
+// REMARQUE : Cette config sert uniquement aux appels "backend" (Spring Boot).
+// Les appels Supabase (auth, BDD directes) s’utilisent via SupabaseClient dans Flutter.
+
 class ApiConfig {
   static final logger = Logger();
 
-  /// Retourne l'URL de base selon la plateforme
+  /// Retourne l'URL de base selon la plateforme (SANS /api à la fin !!)
   static String get baseUrl {
+    final url = 'https://nhtl-production-46e3.up.railway.app';
     if (kIsWeb) {
       logger.i('🌐 Plateforme Web détectée');
-      return 'https://nhtl-production-46e3.up.railway.app/api';
+      return url;
     }
 
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         logger.i('🤖 Plateforme Android détectée');
-        return 'https://nhtl-production-46e3.up.railway.app/api';
+        return url;
       case TargetPlatform.iOS:
         logger.i('🍎 Plateforme iOS détectée');
-        return 'https://nhtl-production-46e3.up.railway.app/api';
+        return url;
       case TargetPlatform.windows:
         logger.i('💻 Plateforme Windows détectée');
-        return 'https://nhtl-production-46e3.up.railway.app/api';
+        return url;
       case TargetPlatform.macOS:
         logger.i('🍏 Plateforme macOS détectée');
-        return 'https://nhtl-production-46e3.up.railway.app/api';
+        return url;
       case TargetPlatform.linux:
         logger.i('🐧 Plateforme Linux détectée');
-        return 'https://nhtl-production-46e3.up.railway.app/api';
+        return url;
       default:
         logger.i('📦 Plateforme inconnue');
-        return 'https://nhtl-production-46e3.up.railway.app/api';
+        return url;
     }
   }
 
-  /// Endpoints spécifiques
-  static const String transportEndpoint = '/transports';
-  static const String commandeEndpoint = '/commandes';
+  /// Endpoints spécifiques (iels commencent par "/")
+  static const String transportEndpoint = '/api/transports';
+  static const String commandeEndpoint = '/api/commandes';
 
   /// Timeout
   static const Duration connectTimeout = Duration(seconds: 30);

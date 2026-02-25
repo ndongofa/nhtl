@@ -3,9 +3,19 @@ import 'dart:convert';
 import '../models/transport.dart';
 import '../config/api_config.dart';
 import 'package:logger/logger.dart';
+import 'auth_service.dart';
 
 class TransportService {
   final logger = Logger();
+
+  // Headers HTTP avec le token JWT Supabase
+  Map<String, String> _headers() {
+    final jwt = AuthService.jwt;
+    return {
+      'Authorization': 'Bearer $jwt',
+      'Content-Type': 'application/json',
+    };
+  }
 
   // Créer un transport
   Future<Transport?> createTransport(Transport transport) async {
@@ -15,17 +25,16 @@ class TransportService {
 
       final response = await http
           .post(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(transport.toJson()),
-      )
+            Uri.parse(url),
+            headers: _headers(),
+            body: jsonEncode(transport.toJson()),
+          )
           .timeout(ApiConfig.connectTimeout);
 
       logger.i('Status: ${response.statusCode}');
       logger.i('Body: ${response.body}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        // ✅ Extrayez le champ 'data' de la réponse
         final json = jsonDecode(response.body);
         logger.i('✅ Transport créé avec succès');
         return Transport.fromJson(json['data']);
@@ -46,15 +55,16 @@ class TransportService {
       final url = '${ApiConfig.baseUrl}${ApiConfig.transportEndpoint}';
       logger.i('GET $url');
 
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-      ).timeout(ApiConfig.receiveTimeout);
+      final response = await http
+          .get(
+            Uri.parse(url),
+            headers: _headers(),
+          )
+          .timeout(ApiConfig.receiveTimeout);
 
       logger.i('Status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
-        // ✅ Extrayez le champ 'data' de la réponse
         final json = jsonDecode(response.body);
         final List<dynamic> data = json['data'];
         logger.i('✅ Transports récupérés');
@@ -75,15 +85,16 @@ class TransportService {
       final url = '${ApiConfig.baseUrl}${ApiConfig.transportEndpoint}/$id';
       logger.i('GET $url');
 
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-      ).timeout(ApiConfig.receiveTimeout);
+      final response = await http
+          .get(
+            Uri.parse(url),
+            headers: _headers(),
+          )
+          .timeout(ApiConfig.receiveTimeout);
 
       logger.i('Status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
-        // ✅ Extrayez le champ 'data' de la réponse
         final json = jsonDecode(response.body);
         logger.i('✅ Transport $id récupéré');
         return Transport.fromJson(json['data']);
@@ -105,16 +116,15 @@ class TransportService {
 
       final response = await http
           .put(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(transport.toJson()),
-      )
+            Uri.parse(url),
+            headers: _headers(),
+            body: jsonEncode(transport.toJson()),
+          )
           .timeout(ApiConfig.connectTimeout);
 
       logger.i('Status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
-        // ✅ Extrayez le champ 'data' de la réponse
         final json = jsonDecode(response.body);
         logger.i('✅ Transport $id mis à jour');
         return Transport.fromJson(json['data']);
@@ -134,10 +144,12 @@ class TransportService {
       final url = '${ApiConfig.baseUrl}${ApiConfig.transportEndpoint}/$id';
       logger.i('DELETE $url');
 
-      final response = await http.delete(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-      ).timeout(ApiConfig.connectTimeout);
+      final response = await http
+          .delete(
+            Uri.parse(url),
+            headers: _headers(),
+          )
+          .timeout(ApiConfig.connectTimeout);
 
       logger.i('Status: ${response.statusCode}');
 

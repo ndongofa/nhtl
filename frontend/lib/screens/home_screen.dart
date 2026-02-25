@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:nhtl_mobile/screens/admin/admin_user_screen.dart'; // Pour le bouton admin
 import '../services/auth_service.dart';
+import '../models/logged_user.dart';
 import 'transport_form_screen.dart';
 import 'commande_form_screen.dart';
 import 'transports_list_screen.dart';
 import 'commandes_list_screen.dart';
-import 'admin/admin_page.dart'; // <-- import AdminPage
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -43,12 +44,21 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final user = LoggedUser.fromSupabase();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('NHTL'),
         centerTitle: true,
         elevation: 0,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.person),
+            onPressed: () {
+              Navigator.of(context).pushNamed('/profile');
+            },
+            tooltip: 'Mon profil',
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () => _handleLogout(context),
@@ -101,12 +111,13 @@ class HomeScreen extends StatelessWidget {
                 const CommandesListScreen(),
               ),
               const SizedBox(height: 12),
-              _buildButton(
-                context,
-                'Gestion des Utilisateurs',
-                Icons.people,
-                AdminPage(), // <-- nouvel écran CRUD User
-              ),
+              if (user.role == 'admin')
+                _buildButton(
+                  context,
+                  'Gestion des Utilisateurs',
+                  Icons.people,
+                  const AdminUserScreen(),
+                ),
             ],
           ),
         ),
