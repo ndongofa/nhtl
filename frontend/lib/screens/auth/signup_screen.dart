@@ -36,18 +36,20 @@ class _SignupScreenState extends State<SignupScreen> {
     setState(() => _isLoading = true);
 
     try {
+      // On appelle le service en passant 'user' explicitement
       await AuthService.signupWithMetadata(
         email: _emailController.text.trim(),
         password: _passwordController.text,
         fullName: _fullNameController.text.trim(),
         username: _usernameController.text.trim(),
-        // Décommente cette ligne POUR créer un ADMIN (à re-commenter ensuite pour les users standards)
-        role: 'admin',
+        role: 'user', // Sécurité : On ne permet pas l'auto-promotion admin ici
       );
+
       if (mounted) {
         Fluttertoast.showToast(
           msg: 'Inscription réussie! Vérifiez votre email puis connectez-vous.',
           backgroundColor: Colors.green,
+          toastLength: Toast.LENGTH_LONG,
         );
         Navigator.of(context).pushReplacementNamed('/login');
       }
@@ -67,18 +69,20 @@ class _SignupScreenState extends State<SignupScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Inscription')),
-      body: Padding(
+      body: SingleChildScrollView(
+        // Ajout pour éviter les débordements clavier
         padding: const EdgeInsets.all(20),
         child: Form(
           key: _formKey,
           child: Column(
             children: [
-              const SizedBox(height: 40),
+              const SizedBox(height: 20),
               TextFormField(
                 controller: _emailController,
                 decoration: const InputDecoration(
                   labelText: 'Email',
                   border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.email),
                 ),
                 validator: (v) => (v == null || v.isEmpty)
                     ? 'Email requis'
@@ -90,6 +94,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Nom d\'utilisateur',
                   border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.person_outline),
                 ),
                 validator: (v) => (v == null || v.isEmpty)
                     ? 'Nom d\'utilisateur requis'
@@ -101,6 +106,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Nom complet',
                   border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.badge),
                 ),
                 validator: (v) =>
                     (v == null || v.isEmpty) ? 'Nom complet requis' : null,
@@ -112,6 +118,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 decoration: InputDecoration(
                   labelText: 'Mot de passe',
                   border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.lock_outline),
                   suffixIcon: IconButton(
                     icon: Icon(_obscurePassword
                         ? Icons.visibility_off
@@ -131,6 +138,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 decoration: InputDecoration(
                   labelText: 'Confirmer le mot de passe',
                   border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.lock_reset),
                   suffixIcon: IconButton(
                     icon: Icon(_obscureConfirm
                         ? Icons.visibility_off
@@ -147,12 +155,17 @@ class _SignupScreenState extends State<SignupScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _isLoading ? null : _handleSignup,
-                child: _isLoading
-                    ? const CircularProgressIndicator()
-                    : const Text('S\'inscrire'),
+              const SizedBox(height: 30),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _handleSignup,
+                  child: _isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text('S\'inscrire',
+                          style: TextStyle(fontSize: 16)),
+                ),
               ),
               TextButton(
                 onPressed: () {

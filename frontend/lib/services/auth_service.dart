@@ -3,21 +3,21 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class AuthService {
   static final SupabaseClient _supabase = Supabase.instance.client;
 
-  // SIGN UP avec role=user par défaut
+  // SIGN UP avec role='user' par défaut si non spécifié
   static Future<void> signupWithMetadata({
     required String email,
     required String password,
     required String fullName,
     String? username,
     String? phone,
-    String? role, // 'user' si non précisé
+    String? role, // Paramètre optionnel
   }) async {
     final res = await _supabase.auth.signUp(
       email: email,
       password: password,
       data: {
         'full_name': fullName,
-        'role': role ?? 'user',
+        'role': role ?? 'user', // Sécurité : 'user' par défaut
         if (username != null) 'username': username,
         if (phone != null) 'phone': phone,
       },
