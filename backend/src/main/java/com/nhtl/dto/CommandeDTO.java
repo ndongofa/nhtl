@@ -12,7 +12,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class CommandeDTO {
     
-    private Integer id;
+    private Long id;
     
     @NotBlank(message = "Le nom est obligatoire")
     private String nom;

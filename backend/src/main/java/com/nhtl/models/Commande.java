@@ -17,7 +17,7 @@ public class Commande {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
     
     // Informations du client
     @NotBlank(message = "Le nom est obligatoire")
