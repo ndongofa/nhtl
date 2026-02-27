@@ -10,7 +10,7 @@ class ApiConfig {
 
   /// Retourne l'URL de base selon la plateforme (SANS /api à la fin !!)
   static String get baseUrl {
-    final url = 'https://nhtl-production-46e3.up.railway.app';
+    final url = 'https://nhtl-production-5e78.up.railway.app';
     if (kIsWeb) {
       logger.i('🌐 Plateforme Web détectée');
       return url;

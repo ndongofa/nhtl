@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:nhtl_mobile/services/user_service.dart';
+import 'package:nhtl_mobile/widgets/user_form_dialog.dart';
 import '../../models/user.dart';
-import '../../services/user_service.dart';
 import '../../models/logged_user.dart';
 
 class AdminUserScreen extends StatefulWidget {
@@ -32,156 +33,47 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
     }
   }
 
-  // DIALOGUE AJOUT
-  Future<void> _addUserDialog() async {
-    final nameController = TextEditingController();
-    final emailController = TextEditingController();
-    final passwordController = TextEditingController();
-    String selectedRole = 'user'; // Valeur par défaut
-
-    await showDialog(
+  Future<void> _addOrEditUser({User? user, bool isEdit = false}) async {
+    final result = await showUserFormDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text("Ajouter un utilisateur"),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(labelText: "Nom complet"),
-                ),
-                TextField(
-                  controller: emailController,
-                  decoration: const InputDecoration(labelText: "Email"),
-                  keyboardType: TextInputType.emailAddress,
-                ),
-                TextField(
-                  controller: passwordController,
-                  decoration:
-                      const InputDecoration(labelText: "Mot de passe initial"),
-                  obscureText: true,
-                ),
-                const SizedBox(height: 20),
-                DropdownButtonFormField<String>(
-                  value: selectedRole,
-                  decoration: const InputDecoration(labelText: "Rôle"),
-                  items: ["user", "admin"]
-                      .map((r) => DropdownMenuItem(value: r, child: Text(r)))
-                      .toList(),
-                  onChanged: (value) {
-                    setDialogState(() => selectedRole = value!);
-                  },
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Annuler"),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (nameController.text.isEmpty || emailController.text.isEmpty)
-                  return;
-
-                final success = await userService.createUserParAdmin(
-                  name: nameController.text,
-                  email: emailController.text,
-                  password: passwordController.text,
-                  role: selectedRole,
-                );
-
-                if (mounted) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                        content: Text(success
-                            ? "Utilisateur créé"
-                            : "Erreur lors de la création")),
-                  );
-                  _loadUsers();
-                }
-              },
-              child: const Text("Créer"),
-            ),
-          ],
-        ),
-      ),
+      user: user,
+      isEdit: isEdit,
     );
-  }
+    if (result == null) return;
 
-  // DIALOGUE EDITION
-  Future<void> _editUserDialog(User user) async {
-    final nameController = TextEditingController(text: user.name ?? '');
-    final emailController = TextEditingController(text: user.email ?? '');
-    String selectedRole = user.role;
-
-    await showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text("Modifier l'utilisateur"),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(labelText: "Nom"),
-                ),
-                TextField(
-                  controller: emailController,
-                  decoration: const InputDecoration(labelText: "Email"),
-                ),
-                const SizedBox(height: 20),
-                DropdownButtonFormField<String>(
-                  value: selectedRole,
-                  decoration: const InputDecoration(labelText: "Rôle"),
-                  items: ["user", "admin"]
-                      .map((r) => DropdownMenuItem(value: r, child: Text(r)))
-                      .toList(),
-                  onChanged: (value) {
-                    setDialogState(() => selectedRole = value!);
-                  },
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Annuler"),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final updatedUser = User(
-                  id: user.id ?? 0,
-                  name: nameController.text,
-                  email: emailController.text,
-                  role: selectedRole,
-                );
-
-                final result = await userService.updateUser(updatedUser);
-                if (mounted) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                        content: Text(result != null
-                            ? "Modifications enregistrées"
-                            : "Erreur modification")),
-                  );
-                  _loadUsers();
-                }
-              },
-              child: const Text("Sauvegarder"),
-            ),
-          ],
-        ),
-      ),
-    );
+    if (isEdit && user != null) {
+      // Edition d’un utilisateur
+      final updated = User(
+        id: user.id!,
+        name: result['name'],
+        email: result['email'],
+        role: result['role'],
+      );
+      final res = await userService.updateUser(updated);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(res != null
+                ? "Modifications enregistrées"
+                : "Erreur modification")),
+      );
+    } else {
+      // Création par admin
+      final res = await userService.createUserParAdmin(
+        name: result['name'],
+        email: result['email'],
+        password: result['password'],
+        role: result['role'],
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content:
+                Text(res ? "Utilisateur créé" : "Erreur lors de la création")),
+      );
+    }
+    // Rafraîchir après action
+    _loadUsers();
   }
 
   Future<void> _deleteUser(int? id) async {
@@ -257,7 +149,8 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
                         children: [
                           IconButton(
                             icon: const Icon(Icons.edit, color: Colors.blue),
-                            onPressed: () => _editUserDialog(u),
+                            onPressed: () =>
+                                _addOrEditUser(user: u, isEdit: true),
                           ),
                           IconButton(
                             icon: const Icon(Icons.delete, color: Colors.red),
@@ -269,7 +162,7 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
                   },
                 ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _addUserDialog,
+        onPressed: () => _addOrEditUser(isEdit: false),
         child: const Icon(Icons.person_add),
       ),
     );
