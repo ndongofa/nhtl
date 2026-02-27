@@ -12,7 +12,7 @@ public class CorsProdConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         // Autoriser le vrai domaine FRONTEND (celui qui appelle l’API)
-        registry.addMapping("/api/**")
+        registry.addMapping("/**")
             .allowedOrigins(
                 "https://ngom-holding.com"
             )
