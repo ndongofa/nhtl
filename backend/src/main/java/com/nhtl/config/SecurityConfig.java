@@ -23,11 +23,14 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .cors(withDefaults())  // Active CORS via config spécifique ci-dessous
+            .cors(withDefaults())
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()   // Permet OPTIONS partout (préflight CORS)
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
+                .requestMatchers("/api/auth/login").permitAll() // <- IMPORTANT : login public
+                // Si tu veux aussi autoriser /api/auth/register, ajoute :
+                // .requestMatchers("/api/auth/register").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(supabaseJwtFilter, UsernamePasswordAuthenticationFilter.class);
@@ -37,7 +40,6 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // Bean CORS **obligatoire**, appliqué à toutes les routes pour Spring Security
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
