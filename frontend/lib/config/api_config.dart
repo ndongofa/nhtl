@@ -41,6 +41,7 @@ class ApiConfig {
   /// Endpoints spécifiques (iels commencent par "/")
   static const String transportEndpoint = '/api/transports';
   static const String commandeEndpoint = '/api/commandes';
+  static const String userEndpoint = '/api/users';
 
   /// Timeout
   static const Duration connectTimeout = Duration(seconds: 30);

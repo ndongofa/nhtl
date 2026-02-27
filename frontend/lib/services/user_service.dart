@@ -6,24 +6,25 @@ import 'package:logger/logger.dart';
 import 'auth_service.dart';
 
 class UserService {
-  final logger = Logger();
+  final Logger logger = Logger();
 
+  /// Headers HTTP incluant le JWT pour l'authentification.
   Future<Map<String, String>> _headers() async {
     final jwt = await AuthService.getJwt();
     return {
-      'Authorization': 'Bearer $jwt',
+      if (jwt != null) 'Authorization': 'Bearer $jwt',
       'Content-Type': 'application/json',
     };
   }
 
-  /// Création par admin (role choisi) - Correction du endpoint sans /api
+  /// Création d'un utilisateur par un admin (POST /admin/users)
   Future<bool> createUserParAdmin({
     required String name,
     required String email,
     required String password,
     required String role,
   }) async {
-    final url = '${ApiConfig.baseUrl}/admin/users'; // <-- CORRECTION ici !
+    final url = '${ApiConfig.baseUrl}/admin/users';
     final body = {
       'name': name,
       'email': email,
@@ -37,30 +38,25 @@ class UserService {
         headers: headers,
         body: jsonEncode(body),
       );
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        return true;
-      } else {
-        logger.e(
-          'Erreur création user admin: ${response.statusCode} - ${response.body}',
-        );
-        return false;
-      }
+      return response.statusCode == 201 || response.statusCode == 200;
     } catch (e) {
-      logger.e("Erreur création user admin : $e");
+      logger.e('Erreur création user admin: $e');
       return false;
     }
   }
 
-  // CRUD REST classique
+  /// Ajouter un utilisateur standard (POST /api/users)
   Future<User?> addUser(User user) async {
     try {
-      final url = '${ApiConfig.baseUrl}/api/users';
+      final url = '${ApiConfig.baseUrl}${ApiConfig.userEndpoint}';
       final headers = await _headers();
+
       final response = await http.post(
         Uri.parse(url),
         headers: headers,
         body: jsonEncode(user.toJson()),
       );
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         return User.fromJson(jsonDecode(response.body));
       } else {
@@ -68,42 +64,54 @@ class UserService {
         return null;
       }
     } catch (e) {
-      logger.e("Exception addUser: $e");
+      logger.e('Exception addUser: $e');
       return null;
     }
   }
 
+  /// Récupérer tous les utilisateurs (GET /api/users)
   Future<List<User>?> getUsers() async {
     try {
-      final url = '${ApiConfig.baseUrl}/api/users';
+      final url = '${ApiConfig.baseUrl}${ApiConfig.userEndpoint}';
       final headers = await _headers();
-      final response = await http.get(Uri.parse(url), headers: headers);
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: headers,
+      );
+
       if (response.statusCode == 200) {
-        final body = response.body;
-        final decoded = jsonDecode(body);
-        // Supporte [{"id"...}, ...] (spring) ou {"data":[user,...]} (autre API)
-        final List<dynamic> jsonList =
-            decoded is List ? decoded : (decoded['data'] ?? []);
+        final decoded = jsonDecode(response.body);
+        List<dynamic> jsonList = [];
+        if (decoded is List) {
+          jsonList = decoded;
+        } else if (decoded is Map && decoded.containsKey('data')) {
+          jsonList = decoded['data'];
+        }
         return jsonList.map((u) => User.fromJson(u)).toList();
       } else {
         logger.e('Erreur getUsers: ${response.statusCode} - ${response.body}');
         return null;
       }
     } catch (e) {
-      logger.e("Exception getUsers: $e");
+      logger.e('Exception getUsers: $e');
       return null;
     }
   }
 
+  /// Mettre à jour un utilisateur (PUT /api/users/{id})
   Future<User?> updateUser(User user) async {
     try {
-      final url = '${ApiConfig.baseUrl}/api/users/${user.id}';
+      if (user.id == null) throw Exception('ID utilisateur requis pour update');
+      final url = '${ApiConfig.baseUrl}${ApiConfig.userEndpoint}/${user.id}';
       final headers = await _headers();
+
       final response = await http.put(
         Uri.parse(url),
         headers: headers,
         body: jsonEncode(user.toJson()),
       );
+
       if (response.statusCode == 200) {
         return User.fromJson(jsonDecode(response.body));
       } else {
@@ -112,25 +120,25 @@ class UserService {
         return null;
       }
     } catch (e) {
-      logger.e("Exception updateUser: $e");
+      logger.e('Exception updateUser: $e');
       return null;
     }
   }
 
+  /// Supprimer un utilisateur (DELETE /api/users/{id})
   Future<bool> deleteUser(int id) async {
     try {
-      final url = '${ApiConfig.baseUrl}/api/users/$id';
+      final url = '${ApiConfig.baseUrl}${ApiConfig.userEndpoint}/$id';
       final headers = await _headers();
-      final response = await http.delete(Uri.parse(url), headers: headers);
-      if (response.statusCode == 200 || response.statusCode == 204) {
-        return true;
-      } else {
-        logger
-            .e('Erreur deleteUser: ${response.statusCode} - ${response.body}');
-        return false;
-      }
+
+      final response = await http.delete(
+        Uri.parse(url),
+        headers: headers,
+      );
+
+      return response.statusCode == 200 || response.statusCode == 204;
     } catch (e) {
-      logger.e("Exception deleteUser: $e");
+      logger.e('Exception deleteUser: $e');
       return false;
     }
   }
