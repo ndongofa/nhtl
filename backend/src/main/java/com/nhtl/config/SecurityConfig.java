@@ -27,11 +27,10 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/h2-console/**").permitAll()
-                .requestMatchers("/api/auth/login").permitAll() // <- IMPORTANT : login public
-                // Si tu veux aussi autoriser /api/auth/register, ajoute :
-                // .requestMatchers("/api/auth/register").permitAll()
-                .anyRequest().authenticated()
+                .requestMatchers("/", "/index.html").permitAll()
+                .requestMatchers("/api/auth/login").permitAll()      // Public : login (si besoin)
+                .requestMatchers("/api/auth/register").permitAll()   // Public : inscription (si besoin)
+                .anyRequest().authenticated()                        // Tout le reste sécurisé
             )
             .addFilterBefore(supabaseJwtFilter, UsernamePasswordAuthenticationFilter.class);
 
