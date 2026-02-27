@@ -9,8 +9,12 @@ class CommandeService {
   final logger = Logger();
 
   /// Helper pour les headers HTTP avec JWT Supabase
-  Map<String, String> _headers() {
-    final jwt = AuthService.jwt;
+  Future<Map<String, String>> _headers() async {
+    final jwt = await AuthService.getJwt();
+    if (jwt == null) {
+      logger.e('JWT absent: utilisateur non connecté ?');
+      throw Exception("Non authentifié");
+    }
     return {
       'Authorization': 'Bearer $jwt',
       'Content-Type': 'application/json',
@@ -22,11 +26,12 @@ class CommandeService {
     try {
       final url = '${ApiConfig.baseUrl}${ApiConfig.commandeEndpoint}';
       logger.i('POST $url');
+      final headers = await _headers();
 
       final response = await http
           .post(
             Uri.parse(url),
-            headers: _headers(),
+            headers: headers,
             body: jsonEncode(commande.toJson()),
           )
           .timeout(ApiConfig.connectTimeout);
@@ -54,11 +59,12 @@ class CommandeService {
     try {
       final url = '${ApiConfig.baseUrl}${ApiConfig.commandeEndpoint}';
       logger.i('GET $url');
+      final headers = await _headers();
 
       final response = await http
           .get(
             Uri.parse(url),
-            headers: _headers(),
+            headers: headers,
           )
           .timeout(ApiConfig.receiveTimeout);
 
@@ -84,11 +90,12 @@ class CommandeService {
     try {
       final url = '${ApiConfig.baseUrl}${ApiConfig.commandeEndpoint}/$id';
       logger.i('GET $url');
+      final headers = await _headers();
 
       final response = await http
           .get(
             Uri.parse(url),
-            headers: _headers(),
+            headers: headers,
           )
           .timeout(ApiConfig.receiveTimeout);
 
@@ -113,11 +120,12 @@ class CommandeService {
     try {
       final url = '${ApiConfig.baseUrl}${ApiConfig.commandeEndpoint}/$id';
       logger.i('PUT $url');
+      final headers = await _headers();
 
       final response = await http
           .put(
             Uri.parse(url),
-            headers: _headers(),
+            headers: headers,
             body: jsonEncode(commande.toJson()),
           )
           .timeout(ApiConfig.connectTimeout);
@@ -143,11 +151,12 @@ class CommandeService {
     try {
       final url = '${ApiConfig.baseUrl}${ApiConfig.commandeEndpoint}/$id';
       logger.i('DELETE $url');
+      final headers = await _headers();
 
       final response = await http
           .delete(
             Uri.parse(url),
-            headers: _headers(),
+            headers: headers,
           )
           .timeout(ApiConfig.connectTimeout);
 
@@ -172,11 +181,12 @@ class CommandeService {
       final url =
           '${ApiConfig.baseUrl}${ApiConfig.commandeEndpoint}/search/statut?statut=$statut';
       logger.i('GET $url');
+      final headers = await _headers();
 
       final response = await http
           .get(
             Uri.parse(url),
-            headers: _headers(),
+            headers: headers,
           )
           .timeout(ApiConfig.receiveTimeout);
 

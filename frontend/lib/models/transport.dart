@@ -37,7 +37,6 @@ class Transport {
     this.dateModification,
   });
 
-  // JSON vers objet
   factory Transport.fromJson(Map<String, dynamic> json) {
     return Transport(
       id: json['id'] as int?,
@@ -52,21 +51,29 @@ class Transport {
       adresseDestinataire: json['adresseDestinataire'] as String,
       typesMarchandise: json['typesMarchandise'] as String,
       description: json['description'] as String,
-      poids: json['poids'] as double?,
-      valeurEstimee: json['valeurEstimee'] as double?,
+      poids: json['poids'] == null
+          ? null
+          : (json['poids'] is int)
+              ? (json['poids'] as int).toDouble()
+              : (json['poids'] as double),
+      valeurEstimee: json['valeurEstimee'] == null
+          ? null
+          : (json['valeurEstimee'] is int)
+              ? (json['valeurEstimee'] as int).toDouble()
+              : (json['valeurEstimee'] as double),
       statut: json['statut'] as String? ?? 'EN_ATTENTE',
       dateCreation: json['dateCreation'] != null
-          ? DateTime.parse(json['dateCreation'] as String)
+          ? DateTime.parse(json['dateCreation'])
           : null,
       dateModification: json['dateModification'] != null
-          ? DateTime.parse(json['dateModification'] as String)
+          ? DateTime.parse(json['dateModification'])
           : null,
     );
   }
 
-  // Objet vers JSON
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'nom': nom,
       'prenom': prenom,
       'numeroTelephone': numeroTelephone,
@@ -81,6 +88,7 @@ class Transport {
       'poids': poids,
       'valeurEstimee': valeurEstimee,
       'statut': statut,
+      // On n'encode pas les dates ici pour un POST (le backend gère)
     };
   }
 }

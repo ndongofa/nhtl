@@ -8,9 +8,13 @@ import 'auth_service.dart';
 class TransportService {
   final logger = Logger();
 
-  // Headers HTTP avec le token JWT Supabase
-  Map<String, String> _headers() {
-    final jwt = AuthService.jwt;
+  // Headers HTTP ASYNC avec le token JWT Supabase
+  Future<Map<String, String>> _headers() async {
+    final jwt = await AuthService.getJwt();
+    if (jwt == null) {
+      logger.e('JWT absent: utilisateur non connecté ?');
+      throw Exception("Non authentifié");
+    }
     return {
       'Authorization': 'Bearer $jwt',
       'Content-Type': 'application/json',
@@ -22,11 +26,12 @@ class TransportService {
     try {
       final url = '${ApiConfig.baseUrl}${ApiConfig.transportEndpoint}';
       logger.i('POST $url');
+      final headers = await _headers();
 
       final response = await http
           .post(
             Uri.parse(url),
-            headers: _headers(),
+            headers: headers,
             body: jsonEncode(transport.toJson()),
           )
           .timeout(ApiConfig.connectTimeout);
@@ -54,11 +59,12 @@ class TransportService {
     try {
       final url = '${ApiConfig.baseUrl}${ApiConfig.transportEndpoint}';
       logger.i('GET $url');
+      final headers = await _headers();
 
       final response = await http
           .get(
             Uri.parse(url),
-            headers: _headers(),
+            headers: headers,
           )
           .timeout(ApiConfig.receiveTimeout);
 
@@ -84,11 +90,12 @@ class TransportService {
     try {
       final url = '${ApiConfig.baseUrl}${ApiConfig.transportEndpoint}/$id';
       logger.i('GET $url');
+      final headers = await _headers();
 
       final response = await http
           .get(
             Uri.parse(url),
-            headers: _headers(),
+            headers: headers,
           )
           .timeout(ApiConfig.receiveTimeout);
 
@@ -113,11 +120,12 @@ class TransportService {
     try {
       final url = '${ApiConfig.baseUrl}${ApiConfig.transportEndpoint}/$id';
       logger.i('PUT $url');
+      final headers = await _headers();
 
       final response = await http
           .put(
             Uri.parse(url),
-            headers: _headers(),
+            headers: headers,
             body: jsonEncode(transport.toJson()),
           )
           .timeout(ApiConfig.connectTimeout);
@@ -143,11 +151,12 @@ class TransportService {
     try {
       final url = '${ApiConfig.baseUrl}${ApiConfig.transportEndpoint}/$id';
       logger.i('DELETE $url');
+      final headers = await _headers();
 
       final response = await http
           .delete(
             Uri.parse(url),
-            headers: _headers(),
+            headers: headers,
           )
           .timeout(ApiConfig.connectTimeout);
 

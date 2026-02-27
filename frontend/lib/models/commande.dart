@@ -41,7 +41,6 @@ class Commande {
     this.dateModification,
   });
 
-  // JSON vers objet
   factory Commande.fromJson(Map<String, dynamic> json) {
     return Commande(
       id: json['id'] as int?,
@@ -56,23 +55,27 @@ class Commande {
       lienProduit: json['lienProduit'] as String,
       descriptionCommande: json['descriptionCommande'] as String,
       quantite: json['quantite'] as int,
-      prixUnitaire: (json['prixUnitaire'] as num).toDouble(),
-      prixTotal: (json['prixTotal'] as num).toDouble(),
+      prixUnitaire: (json['prixUnitaire'] is int)
+          ? (json['prixUnitaire'] as int).toDouble()
+          : (json['prixUnitaire'] as double),
+      prixTotal: (json['prixTotal'] is int)
+          ? (json['prixTotal'] as int).toDouble()
+          : (json['prixTotal'] as double),
       devise: json['devise'] as String? ?? 'USD',
       notesSpeciales: json['notesSpeciales'] as String?,
       statut: json['statut'] as String? ?? 'EN_ATTENTE',
       dateCreation: json['dateCreation'] != null
-          ? DateTime.parse(json['dateCreation'] as String)
+          ? DateTime.parse(json['dateCreation'])
           : null,
       dateModification: json['dateModification'] != null
-          ? DateTime.parse(json['dateModification'] as String)
+          ? DateTime.parse(json['dateModification'])
           : null,
     );
   }
 
-  // Objet vers JSON
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'nom': nom,
       'prenom': prenom,
       'numeroTelephone': numeroTelephone,
@@ -89,6 +92,7 @@ class Commande {
       'devise': devise,
       'notesSpeciales': notesSpeciales,
       'statut': statut,
+      // Dates exclues du POST : backend gère la création/MAJ
     };
   }
 }
