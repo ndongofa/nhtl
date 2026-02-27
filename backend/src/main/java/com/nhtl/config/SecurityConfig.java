@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.http.HttpMethod;
 import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
@@ -18,9 +19,11 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .cors(withDefaults()) // 👈 INDISPENSABLE pour que CorsProdConfig s'applique à toutes les routes
+            .cors(withDefaults()) 
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
+                // 👉 Autorise toutes les requêtes OPTIONS à tous les endpoints !
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
                 .anyRequest().authenticated()
             )

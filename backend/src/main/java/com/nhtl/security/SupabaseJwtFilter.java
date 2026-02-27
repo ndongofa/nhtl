@@ -31,12 +31,14 @@ public class SupabaseJwtFilter extends OncePerRequestFilter {
 
     // Chemins publics qui ne nécessitent pas d'authentification
     private static final List<String> PUBLIC_PATHS = Arrays.asList(
-        "/auth/**",
-        "/api/public/**",
+        "/auth/",
+        "/api/public/",
         "/actuator/health",
         "/actuator/info",
-        "/swagger-ui/**",
-        "/v3/api-docs/**"
+        "/swagger-ui/",
+        "/v3/api-docs/",
+        "/login",
+        "/signup"
     );
 
     @Override
@@ -45,16 +47,15 @@ public class SupabaseJwtFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
 
         String path = request.getRequestURI();
-        
-        // Ignorer les chemins publics
-        if (isPublicPath(path)) {
+
+        // Si chemin public ou OPTIONS, ne filtre pas
+        if (shouldNotFilter(request)) {
             filterChain.doFilter(request, response);
             return;
         }
 
         String authHeader = request.getHeader("Authorization");
 
-        // Vérification de la présence du header Authorization
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             log.debug("Token JWT manquant ou format incorrect pour: {}", path);
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -66,7 +67,6 @@ public class SupabaseJwtFilter extends OncePerRequestFilter {
         String jwt = authHeader.substring(7);
 
         try {
-            // Version compatible avec JJWT 0.9.x - 0.11.x
             Claims claims = Jwts.parser()
                     .setSigningKey(supabaseJwtSecret.getBytes())
                     .parseClaimsJws(jwt)
@@ -74,7 +74,7 @@ public class SupabaseJwtFilter extends OncePerRequestFilter {
 
             String userId = claims.getSubject();
             String email = claims.get("email", String.class);
-            
+
             if (userId == null) {
                 log.warn("Token JWT sans subject (userId)");
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -82,23 +82,18 @@ public class SupabaseJwtFilter extends OncePerRequestFilter {
                 return;
             }
 
-            // Extraction des informations utilisateur
             String role = extractUserRole(claims);
             String username = email != null ? email : userId;
 
-            // Construction des autorités Spring Security
             List<GrantedAuthority> authorities = new ArrayList<>();
             authorities.add(new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()));
-            
-            // Optionnel: ajouter des autorités basées sur d'autres claims
             addAdditionalAuthorities(claims, authorities);
 
-            // Création du token d'authentification Spring
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(username, null, authorities);
-            
+
             SecurityContextHolder.getContext().setAuthentication(authentication);
-            
+
             log.debug("Utilisateur authentifié: {}, rôle: {}", username, role);
 
         } catch (ExpiredJwtException e) {
@@ -130,11 +125,8 @@ public class SupabaseJwtFilter extends OncePerRequestFilter {
      * Extrait le rôle utilisateur des claims Supabase
      */
     private String extractUserRole(Claims claims) {
-        // Valeur par défaut
         String role = "user";
-        
         try {
-            // Essayer de récupérer depuis user_metadata
             Object metaObj = claims.get("user_metadata");
             if (metaObj instanceof Map) {
                 Object foundRole = ((Map<?, ?>) metaObj).get("role");
@@ -144,8 +136,6 @@ public class SupabaseJwtFilter extends OncePerRequestFilter {
                     return role;
                 }
             }
-            
-            // Alternative: depuis app_metadata
             Object appMetaObj = claims.get("app_metadata");
             if (appMetaObj instanceof Map) {
                 Object foundRole = ((Map<?, ?>) appMetaObj).get("role");
@@ -155,17 +145,13 @@ public class SupabaseJwtFilter extends OncePerRequestFilter {
                     return role;
                 }
             }
-            
-            // Alternative: depuis le claim direct "role"
             if (claims.get("role") != null) {
                 role = claims.get("role").toString().toLowerCase();
                 log.debug("Rôle trouvé dans claim direct: {}", role);
             }
-            
         } catch (Exception e) {
             log.warn("Erreur lors de l'extraction du rôle: {}", e.getMessage());
         }
-        
         log.debug("Rôle par défaut utilisé: {}", role);
         return role;
     }
@@ -174,13 +160,10 @@ public class SupabaseJwtFilter extends OncePerRequestFilter {
      * Ajoute des autorités supplémentaires basées sur les claims
      */
     private void addAdditionalAuthorities(Claims claims, List<GrantedAuthority> authorities) {
-        // Exemple: ajouter une autorité basée sur l'email vérifié
         Boolean emailVerified = claims.get("email_verified", Boolean.class);
         if (Boolean.TRUE.equals(emailVerified)) {
             authorities.add(new SimpleGrantedAuthority("EMAIL_VERIFIED"));
         }
-        
-        // Exemple: ajouter une autorité basée sur le provider
         String provider = claims.get("provider", String.class);
         if (provider != null) {
             authorities.add(new SimpleGrantedAuthority("PROVIDER_" + provider.toUpperCase()));
@@ -188,15 +171,15 @@ public class SupabaseJwtFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Vérifie si le chemin est public
+     * Vérifie si le chemin est public ou si c'est une requête OPTIONS (préflight CORS)
      */
-    private boolean isPublicPath(String path) {
-        return PUBLIC_PATHS.stream().anyMatch(path::startsWith);
-    }
-
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
-        return isPublicPath(path);
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return true; // Ignore toutes les requêtes préflight CORS !
+        }
+        // Ignore chemins publics
+        return PUBLIC_PATHS.stream().anyMatch(path::startsWith);
     }
 }
