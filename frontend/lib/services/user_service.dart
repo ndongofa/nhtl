@@ -10,7 +10,8 @@ class UserService {
 
   /// Headers HTTP incluant le JWT pour l'authentification.
   Future<Map<String, String>> _headers() async {
-    final jwt = await AuthService.getJwt();
+    final jwt = await AuthService
+        .getJwt(); // ✅ ASYNC : token Supabase récupéré à chaque appel
     return {
       if (jwt != null) 'Authorization': 'Bearer $jwt',
       'Content-Type': 'application/json',

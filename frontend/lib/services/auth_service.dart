@@ -3,21 +3,20 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class AuthService {
   static final SupabaseClient _supabase = Supabase.instance.client;
 
-  // SIGN UP avec role='user' par défaut si non spécifié
   static Future<void> signupWithMetadata({
     required String email,
     required String password,
     required String fullName,
     String? username,
     String? phone,
-    String? role, // Paramètre optionnel
+    String? role,
   }) async {
     final res = await _supabase.auth.signUp(
       email: email,
       password: password,
       data: {
         'full_name': fullName,
-        'role': role ?? 'user', // Sécurité : 'user' par défaut
+        'role': role ?? 'user',
         if (username != null) 'username': username,
         if (phone != null) 'phone': phone,
       },
@@ -48,17 +47,17 @@ class AuthService {
   static Future<bool> isLoggedIn() async =>
       _supabase.auth.currentSession != null;
 
+  // Méthode recommandée pour obtenir le JWT (toujours utiliser await)
   static Future<String?> getJwt() async {
     final session = _supabase.auth.currentSession;
     return session?.accessToken;
   }
 
+  // Getter synchrone en *option*, si tu fais du pur synchrone (rare)
   static String? get jwt => _supabase.auth.currentSession?.accessToken;
 
   static String? get userId => _supabase.auth.currentUser?.id;
-
   static User? get currentUser => _supabase.auth.currentUser;
-
   static Map<String, dynamic>? get userMetadata =>
       _supabase.auth.currentUser?.userMetadata;
 
