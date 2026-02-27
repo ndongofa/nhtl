@@ -22,7 +22,6 @@ public class SecurityConfig {
             .cors(withDefaults()) 
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                // 👉 Autorise toutes les requêtes OPTIONS à tous les endpoints !
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
                 .anyRequest().authenticated()
