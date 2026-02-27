@@ -8,7 +8,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = "*") // autoriser Flutter à consommer l’API
 public class UserController {
     private final UserService userService;
 

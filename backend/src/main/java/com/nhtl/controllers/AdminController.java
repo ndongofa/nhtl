@@ -1,4 +1,5 @@
 package com.nhtl.controllers;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -11,27 +12,26 @@ import java.util.Map;
 @RestController
 public class AdminController {
 
-    @Value("${supabase.project.url}") 
+    @Value("${supabase.project.url}")
     private String supabaseProjectUrl;
 
-    @Value("${supabase.service.role.key}") 
+    @Value("${supabase.service.role.key}")
     private String supabaseServiceRoleKey;
 
     private final RestTemplate restTemplate = new RestTemplate();
 
+    // Création d'un user admin via Supabase (POST)
     @PostMapping("/admin/users")
-    @PreAuthorize("hasRole('ADMIN')") // Sécurité Spring
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> createUserForAdmin(@RequestBody Map<String, String> userInfos) {
         String email = userInfos.get("email");
         String password = userInfos.get("password");
         String name = userInfos.get("name");
         String role = userInfos.getOrDefault("role", "user");
 
-        // Construction du body pour Supabase Auth Admin REST API
         Map<String, Object> body = new HashMap<>();
         body.put("email", email);
         body.put("password", password);
-        // Attention, c'est "user_metadata" dans Supabase
         Map<String, String> userMeta = new HashMap<>();
         userMeta.put("full_name", name);
         userMeta.put("role", role);
@@ -43,16 +43,14 @@ public class AdminController {
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
 
-        String url = supabaseProjectUrl + "/auth/v1/admin/users"; 
+        String url = supabaseProjectUrl + "/auth/v1/admin/users";
 
         try {
             ResponseEntity<Map> response = restTemplate.postForEntity(url, entity, Map.class);
-            // Propagation au front : retourne l'utilisateur créé et "201 created"
             return ResponseEntity.status(HttpStatus.CREATED).body(response.getBody());
         } catch (Exception e) {
-            // Gérer les erreurs Supabase, e.g. email already used, etc.
             String message = e.getMessage();
-            if (message.contains("duplicate key value") || message.contains("User already registered")) {
+            if (message != null && (message.contains("duplicate key value") || message.contains("User already registered"))) {
                 return ResponseEntity.status(HttpStatus.CONFLICT)
                         .body(Map.of("error", "Cet email est déjà utilisé."));
             }

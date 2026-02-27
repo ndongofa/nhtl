@@ -17,14 +17,10 @@ import java.util.Map;
 @RequestMapping("/api/transports")
 @Validated
 public class TransportController {
-    
+
     @Autowired
     private TransportService transportService;
-    
-    /**
-     * Créer une nouvelle demande de transport
-     * POST /api/transports
-     */
+
     @PostMapping
     public ResponseEntity<Map<String, Object>> createTransport(@Valid @RequestBody TransportDTO transportDTO) {
         try {
@@ -38,20 +34,16 @@ public class TransportController {
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "Erreur lors de la création du transport: " + e.getMessage());
-            e.printStackTrace(); // ✅ Ajoutez cette ligne pour voir l'erreur dans les logs
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
     }
-    
-    /**
-     * Récupérer un transport par ID
-     * GET /api/transports/{id}
-     */
+
     @GetMapping("/{id}")
     public ResponseEntity<Map<String, Object>> getTransportById(@PathVariable Long id) {
         TransportDTO transport = transportService.getTransportById(id);
         Map<String, Object> response = new HashMap<>();
-        
+
         if (transport != null) {
             response.put("success", true);
             response.put("message", "Transport trouvé");
@@ -63,11 +55,7 @@ public class TransportController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
     }
-    
-    /**
-     * Récupérer tous les transports
-     * GET /api/transports
-     */
+
     @GetMapping
     public ResponseEntity<Map<String, Object>> getAllTransports() {
         List<TransportDTO> transports = transportService.getAllTransports();
@@ -78,11 +66,7 @@ public class TransportController {
         response.put("data", transports);
         return ResponseEntity.ok(response);
     }
-    
-    /**
-     * Récupérer les transports par statut
-     * GET /api/transports/search/statut?statut=EN_ATTENTE
-     */
+
     @GetMapping("/search/statut")
     public ResponseEntity<Map<String, Object>> getTransportsByStatut(@RequestParam String statut) {
         try {
@@ -100,11 +84,7 @@ public class TransportController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
     }
-    
-    /**
-     * Récupérer les transports par numéro de téléphone
-     * GET /api/transports/search/phone?phone=+237123456789
-     */
+
     @GetMapping("/search/phone")
     public ResponseEntity<Map<String, Object>> getTransportsByPhone(@RequestParam String phone) {
         List<TransportDTO> transports = transportService.getTransportsByPhoneNumber(phone);
@@ -115,11 +95,7 @@ public class TransportController {
         response.put("data", transports);
         return ResponseEntity.ok(response);
     }
-    
-    /**
-     * Récupérer les transports par pays de destination
-     * GET /api/transports/search/country?country=France
-     */
+
     @GetMapping("/search/country")
     public ResponseEntity<Map<String, Object>> getTransportsByCountry(@RequestParam String country) {
         List<TransportDTO> transports = transportService.getTransportsByDestinationCountry(country);
@@ -130,16 +106,13 @@ public class TransportController {
         response.put("data", transports);
         return ResponseEntity.ok(response);
     }
-    
-    /**
-     * Chercher les transports par nom ou prénom
-     * GET /api/transports/search?nom=Dupont&prenom=Jean
-     */
+
     @GetMapping("/search")
     public ResponseEntity<Map<String, Object>> searchTransports(
             @RequestParam(required = false) String nom,
             @RequestParam(required = false) String prenom) {
-        List<TransportDTO> transports = transportService.searchByNomOrPrenom(nom != null ? nom : "", prenom != null ? prenom : "");
+        List<TransportDTO> transports = transportService.searchByNomOrPrenom(
+            nom != null ? nom : "", prenom != null ? prenom : "");
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
         response.put("message", "Résultats de recherche");
@@ -147,11 +120,7 @@ public class TransportController {
         response.put("data", transports);
         return ResponseEntity.ok(response);
     }
-    
-    /**
-     * Mettre à jour un transport
-     * PUT /api/transports/{id}
-     */
+
     @PutMapping("/{id}")
     public ResponseEntity<Map<String, Object>> updateTransport(
             @PathVariable Long id,
@@ -159,7 +128,7 @@ public class TransportController {
         try {
             TransportDTO updatedTransport = transportService.updateTransport(id, transportDTO);
             Map<String, Object> response = new HashMap<>();
-            
+
             if (updatedTransport != null) {
                 response.put("success", true);
                 response.put("message", "Transport mis à jour avec succès");
@@ -177,16 +146,12 @@ public class TransportController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
     }
-    
-    /**
-     * Supprimer un transport
-     * DELETE /api/transports/{id}
-     */
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, Object>> deleteTransport(@PathVariable Long id) {
         boolean deleted = transportService.deleteTransport(id);
         Map<String, Object> response = new HashMap<>();
-        
+
         if (deleted) {
             response.put("success", true);
             response.put("message", "Transport supprimé avec succès");
