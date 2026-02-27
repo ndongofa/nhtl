@@ -20,6 +20,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 @Slf4j
@@ -29,7 +30,6 @@ public class SupabaseJwtFilter extends OncePerRequestFilter {
     @Value("${supabase.jwt.secret}")
     private String supabaseJwtSecret;
 
-    // Chemins publics qui ne nécessitent pas d'authentification
     private static final List<String> PUBLIC_PATHS = Arrays.asList(
         "/auth/",
         "/api/public/",
@@ -48,7 +48,6 @@ public class SupabaseJwtFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
 
-        // Si chemin public ou OPTIONS, ne filtre pas
         if (shouldNotFilter(request)) {
             filterChain.doFilter(request, response);
             return;
@@ -68,7 +67,7 @@ public class SupabaseJwtFilter extends OncePerRequestFilter {
 
         try {
             Claims claims = Jwts.parser()
-                    .setSigningKey(supabaseJwtSecret.getBytes())
+                    .setSigningKey(supabaseJwtSecret.getBytes(StandardCharsets.UTF_8))
                     .parseClaimsJws(jwt)
                     .getBody();
 
@@ -121,9 +120,6 @@ public class SupabaseJwtFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    /**
-     * Extrait le rôle utilisateur des claims Supabase
-     */
     private String extractUserRole(Claims claims) {
         String role = "user";
         try {
@@ -156,9 +152,6 @@ public class SupabaseJwtFilter extends OncePerRequestFilter {
         return role;
     }
 
-    /**
-     * Ajoute des autorités supplémentaires basées sur les claims
-     */
     private void addAdditionalAuthorities(Claims claims, List<GrantedAuthority> authorities) {
         Boolean emailVerified = claims.get("email_verified", Boolean.class);
         if (Boolean.TRUE.equals(emailVerified)) {
@@ -170,16 +163,12 @@ public class SupabaseJwtFilter extends OncePerRequestFilter {
         }
     }
 
-    /**
-     * Vérifie si le chemin est public ou si c'est une requête OPTIONS (préflight CORS)
-     */
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
-            return true; // Ignore toutes les requêtes préflight CORS !
+            return true;
         }
-        // Ignore chemins publics
         return PUBLIC_PATHS.stream().anyMatch(path::startsWith);
     }
 }
