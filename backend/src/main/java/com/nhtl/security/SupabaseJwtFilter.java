@@ -8,8 +8,10 @@ import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -65,7 +67,7 @@ public class SupabaseJwtFilter extends OncePerRequestFilter {
 
         try {
 
-            // 🔥 CORRECTION IMPORTANTE : décodage Base64 du secret Supabase
+            // 🔐 Décodage Base64 du secret Supabase (HS256)
             byte[] decodedKey = Base64.getDecoder().decode(supabaseJwtSecret);
             Key key = Keys.hmacShaKeyFor(decodedKey);
 
@@ -75,7 +77,23 @@ public class SupabaseJwtFilter extends OncePerRequestFilter {
                     .parseClaimsJws(jwt)
                     .getBody();
 
-            log.info("JWT valide pour user: {}", claims.getSubject());
+            String userId = claims.getSubject();
+
+            // 🎯 Extraction du rôle (si présent)
+            String role = "USER";
+            if (claims.get("role") != null) {
+                role = claims.get("role").toString().toUpperCase();
+            }
+
+            List<GrantedAuthority> authorities = new ArrayList<>();
+            authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+
+            UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(userId, null, authorities);
+
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            log.info("JWT valide et authentifié pour user: {} avec rôle: {}", userId, role);
 
         } catch (ExpiredJwtException e) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -83,7 +101,6 @@ public class SupabaseJwtFilter extends OncePerRequestFilter {
             return;
 
         } catch (io.jsonwebtoken.security.SecurityException e) {
-            log.error("Signature JWT invalide: {}", e.getMessage());
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().write("{\"error\": \"Signature JWT invalide\"}");
             return;
