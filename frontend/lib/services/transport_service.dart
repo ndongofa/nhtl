@@ -1,15 +1,27 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/transport.dart';
+import 'auth_service.dart'; // Pour récupérer le token JWT
 
 class TransportService {
   final String baseUrl =
       'https://nhtl-production-5e78.up.railway.app/api/transports';
 
+  // Génère le header avec Authorization
+  Future<Map<String, String>> _headers() async {
+    final jwt = await AuthService.getJwt();
+    if (jwt == null) throw Exception("Utilisateur non connecté (JWT manquant)");
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $jwt',
+    };
+  }
+
   Future<Transport?> createTransport(Transport transport) async {
+    final headers = await _headers();
     final response = await http.post(
       Uri.parse(baseUrl),
-      headers: {'Content-Type': 'application/json'},
+      headers: headers,
       body: jsonEncode(transport.toJson()),
     );
     if (response.statusCode == 200 || response.statusCode == 201) {
@@ -22,7 +34,8 @@ class TransportService {
 
   Future<List<Transport>?> getAllTransports() async {
     try {
-      final response = await http.get(Uri.parse(baseUrl));
+      final headers = await _headers();
+      final response = await http.get(Uri.parse(baseUrl), headers: headers);
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         return data.map((e) => Transport.fromJson(e)).toList();

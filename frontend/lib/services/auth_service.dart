@@ -47,15 +47,12 @@ class AuthService {
   static Future<bool> isLoggedIn() async =>
       _supabase.auth.currentSession != null;
 
-  // Méthode recommandée pour obtenir le JWT (toujours utiliser await)
   static Future<String?> getJwt() async {
     final session = _supabase.auth.currentSession;
     return session?.accessToken;
   }
 
-  // Getter synchrone en *option*, si tu fais du pur synchrone (rare)
   static String? get jwt => _supabase.auth.currentSession?.accessToken;
-
   static String? get userId => _supabase.auth.currentUser?.id;
   static User? get currentUser => _supabase.auth.currentUser;
   static Map<String, dynamic>? get userMetadata =>
