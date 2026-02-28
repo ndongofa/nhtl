@@ -28,10 +28,11 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
   final descriptionController = TextEditingController();
   final poidsController = TextEditingController();
   final valeurEstimeeController = TextEditingController();
-
   final typeTransportController = TextEditingController();
   final pointDepartController = TextEditingController();
   final pointArriveeController = TextEditingController();
+
+  String statutValue = "EN_ATTENTE";
 
   @override
   void dispose() {
@@ -103,8 +104,9 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
           typeTransport: typeTransportController.text.trim(),
           pointDepart: pointDepartController.text.trim(),
           pointArrivee: pointArriveeController.text.trim(),
+          statut: statutValue,
         );
-
+        print('JSON envoyé : ${transport.toJson()}');
         final result = await _service.createTransport(transport);
 
         if (result != null) {
@@ -147,7 +149,7 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
               _buildTextField(nomController, 'Nom'),
               _buildTextField(prenomController, 'Prénom'),
               _buildTextField(numeroTelephoneController, 'Numéro Téléphone',
-                  validator: _validatePhoneNumber, hintText: '+221770000999'),
+                  validator: _validatePhoneNumber, hintText: '+221771234567'),
               _buildSectionTitle('Expéditeur'),
               _buildTextField(paysExpediteurController, 'Pays'),
               _buildTextField(villeExpediteurController, 'Ville'),
@@ -174,6 +176,28 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
               _buildTextField(typeTransportController, 'Type de transport'),
               _buildTextField(pointDepartController, 'Point de départ'),
               _buildTextField(pointArriveeController, 'Point d\'arrivée'),
+              _buildSectionTitle('Statut'),
+              DropdownButtonFormField<String>(
+                value: statutValue,
+                decoration: InputDecoration(
+                  labelText: "Statut",
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                ),
+                onChanged: (String? newValue) {
+                  if (newValue != null) {
+                    setState(() {
+                      statutValue = newValue;
+                    });
+                  }
+                },
+                items: const [
+                  DropdownMenuItem(
+                      value: "EN_ATTENTE", child: Text("En attente")),
+                  DropdownMenuItem(value: "EN_COURS", child: Text("En cours")),
+                  DropdownMenuItem(value: "TERMINE", child: Text("Terminé")),
+                ],
+              ),
               const SizedBox(height: 32),
               SizedBox(
                 width: double.infinity,
