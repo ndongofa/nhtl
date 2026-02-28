@@ -28,9 +28,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/", "/index.html").permitAll()
-                .requestMatchers("/api/auth/login").permitAll()      // Public : login (si besoin)
-                .requestMatchers("/api/auth/register").permitAll()   // Public : inscription (si besoin)
-                .anyRequest().authenticated()                        // Tout le reste sécurisé
+                .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
+                .anyRequest().authenticated()
             )
             .addFilterBefore(supabaseJwtFilter, UsernamePasswordAuthenticationFilter.class);
 
