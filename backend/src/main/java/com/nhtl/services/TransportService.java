@@ -1,8 +1,8 @@
 package com.nhtl.services;
 
 import com.nhtl.models.Transport;
-import com.nhtl.repositories.TransportRepository;
 import com.nhtl.dto.TransportDTO;
+import com.nhtl.repositories.TransportRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
@@ -16,129 +16,93 @@ public class TransportService {
     @Autowired
     private TransportRepository transportRepository;
 
-    /**
-     * Créer une nouvelle demande de transport
-     */
-    public TransportDTO createTransport(TransportDTO transportDTO) {
-        Transport transport = new Transport();
-        transport.setNom(transportDTO.getNom());
-        transport.setPrenom(transportDTO.getPrenom());
-        transport.setNumeroTelephone(transportDTO.getNumeroTelephone());
-        transport.setPaysExpediteur(transportDTO.getPaysExpediteur());
-        transport.setVilleExpediteur(transportDTO.getVilleExpediteur());
-        transport.setAdresseExpediteur(transportDTO.getAdresseExpediteur());
-        transport.setPaysDestinataire(transportDTO.getPaysDestinataire());
-        transport.setVilleDestinataire(transportDTO.getVilleDestinataire());
-        transport.setAdresseDestinataire(transportDTO.getAdresseDestinataire());
-        transport.setTypesMarchandise(transportDTO.getTypesMarchandise());
-        transport.setDescription(transportDTO.getDescription());
-        transport.setPoids(transportDTO.getPoids());
-        transport.setValeurEstimee(transportDTO.getValeurEstimee());
-        transport.setTypeTransport(transportDTO.getTypeTransport());
-        transport.setStatut(transportDTO.getStatut());
-        transport.setPointDepart(transportDTO.getPointDepart());
-        transport.setPointArrivee(transportDTO.getPointArrivee());
-        transport.setDateCreation(LocalDateTime.now());
-        transport.setDateModification(LocalDateTime.now());
-
-        Transport savedTransport = transportRepository.save(transport);
-        return convertToDTO(savedTransport);
+    public TransportDTO createTransport(TransportDTO dto) {
+        Transport t = new Transport();
+        t.setNom(dto.getNom());
+        t.setPrenom(dto.getPrenom());
+        t.setNumeroTelephone(dto.getNumeroTelephone());
+        t.setPaysExpediteur(dto.getPaysExpediteur());
+        t.setVilleExpediteur(dto.getVilleExpediteur());
+        t.setAdresseExpediteur(dto.getAdresseExpediteur());
+        t.setPaysDestinataire(dto.getPaysDestinataire());
+        t.setVilleDestinataire(dto.getVilleDestinataire());
+        t.setAdresseDestinataire(dto.getAdresseDestinataire());
+        t.setTypesMarchandise(dto.getTypesMarchandise());
+        t.setDescription(dto.getDescription());
+        t.setPoids(dto.getPoids());
+        t.setValeurEstimee(dto.getValeurEstimee());
+        t.setTypeTransport(dto.getTypeTransport());
+        t.setPointDepart(dto.getPointDepart());
+        t.setPointArrivee(dto.getPointArrivee());
+        t.setStatut(dto.getStatut());
+        t.setDateCreation(LocalDateTime.now());
+        t.setDateModification(LocalDateTime.now());
+        Transport saved = transportRepository.save(t);
+        return convertToDTO(saved);
     }
 
-    /**
-     * Récupérer un transport par ID
-     */
     public TransportDTO getTransportById(Long id) {
-        Optional<Transport> transport = transportRepository.findById(id);
-        return transport.map(this::convertToDTO).orElse(null);
+        Optional<Transport> t = transportRepository.findById(id);
+        return t.map(this::convertToDTO).orElse(null);
     }
 
-    /**
-     * Récupérer tous les transports
-     */
     public List<TransportDTO> getAllTransports() {
-        return transportRepository.findAll()
-                .stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+        return transportRepository.findAll().stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
-    /**
-     * Récupérer les transports par statut
-     */
     public List<TransportDTO> getTransportsByStatut(String statut) {
         return transportRepository.findByStatut(statut)
-                .stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+                .stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
-    /**
-     * Récupérer les transports par numéro de téléphone
-     */
-    public List<TransportDTO> getTransportsByPhoneNumber(String phoneNumber) {
-        return transportRepository.findByNumeroTelephone(phoneNumber)
-                .stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+    public List<TransportDTO> getTransportsByNumeroTelephone(String numeroTelephone) {
+        return transportRepository.findByNumeroTelephone(numeroTelephone)
+                .stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
-    /**
-     * Récupérer les transports par pays de destination
-     */
-    public List<TransportDTO> getTransportsByDestinationCountry(String country) {
-        return transportRepository.findByPaysDestinataire(country)
-                .stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+    public List<TransportDTO> getTransportsByTypeTransport(String typeTransport) {
+        return transportRepository.findByTypeTransport(typeTransport)
+                .stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
-    /**
-     * Chercher les transports par nom ou prénom
-     */
-    public List<TransportDTO> searchByNomOrPrenom(String nom, String prenom) {
-        return transportRepository.searchByNomOrPrenom(nom, prenom)
-                .stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+    public List<TransportDTO> getTransportsByPointDepart(String pointDepart) {
+        return transportRepository.findByPointDepart(pointDepart)
+                .stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
-    /**
-     * Mettre à jour un transport
-     */
-    public TransportDTO updateTransport(Long id, TransportDTO transportDTO) {
-        Optional<Transport> existingTransport = transportRepository.findById(id);
+    public List<TransportDTO> getTransportsByPointArrivee(String pointArrivee) {
+        return transportRepository.findByPointArrivee(pointArrivee)
+                .stream().map(this::convertToDTO).collect(Collectors.toList());
+    }
 
-        if (existingTransport.isPresent()) {
-            Transport transport = existingTransport.get();
-            transport.setNom(transportDTO.getNom());
-            transport.setPrenom(transportDTO.getPrenom());
-            transport.setNumeroTelephone(transportDTO.getNumeroTelephone());
-            transport.setPaysExpediteur(transportDTO.getPaysExpediteur());
-            transport.setVilleExpediteur(transportDTO.getVilleExpediteur());
-            transport.setAdresseExpediteur(transportDTO.getAdresseExpediteur());
-            transport.setPaysDestinataire(transportDTO.getPaysDestinataire());
-            transport.setVilleDestinataire(transportDTO.getVilleDestinataire());
-            transport.setAdresseDestinataire(transportDTO.getAdresseDestinataire());
-            transport.setTypesMarchandise(transportDTO.getTypesMarchandise());
-            transport.setDescription(transportDTO.getDescription());
-            transport.setPoids(transportDTO.getPoids());
-            transport.setValeurEstimee(transportDTO.getValeurEstimee());
-            transport.setTypeTransport(transportDTO.getTypeTransport());
-            transport.setStatut(transportDTO.getStatut());
-            transport.setPointDepart(transportDTO.getPointDepart());
-            transport.setPointArrivee(transportDTO.getPointArrivee());
-            transport.setDateModification(LocalDateTime.now());
-
-            Transport updatedTransport = transportRepository.save(transport);
-            return convertToDTO(updatedTransport);
+    public TransportDTO updateTransport(Long id, TransportDTO dto) {
+        Optional<Transport> opt = transportRepository.findById(id);
+        if (opt.isPresent()) {
+            Transport t = opt.get();
+            t.setNom(dto.getNom());
+            t.setPrenom(dto.getPrenom());
+            t.setNumeroTelephone(dto.getNumeroTelephone());
+            t.setPaysExpediteur(dto.getPaysExpediteur());
+            t.setVilleExpediteur(dto.getVilleExpediteur());
+            t.setAdresseExpediteur(dto.getAdresseExpediteur());
+            t.setPaysDestinataire(dto.getPaysDestinataire());
+            t.setVilleDestinataire(dto.getVilleDestinataire());
+            t.setAdresseDestinataire(dto.getAdresseDestinataire());
+            t.setTypesMarchandise(dto.getTypesMarchandise());
+            t.setDescription(dto.getDescription());
+            t.setPoids(dto.getPoids());
+            t.setValeurEstimee(dto.getValeurEstimee());
+            t.setTypeTransport(dto.getTypeTransport());
+            t.setPointDepart(dto.getPointDepart());
+            t.setPointArrivee(dto.getPointArrivee());
+            t.setStatut(dto.getStatut());
+            t.setDateModification(LocalDateTime.now());
+            Transport updated = transportRepository.save(t);
+            return convertToDTO(updated);
         }
         return null;
     }
 
-    /**
-     * Supprimer un transport
-     */
     public boolean deleteTransport(Long id) {
         if (transportRepository.existsById(id)) {
             transportRepository.deleteById(id);
@@ -147,31 +111,28 @@ public class TransportService {
         return false;
     }
 
-    /**
-     * Convertir Transport entity en TransportDTO
-     */
-    private TransportDTO convertToDTO(Transport transport) {
+    private TransportDTO convertToDTO(Transport t) {
         TransportDTO dto = new TransportDTO();
-        dto.setId(transport.getId());
-        dto.setNom(transport.getNom());
-        dto.setPrenom(transport.getPrenom());
-        dto.setNumeroTelephone(transport.getNumeroTelephone());
-        dto.setPaysExpediteur(transport.getPaysExpediteur());
-        dto.setVilleExpediteur(transport.getVilleExpediteur());
-        dto.setAdresseExpediteur(transport.getAdresseExpediteur());
-        dto.setPaysDestinataire(transport.getPaysDestinataire());
-        dto.setVilleDestinataire(transport.getVilleDestinataire());
-        dto.setAdresseDestinataire(transport.getAdresseDestinataire());
-        dto.setTypesMarchandise(transport.getTypesMarchandise());
-        dto.setDescription(transport.getDescription());
-        dto.setPoids(transport.getPoids());
-        dto.setValeurEstimee(transport.getValeurEstimee());
-        dto.setTypeTransport(transport.getTypeTransport());
-        dto.setStatut(transport.getStatut());
-        dto.setPointDepart(transport.getPointDepart());
-        dto.setPointArrivee(transport.getPointArrivee());
-        dto.setDateCreation(transport.getDateCreation());
-        dto.setDateModification(transport.getDateModification());
+        dto.setId(t.getId());
+        dto.setNom(t.getNom());
+        dto.setPrenom(t.getPrenom());
+        dto.setNumeroTelephone(t.getNumeroTelephone());
+        dto.setPaysExpediteur(t.getPaysExpediteur());
+        dto.setVilleExpediteur(t.getVilleExpediteur());
+        dto.setAdresseExpediteur(t.getAdresseExpediteur());
+        dto.setPaysDestinataire(t.getPaysDestinataire());
+        dto.setVilleDestinataire(t.getVilleDestinataire());
+        dto.setAdresseDestinataire(t.getAdresseDestinataire());
+        dto.setTypesMarchandise(t.getTypesMarchandise());
+        dto.setDescription(t.getDescription());
+        dto.setPoids(t.getPoids());
+        dto.setValeurEstimee(t.getValeurEstimee());
+        dto.setTypeTransport(t.getTypeTransport());
+        dto.setPointDepart(t.getPointDepart());
+        dto.setPointArrivee(t.getPointArrivee());
+        dto.setStatut(t.getStatut());
+        dto.setDateCreation(t.getDateCreation());
+        dto.setDateModification(t.getDateModification());
         return dto;
     }
 }
