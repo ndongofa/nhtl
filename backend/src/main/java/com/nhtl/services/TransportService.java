@@ -13,10 +13,10 @@ import java.util.stream.Collectors;
 
 @Service
 public class TransportService {
-    
+
     @Autowired
     private TransportRepository transportRepository;
-    
+
     /**
      * Créer une nouvelle demande de transport
      */
@@ -35,11 +35,21 @@ public class TransportService {
         transport.setDescription(transportDTO.getDescription());
         transport.setPoids(transportDTO.getPoids());
         transport.setValeurEstimee(transportDTO.getValeurEstimee());
-        
+        transport.setTypeTransport(transportDTO.getTypeTransport()); // AJOUT OBLIGATOIRE
+
+        if (transportDTO.getStatut() != null) {
+            transport.setStatut(StatutTransport.valueOf(transportDTO.getStatut().toUpperCase()));
+        } else {
+            transport.setStatut(StatutTransport.EN_ATTENTE); // Valeur par défaut, adapte selon ton besoin
+        }
+
+        transport.setDateCreation(LocalDateTime.now());
+        transport.setDateModification(LocalDateTime.now());
+
         Transport savedTransport = transportRepository.save(transport);
         return convertToDTO(savedTransport);
     }
-    
+
     /**
      * Récupérer un transport par ID
      */
@@ -47,7 +57,7 @@ public class TransportService {
         Optional<Transport> transport = transportRepository.findById(id);
         return transport.map(this::convertToDTO).orElse(null);
     }
-    
+
     /**
      * Récupérer tous les transports
      */
@@ -57,7 +67,7 @@ public class TransportService {
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
-    
+
     /**
      * Récupérer les transports par statut
      */
@@ -68,7 +78,7 @@ public class TransportService {
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
-    
+
     /**
      * Récupérer les transports par numéro de téléphone
      */
@@ -78,7 +88,7 @@ public class TransportService {
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
-    
+
     /**
      * Récupérer les transports par pays de destination
      */
@@ -88,7 +98,7 @@ public class TransportService {
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
-    
+
     /**
      * Chercher les transports par nom ou prénom
      */
@@ -98,13 +108,13 @@ public class TransportService {
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
-    
+
     /**
      * Mettre à jour un transport
      */
     public TransportDTO updateTransport(Long id, TransportDTO transportDTO) {
         Optional<Transport> existingTransport = transportRepository.findById(id);
-        
+
         if (existingTransport.isPresent()) {
             Transport transport = existingTransport.get();
             transport.setNom(transportDTO.getNom());
@@ -120,17 +130,18 @@ public class TransportService {
             transport.setDescription(transportDTO.getDescription());
             transport.setPoids(transportDTO.getPoids());
             transport.setValeurEstimee(transportDTO.getValeurEstimee());
-            
+            transport.setTypeTransport(transportDTO.getTypeTransport());
             if (transportDTO.getStatut() != null) {
                 transport.setStatut(StatutTransport.valueOf(transportDTO.getStatut().toUpperCase()));
             }
-            
+            transport.setDateModification(LocalDateTime.now());
+
             Transport updatedTransport = transportRepository.save(transport);
             return convertToDTO(updatedTransport);
         }
         return null;
     }
-    
+
     /**
      * Supprimer un transport
      */
@@ -141,7 +152,7 @@ public class TransportService {
         }
         return false;
     }
-    
+
     /**
      * Convertir Transport entity en TransportDTO
      */
@@ -161,7 +172,8 @@ public class TransportService {
         dto.setDescription(transport.getDescription());
         dto.setPoids(transport.getPoids());
         dto.setValeurEstimee(transport.getValeurEstimee());
-        dto.setStatut(transport.getStatut().toString());
+        dto.setTypeTransport(transport.getTypeTransport());
+        dto.setStatut(transport.getStatut() != null ? transport.getStatut().toString() : null);
         dto.setDateCreation(transport.getDateCreation());
         dto.setDateModification(transport.getDateModification());
         return dto;

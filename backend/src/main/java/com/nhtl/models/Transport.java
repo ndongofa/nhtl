@@ -1,89 +1,75 @@
 package com.nhtl.models;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "transports")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class Transport {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
-    // Informations du client
-    @NotBlank(message = "Le nom est obligatoire")
-    @Column(nullable = false)
+
     private String nom;
-    
-    @NotBlank(message = "Le prénom est obligatoire")
-    @Column(nullable = false)
     private String prenom;
-    
-    @NotBlank(message = "Le numéro de téléphone est obligatoire")
-    @Column(nullable = false)
     private String numeroTelephone;
-    
-    // Informations de l'expéditeur
-    @NotBlank(message = "Le pays de l'expéditeur est obligatoire")
-    @Column(nullable = false)
     private String paysExpediteur;
-    
-    @NotBlank(message = "La ville de l'expéditeur est obligatoire")
-    @Column(nullable = false)
     private String villeExpediteur;
-    
-    @NotBlank(message = "L'adresse de l'expéditeur est obligatoire")
-    @Column(nullable = false)
     private String adresseExpediteur;
-    
-    // Informations du destinataire
-    @NotBlank(message = "Le pays du destinataire est obligatoire")
-    @Column(nullable = false)
     private String paysDestinataire;
-    
-    @NotBlank(message = "La ville du destinataire est obligatoire")
-    @Column(nullable = false)
     private String villeDestinataire;
-    
-    @NotBlank(message = "L'adresse du destinataire est obligatoire")
-    @Column(nullable = false)
     private String adresseDestinataire;
-    
-    // Informations sur la marchandise
-    @NotBlank(message = "Le type de marchandise est obligatoire")
-    @Column(nullable = false)
     private String typesMarchandise;
-    
-    @NotBlank(message = "La description est obligatoire")
-    @Column(nullable = false, length = 1000)
     private String description;
-    
-    @DecimalMin(value = "0.0", inclusive = false, message = "Le poids doit être supérieur à 0")
-    private Double poids; // en kg
-    
-    @DecimalMin(value = "0.0", inclusive = false, message = "La valeur estimée doit être supérieure à 0")
-    private Double valeurEstimee; // en devise locale
-    
-    // Suivi
+    private Double poids;
+    private Double valeurEstimee;
+
+    @Column(name = "type_transport", nullable = false)
+    private String typeTransport; // <-- OBLIGATOIRE !
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private StatutTransport statut = StatutTransport.EN_ATTENTE;
-    
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime dateCreation = LocalDateTime.now();
-    
+    private StatutTransport statut;
+
+    private LocalDateTime dateCreation;
     private LocalDateTime dateModification;
-    
-    @PreUpdate
-    protected void onUpdate() {
-        dateModification = LocalDateTime.now();
-    }
+
+    // Getters & setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getNom() { return nom; }
+    public void setNom(String nom) { this.nom = nom; }
+    public String getPrenom() { return prenom; }
+    public void setPrenom(String prenom) { this.prenom = prenom; }
+    public String getNumeroTelephone() { return numeroTelephone; }
+    public void setNumeroTelephone(String numeroTelephone) { this.numeroTelephone = numeroTelephone; }
+    public String getPaysExpediteur() { return paysExpediteur; }
+    public void setPaysExpediteur(String paysExpediteur) { this.paysExpediteur = paysExpediteur; }
+    public String getVilleExpediteur() { return villeExpediteur; }
+    public void setVilleExpediteur(String villeExpediteur) { this.villeExpediteur = villeExpediteur; }
+    public String getAdresseExpediteur() { return adresseExpediteur; }
+    public void setAdresseExpediteur(String adresseExpediteur) { this.adresseExpediteur = adresseExpediteur; }
+    public String getPaysDestinataire() { return paysDestinataire; }
+    public void setPaysDestinataire(String paysDestinataire) { this.paysDestinataire = paysDestinataire; }
+    public String getVilleDestinataire() { return villeDestinataire; }
+    public void setVilleDestinataire(String villeDestinataire) { this.villeDestinataire = villeDestinataire; }
+    public String getAdresseDestinataire() { return adresseDestinataire; }
+    public void setAdresseDestinataire(String adresseDestinataire) { this.adresseDestinataire = adresseDestinataire; }
+    public String getTypesMarchandise() { return typesMarchandise; }
+    public void setTypesMarchandise(String typesMarchandise) { this.typesMarchandise = typesMarchandise; }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+    public Double getPoids() { return poids; }
+    public void setPoids(Double poids) { this.poids = poids; }
+    public Double getValeurEstimee() { return valeurEstimee; }
+    public void setValeurEstimee(Double valeurEstimee) { this.valeurEstimee = valeurEstimee; }
+    public String getTypeTransport() { return typeTransport; }
+    public void setTypeTransport(String typeTransport) { this.typeTransport = typeTransport; }
+    public StatutTransport getStatut() { return statut; }
+    public void setStatut(StatutTransport statut) { this.statut = statut; }
+    public LocalDateTime getDateCreation() { return dateCreation; }
+    public void setDateCreation(LocalDateTime dateCreation) { this.dateCreation = dateCreation; }
+    public LocalDateTime getDateModification() { return dateModification; }
+    public void setDateModification(LocalDateTime dateModification) { this.dateModification = dateModification; }
 }
