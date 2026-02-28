@@ -17,15 +17,14 @@ public class TransportDTO {
     private String description;
     private Double poids;
     private Double valeurEstimee;
-
-    private String typeTransport;       // Obligatoire !
-
-    private String statut;              // EN_ATTENTE, LIVRE, etc.
-
+    private String statut;
+    private String typeTransport;
+    private String pointDepart;
+    private String pointArrivee;
     private LocalDateTime dateCreation;
     private LocalDateTime dateModification;
 
-    // Getters & setters
+    // Getters & Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getNom() { return nom; }
@@ -54,10 +53,14 @@ public class TransportDTO {
     public void setPoids(Double poids) { this.poids = poids; }
     public Double getValeurEstimee() { return valeurEstimee; }
     public void setValeurEstimee(Double valeurEstimee) { this.valeurEstimee = valeurEstimee; }
-    public String getTypeTransport() { return typeTransport; }
-    public void setTypeTransport(String typeTransport) { this.typeTransport = typeTransport; }
     public String getStatut() { return statut; }
     public void setStatut(String statut) { this.statut = statut; }
+    public String getTypeTransport() { return typeTransport; }
+    public void setTypeTransport(String typeTransport) { this.typeTransport = typeTransport; }
+    public String getPointDepart() { return pointDepart; }
+    public void setPointDepart(String pointDepart) { this.pointDepart = pointDepart; }
+    public String getPointArrivee() { return pointArrivee; }
+    public void setPointArrivee(String pointArrivee) { this.pointArrivee = pointArrivee; }
     public LocalDateTime getDateCreation() { return dateCreation; }
     public void setDateCreation(LocalDateTime dateCreation) { this.dateCreation = dateCreation; }
     public LocalDateTime getDateModification() { return dateModification; }

@@ -1,7 +1,6 @@
 package com.nhtl.services;
 
 import com.nhtl.models.Transport;
-import com.nhtl.models.StatutTransport;
 import com.nhtl.repositories.TransportRepository;
 import com.nhtl.dto.TransportDTO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,14 +34,10 @@ public class TransportService {
         transport.setDescription(transportDTO.getDescription());
         transport.setPoids(transportDTO.getPoids());
         transport.setValeurEstimee(transportDTO.getValeurEstimee());
-        transport.setTypeTransport(transportDTO.getTypeTransport()); // AJOUT OBLIGATOIRE
-
-        if (transportDTO.getStatut() != null) {
-            transport.setStatut(StatutTransport.valueOf(transportDTO.getStatut().toUpperCase()));
-        } else {
-            transport.setStatut(StatutTransport.EN_ATTENTE); // Valeur par défaut, adapte selon ton besoin
-        }
-
+        transport.setTypeTransport(transportDTO.getTypeTransport());
+        transport.setStatut(transportDTO.getStatut());
+        transport.setPointDepart(transportDTO.getPointDepart());
+        transport.setPointArrivee(transportDTO.getPointArrivee());
         transport.setDateCreation(LocalDateTime.now());
         transport.setDateModification(LocalDateTime.now());
 
@@ -72,8 +67,7 @@ public class TransportService {
      * Récupérer les transports par statut
      */
     public List<TransportDTO> getTransportsByStatut(String statut) {
-        StatutTransport enumStatut = StatutTransport.valueOf(statut.toUpperCase());
-        return transportRepository.findByStatut(enumStatut)
+        return transportRepository.findByStatut(statut)
                 .stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
@@ -131,9 +125,9 @@ public class TransportService {
             transport.setPoids(transportDTO.getPoids());
             transport.setValeurEstimee(transportDTO.getValeurEstimee());
             transport.setTypeTransport(transportDTO.getTypeTransport());
-            if (transportDTO.getStatut() != null) {
-                transport.setStatut(StatutTransport.valueOf(transportDTO.getStatut().toUpperCase()));
-            }
+            transport.setStatut(transportDTO.getStatut());
+            transport.setPointDepart(transportDTO.getPointDepart());
+            transport.setPointArrivee(transportDTO.getPointArrivee());
             transport.setDateModification(LocalDateTime.now());
 
             Transport updatedTransport = transportRepository.save(transport);
@@ -173,7 +167,9 @@ public class TransportService {
         dto.setPoids(transport.getPoids());
         dto.setValeurEstimee(transport.getValeurEstimee());
         dto.setTypeTransport(transport.getTypeTransport());
-        dto.setStatut(transport.getStatut() != null ? transport.getStatut().toString() : null);
+        dto.setStatut(transport.getStatut());
+        dto.setPointDepart(transport.getPointDepart());
+        dto.setPointArrivee(transport.getPointArrivee());
         dto.setDateCreation(transport.getDateCreation());
         dto.setDateModification(transport.getDateModification());
         return dto;
