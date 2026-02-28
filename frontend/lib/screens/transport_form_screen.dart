@@ -21,15 +21,14 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
   final paysExpediteurController = TextEditingController();
   final villeExpediteurController = TextEditingController();
   final adresseExpediteurController = TextEditingController();
-  final paysDestinataiireController = TextEditingController();
-  final villeDestinataiireController = TextEditingController();
-  final adresseDestinataiireController = TextEditingController();
+  final paysDestinataireController = TextEditingController();
+  final villeDestinataireController = TextEditingController();
+  final adresseDestinataireController = TextEditingController();
   final typesMarchandiseController = TextEditingController();
   final descriptionController = TextEditingController();
   final poidsController = TextEditingController();
   final valeurEstimeeController = TextEditingController();
 
-  // Champs obligatoires ajoutés :
   final typeTransportController = TextEditingController();
   final pointDepartController = TextEditingController();
   final pointArriveeController = TextEditingController();
@@ -42,21 +41,18 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
     paysExpediteurController.dispose();
     villeExpediteurController.dispose();
     adresseExpediteurController.dispose();
-    paysDestinataiireController.dispose();
-    villeDestinataiireController.dispose();
-    adresseDestinataiireController.dispose();
+    paysDestinataireController.dispose();
+    villeDestinataireController.dispose();
+    adresseDestinataireController.dispose();
     typesMarchandiseController.dispose();
     descriptionController.dispose();
     poidsController.dispose();
     valeurEstimeeController.dispose();
-    // Dispose des nouveaux contrôleurs
     typeTransportController.dispose();
     pointDepartController.dispose();
     pointArriveeController.dispose();
     super.dispose();
   }
-
-  // Validators comme avant...
 
   String? _validatePhoneNumber(String? value) {
     if (value == null || value.isEmpty) {
@@ -82,142 +78,17 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
     return null;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Nouveau Transport')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              _buildSectionTitle('Informations Personnelles'),
-              _buildTextField(nomController, 'Nom',
-                  validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null),
-              _buildTextField(prenomController, 'Prénom',
-                  validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null),
-              _buildTextField(
-                numeroTelephoneController,
-                'Numéro Téléphone',
-                validator: _validatePhoneNumber,
-                hintText: '+237123456789',
-              ),
-              const SizedBox(height: 20),
-              _buildSectionTitle('Expéditeur'),
-              _buildTextField(paysExpediteurController, 'Pays',
-                  validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null),
-              _buildTextField(villeExpediteurController, 'Ville',
-                  validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null),
-              _buildTextField(
-                adresseExpediteurController,
-                'Adresse',
-                validator: _validateAddress,
-                maxLines: 2,
-              ),
-              const SizedBox(height: 20),
-              _buildSectionTitle('Destinataire'),
-              _buildTextField(paysDestinataiireController, 'Pays',
-                  validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null),
-              _buildTextField(villeDestinataiireController, 'Ville',
-                  validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null),
-              _buildTextField(
-                adresseDestinataiireController,
-                'Adresse',
-                validator: _validateAddress,
-                maxLines: 2,
-              ),
-              const SizedBox(height: 20),
-              _buildSectionTitle('Marchandise'),
-              _buildTextField(typesMarchandiseController, 'Type',
-                  validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null),
-              _buildTextField(
-                descriptionController,
-                'Description',
-                validator: _validateDescription,
-                maxLines: 3,
-                hintText: 'Minimum 10 caractères',
-              ),
-              _buildTextField(
-                poidsController,
-                'Poids (kg)',
-                keyboardType: TextInputType.number,
-                validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null,
-              ),
-              _buildTextField(
-                valeurEstimeeController,
-                'Valeur estimée',
-                keyboardType: TextInputType.number,
-                validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null,
-              ),
-              const SizedBox(height: 20),
-              _buildSectionTitle('Informations Transport'),
-              _buildTextField(typeTransportController, 'Type de transport',
-                  validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null),
-              _buildTextField(pointDepartController, 'Point de départ',
-                  validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null),
-              _buildTextField(pointArriveeController, 'Point d\'arrivée',
-                  validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _submitForm,
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Envoyer'),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Text(
-        title,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-      ),
-    );
-  }
-
-  Widget _buildTextField(
-    TextEditingController controller,
-    String label, {
-    TextInputType keyboardType = TextInputType.text,
-    int maxLines = 1,
-    String? hintText,
-    String? Function(String?)? validator,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: TextFormField(
-        controller: controller,
-        decoration: InputDecoration(
-          labelText: label,
-          hintText: hintText,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-        keyboardType: keyboardType,
-        maxLines: maxLines,
-        validator:
-            validator ?? (v) => v?.isEmpty ?? true ? 'Obligatoire' : null,
-      ),
-    );
+  String? _validateDouble(String? value) {
+    if (value == null || value.isEmpty) return 'Obligatoire';
+    final v = double.tryParse(value);
+    if (v == null) return 'Doit être un nombre';
+    if (v < 0) return 'Doit être positif';
+    return null;
   }
 
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
-
       try {
         final transport = Transport(
           nom: nomController.text.trim(),
@@ -226,24 +97,24 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
           paysExpediteur: paysExpediteurController.text.trim(),
           villeExpediteur: villeExpediteurController.text.trim(),
           adresseExpediteur: adresseExpediteurController.text.trim(),
-          paysDestinataire: paysDestinataiireController.text.trim(),
-          villeDestinataire: villeDestinataiireController.text.trim(),
-          adresseDestinataire: adresseDestinataiireController.text.trim(),
+          paysDestinataire: paysDestinataireController.text.trim(),
+          villeDestinataire: villeDestinataireController.text.trim(),
+          adresseDestinataire: adresseDestinataireController.text.trim(),
           typesMarchandise: typesMarchandiseController.text.trim(),
           description: descriptionController.text.trim(),
-          poids: double.tryParse(poidsController.text) ?? 0.0,
-          valeurEstimee: double.tryParse(valeurEstimeeController.text) ?? 0.0,
+          poids: double.parse(poidsController.text.trim()),
+          valeurEstimee: double.parse(valeurEstimeeController.text.trim()),
           typeTransport: typeTransportController.text.trim(),
           pointDepart: pointDepartController.text.trim(),
           pointArrivee: pointArriveeController.text.trim(),
-          // statut volontairement non modifiable ici : par défaut à EN_ATTENTE
+          // statut: par défaut à 'EN_ATTENTE' dans le modèle
         );
 
         final result = await _service.createTransport(transport);
 
         if (result != null) {
           Fluttertoast.showToast(
-            msg: '✅ Transport créé!',
+            msg: '✅ Transport créé !',
             gravity: ToastGravity.BOTTOM,
             backgroundColor: Colors.green,
           );
@@ -266,4 +137,98 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
       }
     }
   }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Nouveau Transport')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              _buildSectionTitle('Infos Personnelles'),
+              _buildTextField(nomController, 'Nom'),
+              _buildTextField(prenomController, 'Prénom'),
+              _buildTextField(numeroTelephoneController, 'Numéro Téléphone',
+                  validator: _validatePhoneNumber, hintText: '+221770000999'),
+              _buildSectionTitle('Expéditeur'),
+              _buildTextField(paysExpediteurController, 'Pays'),
+              _buildTextField(villeExpediteurController, 'Ville'),
+              _buildTextField(adresseExpediteurController, 'Adresse',
+                  validator: _validateAddress, maxLines: 2),
+              _buildSectionTitle('Destinataire'),
+              _buildTextField(paysDestinataireController, 'Pays'),
+              _buildTextField(villeDestinataireController, 'Ville'),
+              _buildTextField(adresseDestinataireController, 'Adresse',
+                  validator: _validateAddress, maxLines: 2),
+              _buildSectionTitle('Marchandise'),
+              _buildTextField(typesMarchandiseController, 'Type'),
+              _buildTextField(descriptionController, 'Description',
+                  validator: _validateDescription,
+                  maxLines: 3,
+                  hintText: 'Au moins 10 caractères'),
+              _buildTextField(poidsController, 'Poids (kg)',
+                  keyboardType: TextInputType.number,
+                  validator: _validateDouble),
+              _buildTextField(valeurEstimeeController, 'Valeur estimée',
+                  keyboardType: TextInputType.number,
+                  validator: _validateDouble),
+              _buildSectionTitle('Transport'),
+              _buildTextField(typeTransportController, 'Type de transport'),
+              _buildTextField(pointDepartController, 'Point de départ'),
+              _buildTextField(pointArriveeController, 'Point d\'arrivée'),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _submitForm,
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Envoyer'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Text(
+          title,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+      );
+
+  Widget _buildTextField(
+    TextEditingController controller,
+    String label, {
+    TextInputType keyboardType = TextInputType.text,
+    int maxLines = 1,
+    String? hintText,
+    String? Function(String?)? validator,
+  }) =>
+      Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: TextFormField(
+          controller: controller,
+          decoration: InputDecoration(
+            labelText: label,
+            hintText: hintText,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+          keyboardType: keyboardType,
+          maxLines: maxLines,
+          validator:
+              validator ?? (v) => v?.isEmpty ?? true ? 'Obligatoire' : null,
+        ),
+      );
 }
