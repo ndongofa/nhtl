@@ -55,13 +55,9 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
   }
 
   String? _validatePhoneNumber(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Obligatoire';
-    }
+    if (value == null || value.isEmpty) return 'Obligatoire';
     final phoneRegex = RegExp(r'^[+]?[0-9]{9,15}$');
-    if (!phoneRegex.hasMatch(value)) {
-      return 'Format invalide (ex: +237123456789)';
-    }
+    if (!phoneRegex.hasMatch(value)) return 'Format invalide';
     return null;
   }
 
@@ -107,7 +103,6 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
           typeTransport: typeTransportController.text.trim(),
           pointDepart: pointDepartController.text.trim(),
           pointArrivee: pointArriveeController.text.trim(),
-          // statut: par défaut à 'EN_ATTENTE' dans le modèle
         );
 
         final result = await _service.createTransport(transport);
