@@ -66,7 +66,6 @@ public class SupabaseJwtFilter extends OncePerRequestFilter {
         String jwt = authHeader.substring(7);
 
         try {
-
             // 🔐 Décodage Base64 du secret Supabase (HS256)
             byte[] decodedKey = Base64.getDecoder().decode(supabaseJwtSecret);
             Key key = Keys.hmacShaKeyFor(decodedKey);
@@ -79,40 +78,50 @@ public class SupabaseJwtFilter extends OncePerRequestFilter {
 
             String userId = claims.getSubject();
 
-            // 🎯 Extraction du rôle (si présent)
+            // 🎯 Extraction et normalisation du rôle ("user", "admin", "authenticated"...)
             String role = "USER";
             if (claims.get("role") != null) {
                 role = claims.get("role").toString().toUpperCase();
             }
 
             List<GrantedAuthority> authorities = new ArrayList<>();
-            authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+            // Toujours ajouter AUTHENTICATED pour toutes les personnes connectées
+            authorities.add(new SimpleGrantedAuthority("ROLE_AUTHENTICATED"));
+
+            // Ajouter des rôles métiers supplémentaires s'ils sont présents (user, admin, etc.)
+            if (!role.equals("AUTHENTICATED")) {
+                authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+            }
 
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(userId, null, authorities);
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            log.info("JWT valide et authentifié pour user: {} avec rôle: {}", userId, role);
+            log.info("JWT valide et authentifié pour user: {} avec rôles: {}", userId, authorities);
 
         } catch (ExpiredJwtException e) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
             response.getWriter().write("{\"error\": \"Token JWT expiré\"}");
             return;
 
         } catch (io.jsonwebtoken.security.SecurityException e) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
             response.getWriter().write("{\"error\": \"Signature JWT invalide\"}");
             return;
 
         } catch (MalformedJwtException | UnsupportedJwtException | IllegalArgumentException e) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
             response.getWriter().write("{\"error\": \"Token JWT invalide\"}");
             return;
 
         } catch (Exception e) {
             log.error("Erreur inattendue: {}", e.getMessage());
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.setContentType("application/json");
             response.getWriter().write("{\"error\": \"Erreur interne d'authentification\"}");
             return;
         }
@@ -125,7 +134,6 @@ public class SupabaseJwtFilter extends OncePerRequestFilter {
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             return true;
         }
-
         String path = request.getRequestURI();
         return PUBLIC_PATHS.stream().anyMatch(path::startsWith);
     }
