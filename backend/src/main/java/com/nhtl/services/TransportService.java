@@ -55,7 +55,12 @@ public class TransportService {
                 .stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
-    public List<TransportDTO> getTransportsByNumeroTelephone(String numeroTelephone) {
+    public List<TransportDTO> getTransportsByDestinationCountry(String country) {
+        return transportRepository.findByPaysDestinataire(country)
+                .stream().map(this::convertToDTO).collect(Collectors.toList());
+    }
+
+    public List<TransportDTO> getTransportsByPhoneNumber(String numeroTelephone) {
         return transportRepository.findByNumeroTelephone(numeroTelephone)
                 .stream().map(this::convertToDTO).collect(Collectors.toList());
     }
@@ -73,6 +78,15 @@ public class TransportService {
     public List<TransportDTO> getTransportsByPointArrivee(String pointArrivee) {
         return transportRepository.findByPointArrivee(pointArrivee)
                 .stream().map(this::convertToDTO).collect(Collectors.toList());
+    }
+
+    public List<TransportDTO> searchByNomOrPrenom(String nom, String prenom) {
+        String nomParam = nom != null ? nom : "";
+        String prenomParam = prenom != null ? prenom : "";
+        return transportRepository.searchByNomOrPrenom(nomParam, prenomParam)
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
     }
 
     public TransportDTO updateTransport(Long id, TransportDTO dto) {
