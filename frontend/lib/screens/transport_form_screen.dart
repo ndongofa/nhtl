@@ -29,6 +29,11 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
   final poidsController = TextEditingController();
   final valeurEstimeeController = TextEditingController();
 
+  // Champs obligatoires ajoutés :
+  final typeTransportController = TextEditingController();
+  final pointDepartController = TextEditingController();
+  final pointArriveeController = TextEditingController();
+
   @override
   void dispose() {
     nomController.dispose();
@@ -44,15 +49,19 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
     descriptionController.dispose();
     poidsController.dispose();
     valeurEstimeeController.dispose();
+    // Dispose des nouveaux contrôleurs
+    typeTransportController.dispose();
+    pointDepartController.dispose();
+    pointArriveeController.dispose();
     super.dispose();
   }
 
-  // ✅ Validateur pour le téléphone
+  // Validators comme avant...
+
   String? _validatePhoneNumber(String? value) {
     if (value == null || value.isEmpty) {
       return 'Obligatoire';
     }
-    // Format: +237123456789 (9-15 chiffres, optionnellement précédé de +)
     final phoneRegex = RegExp(r'^[+]?[0-9]{9,15}$');
     if (!phoneRegex.hasMatch(value)) {
       return 'Format invalide (ex: +237123456789)';
@@ -60,29 +69,149 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
     return null;
   }
 
-  // ✅ Validateur pour la description
   String? _validateDescription(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Obligatoire';
-    }
-    if (value.length < 10) {
-      return 'Minimum 10 caractères';
-    }
-    if (value.length > 1000) {
-      return 'Maximum 1000 caractères';
-    }
+    if (value == null || value.isEmpty) return 'Obligatoire';
+    if (value.length < 10) return 'Minimum 10 caractères';
+    if (value.length > 1000) return 'Maximum 1000 caractères';
     return null;
   }
 
-  // ✅ Validateur pour les adresses
   String? _validateAddress(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Obligatoire';
-    }
-    if (value.length < 10) {
-      return 'Minimum 10 caractères';
-    }
+    if (value == null || value.isEmpty) return 'Obligatoire';
+    if (value.length < 10) return 'Minimum 10 caractères';
     return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Nouveau Transport')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              _buildSectionTitle('Informations Personnelles'),
+              _buildTextField(nomController, 'Nom',
+                  validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null),
+              _buildTextField(prenomController, 'Prénom',
+                  validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null),
+              _buildTextField(
+                numeroTelephoneController,
+                'Numéro Téléphone',
+                validator: _validatePhoneNumber,
+                hintText: '+237123456789',
+              ),
+              const SizedBox(height: 20),
+              _buildSectionTitle('Expéditeur'),
+              _buildTextField(paysExpediteurController, 'Pays',
+                  validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null),
+              _buildTextField(villeExpediteurController, 'Ville',
+                  validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null),
+              _buildTextField(
+                adresseExpediteurController,
+                'Adresse',
+                validator: _validateAddress,
+                maxLines: 2,
+              ),
+              const SizedBox(height: 20),
+              _buildSectionTitle('Destinataire'),
+              _buildTextField(paysDestinataiireController, 'Pays',
+                  validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null),
+              _buildTextField(villeDestinataiireController, 'Ville',
+                  validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null),
+              _buildTextField(
+                adresseDestinataiireController,
+                'Adresse',
+                validator: _validateAddress,
+                maxLines: 2,
+              ),
+              const SizedBox(height: 20),
+              _buildSectionTitle('Marchandise'),
+              _buildTextField(typesMarchandiseController, 'Type',
+                  validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null),
+              _buildTextField(
+                descriptionController,
+                'Description',
+                validator: _validateDescription,
+                maxLines: 3,
+                hintText: 'Minimum 10 caractères',
+              ),
+              _buildTextField(
+                poidsController,
+                'Poids (kg)',
+                keyboardType: TextInputType.number,
+                validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null,
+              ),
+              _buildTextField(
+                valeurEstimeeController,
+                'Valeur estimée',
+                keyboardType: TextInputType.number,
+                validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null,
+              ),
+              const SizedBox(height: 20),
+              _buildSectionTitle('Informations Transport'),
+              _buildTextField(typeTransportController, 'Type de transport',
+                  validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null),
+              _buildTextField(pointDepartController, 'Point de départ',
+                  validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null),
+              _buildTextField(pointArriveeController, 'Point d\'arrivée',
+                  validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _submitForm,
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Envoyer'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Text(
+        title,
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  Widget _buildTextField(
+    TextEditingController controller,
+    String label, {
+    TextInputType keyboardType = TextInputType.text,
+    int maxLines = 1,
+    String? hintText,
+    String? Function(String?)? validator,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextFormField(
+        controller: controller,
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: hintText,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+        keyboardType: keyboardType,
+        maxLines: maxLines,
+        validator:
+            validator ?? (v) => v?.isEmpty ?? true ? 'Obligatoire' : null,
+      ),
+    );
   }
 
   Future<void> _submitForm() async {
@@ -104,6 +233,10 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
           description: descriptionController.text.trim(),
           poids: double.tryParse(poidsController.text) ?? 0.0,
           valeurEstimee: double.tryParse(valeurEstimeeController.text) ?? 0.0,
+          typeTransport: typeTransportController.text.trim(),
+          pointDepart: pointDepartController.text.trim(),
+          pointArrivee: pointArriveeController.text.trim(),
+          // statut volontairement non modifiable ici : par défaut à EN_ATTENTE
         );
 
         final result = await _service.createTransport(transport);
@@ -132,121 +265,5 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
         setState(() => _isLoading = false);
       }
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Nouveau Transport')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              _buildSectionTitle('Informations Personnelles'),
-              _buildTextField(nomController, 'Nom', validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null),
-              _buildTextField(prenomController, 'Prénom', validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null),
-              _buildTextField(
-                numeroTelephoneController,
-                'Numéro Téléphone',
-                validator: _validatePhoneNumber,
-                hintText: '+237123456789',
-              ),
-              const SizedBox(height: 20),
-              _buildSectionTitle('Expéditeur'),
-              _buildTextField(paysExpediteurController, 'Pays', validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null),
-              _buildTextField(villeExpediteurController, 'Ville', validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null),
-              _buildTextField(
-                adresseExpediteurController,
-                'Adresse',
-                validator: _validateAddress,
-                maxLines: 2,
-              ),
-              const SizedBox(height: 20),
-              _buildSectionTitle('Destinataire'),
-              _buildTextField(paysDestinataiireController, 'Pays', validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null),
-              _buildTextField(villeDestinataiireController, 'Ville', validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null),
-              _buildTextField(
-                adresseDestinataiireController,
-                'Adresse',
-                validator: _validateAddress,
-                maxLines: 2,
-              ),
-              const SizedBox(height: 20),
-              _buildSectionTitle('Marchandise'),
-              _buildTextField(typesMarchandiseController, 'Type', validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null),
-              _buildTextField(
-                descriptionController,
-                'Description',
-                validator: _validateDescription,
-                maxLines: 3,
-                hintText: 'Minimum 10 caractères',
-              ),
-              _buildTextField(
-                poidsController,
-                'Poids (kg)',
-                keyboardType: TextInputType.number,
-                validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null,
-              ),
-              _buildTextField(
-                valeurEstimeeController,
-                'Valeur estimée',
-                keyboardType: TextInputType.number,
-                validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null,
-              ),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _submitForm,
-                  child: _isLoading
-                      ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                      : const Text('Envoyer'),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Text(
-        title,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-      ),
-    );
-  }
-
-  Widget _buildTextField(
-      TextEditingController controller,
-      String label, {
-        TextInputType keyboardType = TextInputType.text,
-        int maxLines = 1,
-        String? hintText,
-        String? Function(String?)? validator,
-      }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: TextFormField(
-        controller: controller,
-        decoration: InputDecoration(
-          labelText: label,
-          hintText: hintText,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-        keyboardType: keyboardType,
-        maxLines: maxLines,
-        validator: validator ?? (v) => v?.isEmpty ?? true ? 'Obligatoire' : null,
-      ),
-    );
   }
 }

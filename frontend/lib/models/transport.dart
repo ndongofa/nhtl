@@ -14,6 +14,9 @@ class Transport {
   final double? poids;
   final double? valeurEstimee;
   final String statut;
+  final String typeTransport;
+  final String pointDepart;
+  final String pointArrivee;
   final DateTime? dateCreation;
   final DateTime? dateModification;
 
@@ -33,6 +36,9 @@ class Transport {
     this.poids,
     this.valeurEstimee,
     this.statut = 'EN_ATTENTE',
+    required this.typeTransport,
+    required this.pointDepart,
+    required this.pointArrivee,
     this.dateCreation,
     this.dateModification,
   });
@@ -51,17 +57,16 @@ class Transport {
       adresseDestinataire: json['adresseDestinataire'] as String,
       typesMarchandise: json['typesMarchandise'] as String,
       description: json['description'] as String,
-      poids: json['poids'] == null
-          ? null
-          : (json['poids'] is int)
-              ? (json['poids'] as int).toDouble()
-              : (json['poids'] as double),
-      valeurEstimee: json['valeurEstimee'] == null
-          ? null
-          : (json['valeurEstimee'] is int)
-              ? (json['valeurEstimee'] as int).toDouble()
-              : (json['valeurEstimee'] as double),
+      poids: (json['poids'] is int)
+          ? (json['poids'] as int).toDouble()
+          : (json['poids'] as double?),
+      valeurEstimee: (json['valeurEstimee'] is int)
+          ? (json['valeurEstimee'] as int).toDouble()
+          : (json['valeurEstimee'] as double?),
       statut: json['statut'] as String? ?? 'EN_ATTENTE',
+      typeTransport: json['typeTransport'] as String,
+      pointDepart: json['pointDepart'] as String,
+      pointArrivee: json['pointArrivee'] as String,
       dateCreation: json['dateCreation'] != null
           ? DateTime.parse(json['dateCreation'])
           : null,
@@ -88,7 +93,9 @@ class Transport {
       'poids': poids,
       'valeurEstimee': valeurEstimee,
       'statut': statut,
-      // On n'encode pas les dates ici pour un POST (le backend gère)
+      'typeTransport': typeTransport,
+      'pointDepart': pointDepart,
+      'pointArrivee': pointArrivee,
     };
   }
 }
