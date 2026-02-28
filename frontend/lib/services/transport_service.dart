@@ -1,177 +1,38 @@
-import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../models/transport.dart';
-import '../config/api_config.dart';
-import 'package:logger/logger.dart';
-import 'auth_service.dart';
 
 class TransportService {
-  final logger = Logger();
+  final String baseUrl =
+      'https://nhtl-production-5e78.up.railway.app/api/transports';
 
-  // Headers HTTP ASYNC avec le token JWT Supabase
-  Future<Map<String, String>> _headers() async {
-    final jwt = await AuthService.getJwt();
-    if (jwt == null) {
-      logger.e('JWT absent: utilisateur non connecté ?');
-      throw Exception("Non authentifié");
-    }
-    return {
-      'Authorization': 'Bearer $jwt',
-      'Content-Type': 'application/json',
-    };
-  }
-
-  // Créer un transport
   Future<Transport?> createTransport(Transport transport) async {
-    try {
-      final url = '${ApiConfig.baseUrl}${ApiConfig.transportEndpoint}';
-      logger.i('POST $url');
-      final headers = await _headers();
-
-      final response = await http
-          .post(
-            Uri.parse(url),
-            headers: headers,
-            body: jsonEncode(transport.toJson()),
-          )
-          .timeout(ApiConfig.connectTimeout);
-
-      logger.i('Status: ${response.statusCode}');
-      logger.i('Body: ${response.body}');
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final json = jsonDecode(response.body);
-        logger.i('✅ Transport créé avec succès');
-        return Transport.fromJson(json['data']);
-      } else {
-        logger.e('❌ Erreur: ${response.statusCode}');
-        logger.e('Body: ${response.body}');
-        return null;
-      }
-    } catch (e) {
-      logger.e('❌ Exception: $e');
+    final response = await http.post(
+      Uri.parse(baseUrl),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(transport.toJson()),
+    );
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return transport;
+    } else {
+      print('Erreur POST: ${response.statusCode} ${response.body}');
       return null;
     }
   }
 
-  // Récupérer tous les transports
   Future<List<Transport>?> getAllTransports() async {
     try {
-      final url = '${ApiConfig.baseUrl}${ApiConfig.transportEndpoint}';
-      logger.i('GET $url');
-      final headers = await _headers();
-
-      final response = await http
-          .get(
-            Uri.parse(url),
-            headers: headers,
-          )
-          .timeout(ApiConfig.receiveTimeout);
-
-      logger.i('Status: ${response.statusCode}');
-
+      final response = await http.get(Uri.parse(baseUrl));
       if (response.statusCode == 200) {
-        final json = jsonDecode(response.body);
-        final List<dynamic> data = json['data'];
-        logger.i('✅ Transports récupérés');
-        return data.map((t) => Transport.fromJson(t)).toList();
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.map((e) => Transport.fromJson(e)).toList();
       } else {
-        logger.e('❌ Erreur: ${response.statusCode}');
+        print('Erreur GET: ${response.statusCode} ${response.body}');
         return null;
       }
     } catch (e) {
-      logger.e('❌ Exception: $e');
+      print('Exception GET: $e');
       return null;
-    }
-  }
-
-  // Récupérer un transport par ID
-  Future<Transport?> getTransportById(int id) async {
-    try {
-      final url = '${ApiConfig.baseUrl}${ApiConfig.transportEndpoint}/$id';
-      logger.i('GET $url');
-      final headers = await _headers();
-
-      final response = await http
-          .get(
-            Uri.parse(url),
-            headers: headers,
-          )
-          .timeout(ApiConfig.receiveTimeout);
-
-      logger.i('Status: ${response.statusCode}');
-
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body);
-        logger.i('✅ Transport $id récupéré');
-        return Transport.fromJson(json['data']);
-      } else {
-        logger.e('❌ Erreur: ${response.statusCode}');
-        return null;
-      }
-    } catch (e) {
-      logger.e('❌ Exception: $e');
-      return null;
-    }
-  }
-
-  // Mettre à jour un transport
-  Future<Transport?> updateTransport(int id, Transport transport) async {
-    try {
-      final url = '${ApiConfig.baseUrl}${ApiConfig.transportEndpoint}/$id';
-      logger.i('PUT $url');
-      final headers = await _headers();
-
-      final response = await http
-          .put(
-            Uri.parse(url),
-            headers: headers,
-            body: jsonEncode(transport.toJson()),
-          )
-          .timeout(ApiConfig.connectTimeout);
-
-      logger.i('Status: ${response.statusCode}');
-
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body);
-        logger.i('✅ Transport $id mis à jour');
-        return Transport.fromJson(json['data']);
-      } else {
-        logger.e('❌ Erreur: ${response.statusCode}');
-        return null;
-      }
-    } catch (e) {
-      logger.e('❌ Exception: $e');
-      return null;
-    }
-  }
-
-  // Supprimer un transport
-  Future<bool> deleteTransport(int id) async {
-    try {
-      final url = '${ApiConfig.baseUrl}${ApiConfig.transportEndpoint}/$id';
-      logger.i('DELETE $url');
-      final headers = await _headers();
-
-      final response = await http
-          .delete(
-            Uri.parse(url),
-            headers: headers,
-          )
-          .timeout(ApiConfig.connectTimeout);
-
-      logger.i('Status: ${response.statusCode}');
-
-      if (response.statusCode == 200 || response.statusCode == 204) {
-        logger.i('✅ Transport $id supprimé');
-        return true;
-      } else {
-        logger.e('❌ Erreur: ${response.statusCode}');
-        return false;
-      }
-    } catch (e) {
-      logger.e('❌ Exception: $e');
-      return false;
     }
   }
 }

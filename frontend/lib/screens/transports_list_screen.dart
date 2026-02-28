@@ -24,7 +24,7 @@ class _TransportsListScreenState extends State<TransportsListScreen> {
           }
 
           if (snapshot.hasError || snapshot.data == null) {
-            return const Center(child: Text('❌ Erreur'));
+            return const Center(child: Text('❌ Erreur lors du chargement'));
           }
 
           if (snapshot.data!.isEmpty) {
@@ -39,7 +39,8 @@ class _TransportsListScreenState extends State<TransportsListScreen> {
                 margin: const EdgeInsets.all(8),
                 child: ListTile(
                   title: Text('${t.nom} ${t.prenom}'),
-                  subtitle: Text('${t.paysExpediteur} → ${t.paysDestinataire}'),
+                  subtitle: Text(
+                      '${t.paysExpediteur} → ${t.paysDestinataire}\n${t.pointDepart} ➔ ${t.pointArrivee}'),
                   trailing: Chip(label: Text(t.statut)),
                 ),
               );
