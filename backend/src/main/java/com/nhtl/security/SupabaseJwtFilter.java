@@ -23,7 +23,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.security.Key;
 import java.util.*;
-import java.util.Base64;
 
 @Slf4j
 @Component
@@ -55,6 +54,7 @@ public class SupabaseJwtFilter extends OncePerRequestFilter {
         }
 
         String authHeader = request.getHeader("Authorization");
+        log.info("Authorization Header: {}", authHeader);
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -66,7 +66,7 @@ public class SupabaseJwtFilter extends OncePerRequestFilter {
         String jwt = authHeader.substring(7);
 
         try {
-            // 🔐 Décodage Base64 du secret Supabase (HS256)
+            // Décodage Base64 du secret Supabase (HS256)
             byte[] decodedKey = Base64.getDecoder().decode(supabaseJwtSecret);
             Key key = Keys.hmacShaKeyFor(decodedKey);
 
@@ -76,11 +76,21 @@ public class SupabaseJwtFilter extends OncePerRequestFilter {
                     .parseClaimsJws(jwt)
                     .getBody();
 
+            log.info("JWT claims: {}", claims);
+
             String userId = claims.getSubject();
 
-            // 🎯 Extraction et normalisation du rôle ("user", "admin", "authenticated"...)
+            // Extraction du rôle métier (admin/user) depuis user_metadata.role si disponible
             String role = "USER";
-            if (claims.get("role") != null) {
+            Object metadataObj = claims.get("user_metadata");
+            if (metadataObj instanceof Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> userMetadata = (Map<String, Object>) metadataObj;
+                Object roleInMeta = userMetadata.get("role");
+                if (roleInMeta != null) {
+                    role = roleInMeta.toString().toUpperCase();
+                }
+            } else if (claims.get("role") != null) {
                 role = claims.get("role").toString().toUpperCase();
             }
 
@@ -104,22 +114,25 @@ public class SupabaseJwtFilter extends OncePerRequestFilter {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
             response.getWriter().write("{\"error\": \"Token JWT expiré\"}");
+            log.warn("Token JWT expiré : {}", e.getMessage());
             return;
 
         } catch (io.jsonwebtoken.security.SecurityException e) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
             response.getWriter().write("{\"error\": \"Signature JWT invalide\"}");
+            log.warn("Signature JWT invalide : {}", e.getMessage());
             return;
 
         } catch (MalformedJwtException | UnsupportedJwtException | IllegalArgumentException e) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
             response.getWriter().write("{\"error\": \"Token JWT invalide\"}");
+            log.warn("Token JWT invalide : {}", e.getMessage());
             return;
 
         } catch (Exception e) {
-            log.error("Erreur inattendue: {}", e.getMessage());
+            log.error("Erreur inattendue: {}", e.getMessage(), e);
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             response.setContentType("application/json");
             response.getWriter().write("{\"error\": \"Erreur interne d'authentification\"}");
