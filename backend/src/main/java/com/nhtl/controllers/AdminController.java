@@ -50,6 +50,7 @@ public class AdminController {
             return ResponseEntity.status(HttpStatus.CREATED).body(response.getBody());
         } catch (Exception e) {
             String message = e.getMessage();
+            e.printStackTrace();
             if (message != null && (message.contains("duplicate key value") || message.contains("User already registered"))) {
                 return ResponseEntity.status(HttpStatus.CONFLICT)
                         .body(Map.of("error", "Cet email est déjà utilisé."));
