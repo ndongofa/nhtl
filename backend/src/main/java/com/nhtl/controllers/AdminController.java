@@ -40,6 +40,8 @@ public class AdminController {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(supabaseServiceRoleKey);
+        // Ajout du header 'apikey' obligatoire pour Supabase Auth Admin API :
+        headers.set("apikey", supabaseServiceRoleKey);
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
 
@@ -55,7 +57,7 @@ public class AdminController {
                 return ResponseEntity.status(HttpStatus.CONFLICT)
                         .body(Map.of("error", "Cet email est déjà utilisé."));
             }
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Erreur Supabase: "+message));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Erreur Supabase: " + message));
         }
     }
 }
