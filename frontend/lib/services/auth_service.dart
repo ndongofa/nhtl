@@ -1,60 +1,209 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+/// Résultat du signup:
+/// - signedIn: session créée (pas de confirmation requise ou auto-confirm)
+/// - confirmationRequired: signup OK, mais l'utilisateur doit confirmer email/phone
+enum SignupOutcome {
+  signedIn,
+  confirmationRequired,
+}
 
 class AuthService {
   static final SupabaseClient _supabase = Supabase.instance.client;
 
-  static Future<void> signupWithMetadata({
-    required String email,
+  static bool _looksLikeEmail(String v) => v.contains('@');
+
+  /// Très simple validation E.164: + puis chiffres 8..15
+  static bool _looksLikeE164Phone(String v) =>
+      RegExp(r'^\+[1-9]\d{7,14}$').hasMatch(v);
+
+  /// Signup avec metadata (prenom/nom/role).
+  /// `identifier` = email OU téléphone E.164 (ex: +221783042838)
+  static Future<SignupOutcome> signupWithMetadata({
+    required String identifier,
     required String password,
-    required String fullName,
-    String? username,
-    String? phone,
-    String? role,
+    required String prenom,
+    required String nom,
+    required String role,
   }) async {
-    final res = await _supabase.auth.signUp(
-      email: email,
-      password: password,
-      data: {
-        'full_name': fullName,
-        'role': role ?? 'user',
-        if (username != null) 'username': username,
-        if (phone != null) 'phone': phone,
-      },
-    );
-    if (res.user == null) {
-      throw Exception('Erreur lors de l\'inscription');
+    final cleanIdentifier = identifier.trim();
+    final cleanPrenom = prenom.trim();
+    final cleanNom = nom.trim();
+
+    if (cleanIdentifier.isEmpty) {
+      throw Exception(
+          "Veuillez renseigner un email ou un numéro de téléphone.");
+    }
+    if (cleanPrenom.isEmpty) {
+      throw Exception("Veuillez renseigner votre prénom.");
+    }
+    if (cleanNom.isEmpty) {
+      throw Exception("Veuillez renseigner votre nom.");
+    }
+    if (password.length < 8) {
+      throw Exception("Le mot de passe doit contenir au moins 8 caractères.");
+    }
+
+    final redirectTo = kIsWeb ? Uri.base.origin : null;
+
+    // ignore: avoid_print
+    print("[AuthService][signup] start identifier=$cleanIdentifier role=$role "
+        "prenomLen=${cleanPrenom.length} nomLen=${cleanNom.length} "
+        "isWeb=$kIsWeb origin=${kIsWeb ? Uri.base.origin : 'n/a'}");
+
+    try {
+      final data = <String, dynamic>{
+        'prenom': cleanPrenom,
+        'nom': cleanNom,
+        'role': role,
+      };
+
+      AuthResponse res;
+
+      if (_looksLikeEmail(cleanIdentifier)) {
+        final email = cleanIdentifier.toLowerCase();
+        res = await _supabase.auth.signUp(
+          email: email,
+          password: password,
+          emailRedirectTo: redirectTo,
+          data: data,
+        );
+      } else {
+        final phone = cleanIdentifier;
+        if (!_looksLikeE164Phone(phone)) {
+          throw Exception(
+            "Numéro invalide. Utilisez le format international E.164, ex: +221783042838",
+          );
+        }
+        res = await _supabase.auth.signUp(
+          phone: phone,
+          password: password,
+          data: data,
+        );
+      }
+
+      // ignore: avoid_print
+      print("[AuthService][signup] signUp() done userId=${res.user?.id} "
+          "email=${res.user?.email} phone=${res.user?.phone} "
+          "session=${res.session != null}");
+
+      // IMPORTANT: confirmation ON => session null mais signup OK
+      if (res.session == null) {
+        return SignupOutcome.confirmationRequired;
+      }
+      return SignupOutcome.signedIn;
+    } on AuthException catch (e) {
+      // ignore: avoid_print
+      print(
+          "[AuthService][signup] AuthException status=${e.statusCode} message=${e.message}");
+      rethrow;
+    } catch (e) {
+      // ignore: avoid_print
+      print("[AuthService][signup] Unknown error: $e");
+      rethrow;
     }
   }
 
-  static Future<void> login(String email, String password) async {
-    final res = await _supabase.auth.signInWithPassword(
-      email: email,
-      password: password,
-    );
-    if (res.user == null || res.session == null) {
-      throw Exception('Connexion échouée. Vérifiez vos identifiants.');
+  /// Login avec email OU téléphone + password
+  static Future<void> login(String identifier, String password) async {
+    final cleanIdentifier = identifier.trim();
+
+    if (cleanIdentifier.isEmpty) {
+      throw Exception(
+          "Veuillez renseigner un email ou un numéro de téléphone.");
+    }
+
+    // ignore: avoid_print
+    print("[AuthService][login] start identifier=$cleanIdentifier");
+
+    try {
+      AuthResponse res;
+
+      if (_looksLikeEmail(cleanIdentifier)) {
+        res = await _supabase.auth.signInWithPassword(
+          email: cleanIdentifier.toLowerCase(),
+          password: password,
+        );
+      } else {
+        if (!_looksLikeE164Phone(cleanIdentifier)) {
+          throw Exception(
+            "Numéro invalide. Utilisez le format international E.164, ex: +221783042838",
+          );
+        }
+        res = await _supabase.auth.signInWithPassword(
+          phone: cleanIdentifier,
+          password: password,
+        );
+      }
+
+      // ignore: avoid_print
+      print(
+          "[AuthService][login] done userId=${res.user?.id} session=${res.session != null}");
+
+      if (res.user == null || res.session == null) {
+        throw Exception('Connexion échouée. Vérifiez vos identifiants.');
+      }
+    } on AuthException catch (e) {
+      // ignore: avoid_print
+      print(
+          "[AuthService][login] AuthException status=${e.statusCode} message=${e.message}");
+      rethrow;
+    } catch (e) {
+      // ignore: avoid_print
+      print("[AuthService][login] Unknown error: $e");
+      rethrow;
     }
   }
 
   static Future<void> resetPasswordForEmail(String email) async {
-    await _supabase.auth.resetPasswordForEmail(email);
+    final cleanEmail = email.trim().toLowerCase();
+    if (!_looksLikeEmail(cleanEmail)) {
+      throw Exception("Veuillez entrer une adresse e-mail valide.");
+    }
+
+    // ignore: avoid_print
+    print("[AuthService][resetPassword] start email=$cleanEmail isWeb=$kIsWeb");
+
+    try {
+      await _supabase.auth.resetPasswordForEmail(
+        cleanEmail,
+        redirectTo: kIsWeb ? Uri.base.origin : null,
+      );
+      // ignore: avoid_print
+      print("[AuthService][resetPassword] OK");
+    } on AuthException catch (e) {
+      // ignore: avoid_print
+      print(
+          "[AuthService][resetPassword] AuthException status=${e.statusCode} message=${e.message}");
+      rethrow;
+    }
   }
 
   static Future<void> logout() async {
+    // ignore: avoid_print
+    print("[AuthService][logout] start");
     await _supabase.auth.signOut();
+    // ignore: avoid_print
+    print("[AuthService][logout] done");
   }
 
-  static Future<bool> isLoggedIn() async =>
-      _supabase.auth.currentSession != null;
-
+  /// Compat: certains services appellent `await AuthService.getJwt()`
   static Future<String?> getJwt() async {
-    final session = _supabase.auth.currentSession;
-    return session?.accessToken;
+    final token = _supabase.auth.currentSession?.accessToken;
+    // ignore: avoid_print
+    print("[AuthService][getJwt] token=${token == null ? 'null' : 'present'}");
+    return token;
   }
 
+  /// JWT courant (access token) si l'utilisateur est connecté
   static String? get jwt => _supabase.auth.currentSession?.accessToken;
+
+  static bool isLoggedIn() => _supabase.auth.currentSession != null;
+
   static String? get userId => _supabase.auth.currentUser?.id;
   static User? get currentUser => _supabase.auth.currentUser;
+
   static Map<String, dynamic>? get userMetadata =>
       _supabase.auth.currentUser?.userMetadata;
 

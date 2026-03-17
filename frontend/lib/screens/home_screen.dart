@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:nhtl_mobile/screens/admin/admin_user_screen.dart'; // Pour le bouton admin
+import 'package:sama/screens/admin/admin_user_screen.dart';
+import 'package:sama/screens/transport_form_screen.dart';
+import 'package:sama/screens/transports_list_screen.dart';
+
+// ✅ NEW: debug token helper
+import 'package:sama/debug/debug_token.dart';
+
 import '../services/auth_service.dart';
 import '../models/logged_user.dart';
-import 'transport_form_screen.dart';
 import 'commande_form_screen.dart';
-import 'transports_list_screen.dart';
 import 'commandes_list_screen.dart';
+import 'gp/gp_list_screen.dart';
+import 'notifications/notifications_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -48,10 +54,38 @@ class HomeScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('NHTL'),
+        title: const Text('SAMA Services International'),
         centerTitle: true,
         elevation: 0,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+              );
+            },
+            tooltip: 'Notifications',
+          ),
+
+          // ✅ NEW: Quick debug button (prints access token in console)
+          // Tu peux le laisser seulement en debug (voir note plus bas).
+          IconButton(
+            icon: const Icon(Icons.bug_report),
+            onPressed: () {
+              printSupabaseTokens();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Token imprimé dans la console (Debug Console / Logcat).',
+                  ),
+                ),
+              );
+            },
+            tooltip: 'Debug: Print token',
+          ),
+
           IconButton(
             icon: const Icon(Icons.person),
             onPressed: () {
@@ -62,6 +96,7 @@ class HomeScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () => _handleLogout(context),
+            tooltip: 'Déconnexion',
           ),
         ],
       ),
@@ -72,13 +107,13 @@ class HomeScreen extends StatelessWidget {
             children: [
               const SizedBox(height: 20),
               const Text(
-                'Bienvenue sur NHTL',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                'Bienvenue sur SAMA Services International',
+                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 10),
               const Text(
-                'Gérez vos transports, commandes et utilisateurs',
+                'Gérez vos transports, commandes et vos demandes en toute simplicité',
                 style: TextStyle(fontSize: 16, color: Colors.grey),
                 textAlign: TextAlign.center,
               ),
@@ -87,36 +122,74 @@ class HomeScreen extends StatelessWidget {
                 context,
                 'Nouveau Transport',
                 Icons.local_shipping,
-                const TransportFormScreen(),
+                () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => TransportFormScreen()),
+                  );
+                },
               ),
               const SizedBox(height: 12),
               _buildButton(
                 context,
                 'Nouvelle Commande',
                 Icons.shopping_cart,
-                const CommandeFormScreen(),
+                () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => CommandeFormScreen()),
+                  );
+                },
               ),
               const SizedBox(height: 12),
               _buildButton(
                 context,
                 'Mes Transports',
                 Icons.list,
-                const TransportsListScreen(),
+                () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => TransportListScreen()),
+                  );
+                },
               ),
               const SizedBox(height: 12),
               _buildButton(
                 context,
                 'Mes Commandes',
                 Icons.receipt,
-                const CommandesListScreen(),
+                () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => CommandesListScreen()),
+                  );
+                },
               ),
+              const SizedBox(height: 12),
+              if (user.role == 'admin')
+                _buildButton(
+                  context,
+                  'GP (Agents de transport)',
+                  Icons.badge_outlined,
+                  () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const GpListScreen()),
+                    );
+                  },
+                ),
               const SizedBox(height: 12),
               if (user.role == 'admin')
                 _buildButton(
                   context,
                   'Gestion des Utilisateurs',
                   Icons.people,
-                  const AdminUserScreen(),
+                  () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => AdminUserScreen()),
+                    );
+                  },
                 ),
             ],
           ),
@@ -129,17 +202,12 @@ class HomeScreen extends StatelessWidget {
     BuildContext context,
     String label,
     IconData icon,
-    Widget screen,
+    VoidCallback onTap,
   ) {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton.icon(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => screen),
-          );
-        },
+        onPressed: onTap,
         icon: Icon(icon),
         label: Text(label),
         style: ElevatedButton.styleFrom(

@@ -8,10 +8,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SignupResponse {
-    
-    private String userId;  // ✅ STRING, pas UUID!
-    private String email;
-    private String phone;
-    private String username;
-    private String message;
+
+	private String userId; // ✅ STRING, pas UUID!
+	private String email;
+	private String phone;
+	private String username;
+	private String message;
 }

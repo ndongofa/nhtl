@@ -1,43 +1,44 @@
 class User {
-  final int? id; // Spring: int | Supabase: null ou inexistant
-  final String? name;
+  final String id;
+  final String? prenom;
+  final String? nom;
   final String? email;
-  final String role; // Toujours présent !
+  final String? phone;
+  final String role;
 
   User({
-    this.id,
-    this.name,
+    required this.id,
+    this.prenom,
+    this.nom,
     this.email,
+    this.phone,
     required this.role,
   });
 
-  /// Factory compatible REST backend (Spring) ou Supabase Auth
+  String get displayName {
+    final p = (prenom ?? '').trim();
+    final n = (nom ?? '').trim();
+    final both = ('$p $n').trim();
+    return both.isEmpty ? (email ?? phone ?? id) : both;
+  }
+
   factory User.fromJson(Map<String, dynamic> json) {
-    String resolvedRole = 'user';
-    // 1. Spring/backend: role au niveau racine
-    if (json['role'] != null) {
-      resolvedRole = json['role'];
-    }
-    // 2. Supabase: dans les metadata
-    else if (json['user_metadata'] != null &&
-        json['user_metadata']['role'] != null) {
-      resolvedRole = json['user_metadata']['role'];
-    }
     return User(
-      id: json['id'], // Inexistant côté Supabase, présent côté Spring
-      name:
-          json['name'] ?? json['user_metadata']?['full_name'] ?? json['email'],
-      email: json['email'],
-      role: resolvedRole,
+      id: json['id'] as String,
+      prenom: json['prenom'] as String?,
+      nom: json['nom'] as String?,
+      email: json['email'] as String?,
+      phone: json['phone'] as String?,
+      role: (json['role'] as String?) ?? 'user',
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      "id": id,
-      "name": name,
-      "email": email,
-      "role": role,
-    };
-  }
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'prenom': prenom,
+        'nom': nom,
+        'email': email,
+        'phone': phone,
+        'role': role,
+      };
 }

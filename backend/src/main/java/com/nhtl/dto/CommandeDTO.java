@@ -1,69 +1,235 @@
 package com.nhtl.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import jakarta.validation.constraints.*;
-import java.time.LocalDateTime;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class CommandeDTO {
-    
-    private Long id;
-    
-    @NotBlank(message = "Le nom est obligatoire")
-    private String nom;
-    
-    @NotBlank(message = "Le prénom est obligatoire")
-    private String prenom;
-    
-    @NotBlank(message = "Le numéro de téléphone est obligatoire")
-    @Pattern(regexp = "^[+]?[0-9]{9,15}$", message = "Numéro de téléphone invalide")
-    private String numeroTelephone;
-    
-    @Email(message = "L'email doit être valide")
-    private String email;
-    
-    @NotBlank(message = "Le pays de livraison est obligatoire")
-    private String paysLivraison;
-    
-    @NotBlank(message = "La ville de livraison est obligatoire")
-    private String villeLivraison;
-    
-    @NotBlank(message = "L'adresse de livraison est obligatoire")
-    @Size(min = 10, max = 500, message = "L'adresse doit faire entre 10 et 500 caractères")
-    private String adresseLivraison;
-    
-    @NotNull(message = "La plateforme est obligatoire")
-    private String plateforme;
-    
-    @NotBlank(message = "Le lien du produit est obligatoire")
-    private String lienProduit;
-    
-    @NotBlank(message = "La description de la commande est obligatoire")
-    @Size(min = 10, max = 1000, message = "La description doit faire entre 10 et 1000 caractères")
-    private String descriptionCommande;
-    
-    @DecimalMin(value = "1", message = "La quantité doit être au minimum 1")
-    private Integer quantite;
-    
-    @DecimalMin(value = "0.0", inclusive = false, message = "Le prix doit être supérieur à 0")
-    private BigDecimal prixUnitaire;
-    
-    @DecimalMin(value = "0.0", inclusive = false, message = "Le prix total doit être supérieur à 0")
-    private BigDecimal prixTotal;
-    
-    @NotBlank(message = "La devise est obligatoire")
-    private String devise = "USD";
-    
-    private String notesSpeciales;
-    
-    private String statut;
-    
-    private LocalDateTime dateCreation;
-    
-    private LocalDateTime dateModification;
+	private Long id;
+	private String userId;
+	private String nom;
+	private String prenom;
+	private String numeroTelephone;
+	private String email;
+	private String paysLivraison;
+	private String villeLivraison;
+	private String adresseLivraison;
+	private String plateforme;
+	private String lienProduit;
+	private String descriptionCommande;
+	private Integer quantite;
+	private BigDecimal prixUnitaire;
+	private BigDecimal prixTotal;
+	private String devise;
+	private String notesSpeciales;
+	private String statut;
+
+	// --- GP (nouveau) ---
+	private Long gpId;
+	private String gpPrenom;
+	private String gpNom;
+	private String gpPhoneNumber;
+
+	private Boolean archived;
+	private LocalDateTime dateCreation;
+	private LocalDateTime dateModification;
+
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
+	}
+
+	public String getUserId() {
+		return userId;
+	}
+
+	public void setUserId(String userId) {
+		this.userId = userId;
+	}
+
+	public String getNom() {
+		return nom;
+	}
+
+	public void setNom(String nom) {
+		this.nom = nom;
+	}
+
+	public String getPrenom() {
+		return prenom;
+	}
+
+	public void setPrenom(String prenom) {
+		this.prenom = prenom;
+	}
+
+	public String getNumeroTelephone() {
+		return numeroTelephone;
+	}
+
+	public void setNumeroTelephone(String numeroTelephone) {
+		this.numeroTelephone = numeroTelephone;
+	}
+
+	public String getEmail() {
+		return email;
+	}
+
+	public void setEmail(String email) {
+		this.email = email;
+	}
+
+	public String getPaysLivraison() {
+		return paysLivraison;
+	}
+
+	public void setPaysLivraison(String paysLivraison) {
+		this.paysLivraison = paysLivraison;
+	}
+
+	public String getVilleLivraison() {
+		return villeLivraison;
+	}
+
+	public void setVilleLivraison(String villeLivraison) {
+		this.villeLivraison = villeLivraison;
+	}
+
+	public String getAdresseLivraison() {
+		return adresseLivraison;
+	}
+
+	public void setAdresseLivraison(String adresseLivraison) {
+		this.adresseLivraison = adresseLivraison;
+	}
+
+	public String getPlateforme() {
+		return plateforme;
+	}
+
+	public void setPlateforme(String plateforme) {
+		this.plateforme = plateforme;
+	}
+
+	public String getLienProduit() {
+		return lienProduit;
+	}
+
+	public void setLienProduit(String lienProduit) {
+		this.lienProduit = lienProduit;
+	}
+
+	public String getDescriptionCommande() {
+		return descriptionCommande;
+	}
+
+	public void setDescriptionCommande(String descriptionCommande) {
+		this.descriptionCommande = descriptionCommande;
+	}
+
+	public Integer getQuantite() {
+		return quantite;
+	}
+
+	public void setQuantite(Integer quantite) {
+		this.quantite = quantite;
+	}
+
+	public BigDecimal getPrixUnitaire() {
+		return prixUnitaire;
+	}
+
+	public void setPrixUnitaire(BigDecimal prixUnitaire) {
+		this.prixUnitaire = prixUnitaire;
+	}
+
+	public BigDecimal getPrixTotal() {
+		return prixTotal;
+	}
+
+	public void setPrixTotal(BigDecimal prixTotal) {
+		this.prixTotal = prixTotal;
+	}
+
+	public String getDevise() {
+		return devise;
+	}
+
+	public void setDevise(String devise) {
+		this.devise = devise;
+	}
+
+	public String getNotesSpeciales() {
+		return notesSpeciales;
+	}
+
+	public void setNotesSpeciales(String notesSpeciales) {
+		this.notesSpeciales = notesSpeciales;
+	}
+
+	public String getStatut() {
+		return statut;
+	}
+
+	public void setStatut(String statut) {
+		this.statut = statut;
+	}
+
+	public Long getGpId() {
+		return gpId;
+	}
+
+	public void setGpId(Long gpId) {
+		this.gpId = gpId;
+	}
+
+	public String getGpPrenom() {
+		return gpPrenom;
+	}
+
+	public void setGpPrenom(String gpPrenom) {
+		this.gpPrenom = gpPrenom;
+	}
+
+	public String getGpNom() {
+		return gpNom;
+	}
+
+	public void setGpNom(String gpNom) {
+		this.gpNom = gpNom;
+	}
+
+	public String getGpPhoneNumber() {
+		return gpPhoneNumber;
+	}
+
+	public void setGpPhoneNumber(String gpPhoneNumber) {
+		this.gpPhoneNumber = gpPhoneNumber;
+	}
+
+	public Boolean getArchived() {
+		return archived;
+	}
+
+	public void setArchived(Boolean archived) {
+		this.archived = archived;
+	}
+
+	public LocalDateTime getDateCreation() {
+		return dateCreation;
+	}
+
+	public void setDateCreation(LocalDateTime dateCreation) {
+		this.dateCreation = dateCreation;
+	}
+
+	public LocalDateTime getDateModification() {
+		return dateModification;
+	}
+
+	public void setDateModification(LocalDateTime dateModification) {
+		this.dateModification = dateModification;
+	}
 }

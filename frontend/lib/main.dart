@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:nhtl_mobile/screens/auth/profile_screen.dart';
+import 'package:sama/screens/auth/profile_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/signup_screen.dart';
@@ -60,8 +60,9 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: '/',
       routes: {
-        '/': (context) =>
-            isLoggedIn ? const HomeScreen() : const LandingScreen(),
+        '/': (context) => isLoggedIn
+            ? const HomeScreen()
+            : LandingScreenSamaServicesInternational(),
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignupScreen(),
         '/forgot-password': (context) => const ForgotPasswordScreen(),

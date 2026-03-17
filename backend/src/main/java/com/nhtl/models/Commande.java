@@ -1,102 +1,258 @@
 package com.nhtl.models;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
-import java.time.LocalDateTime;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "commandes")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class Commande {
-    
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
-    // Informations du client
-    @NotBlank(message = "Le nom est obligatoire")
-    @Column(nullable = false)
-    private String nom;
-    
-    @NotBlank(message = "Le prénom est obligatoire")
-    @Column(nullable = false)
-    private String prenom;
-    
-    @NotBlank(message = "Le numéro de téléphone est obligatoire")
-    @Column(nullable = false)
-    private String numeroTelephone;
-    
-    @Email(message = "L'email doit être valide")
-    private String email;
-    
-    // Informations de livraison
-    @NotBlank(message = "Le pays de livraison est obligatoire")
-    @Column(nullable = false)
-    private String paysLivraison;
-    
-    @NotBlank(message = "La ville de livraison est obligatoire")
-    @Column(nullable = false)
-    private String villeLivraison;
-    
-    @NotBlank(message = "L'adresse de livraison est obligatoire")
-    @Column(nullable = false, length = 500)
-    private String adresseLivraison;
-    
-    // Plateforme de commande
-    @NotNull(message = "La plateforme est obligatoire")
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Plateforme plateforme;
-    
-    // Lien ou URL du produit
-    @NotBlank(message = "Le lien du produit est obligatoire")
-    @Column(nullable = false, length = 1000)
-    private String lienProduit;
-    
-    // Description du produit commandé
-    @NotBlank(message = "La description de la commande est obligatoire")
-    @Column(nullable = false, length = 1000)
-    private String descriptionCommande;
-    
-    // Détails de la commande
-    @DecimalMin(value = "0.0", inclusive = false, message = "La quantité doit être supérieure à 0")
-    @Column(nullable = false)
-    private Integer quantite;
-    
-    @DecimalMin(value = "0.0", inclusive = false, message = "Le prix doit être supérieur à 0")
-    @Column(nullable = false)
-    private BigDecimal prixUnitaire;
-    
-    @Column(nullable = false)
-    private BigDecimal prixTotal;
-    
-    // Devise utilisée
-    @NotBlank(message = "La devise est obligatoire")
-    @Column(nullable = false)
-    private String devise = "USD";
-    
-    // Notes supplémentaires
-    @Column(length = 1000)
-    private String notesSpeciales;
-    
-    // Suivi
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private StatutCommande statut = StatutCommande.EN_ATTENTE;
-    
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime dateCreation = LocalDateTime.now();
-    
-    private LocalDateTime dateModification;
-    
-    @PreUpdate
-    protected void onUpdate() {
-        dateModification = LocalDateTime.now();
-    }
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
+
+	@Column(nullable = false)
+	private String userId;
+
+	private String nom;
+	private String prenom;
+	private String numeroTelephone;
+	private String email;
+	private String paysLivraison;
+	private String villeLivraison;
+	private String adresseLivraison;
+	private String plateforme;
+	private String lienProduit;
+	private String descriptionCommande;
+	private Integer quantite;
+	private BigDecimal prixUnitaire;
+	private BigDecimal prixTotal;
+	private String devise;
+	private String notesSpeciales;
+	private String statut;
+
+	// --- GP assignment (nouveau) ---
+	@Column(name = "gp_id")
+	private Long gpId;
+
+	@Column(name = "gp_prenom")
+	private String gpPrenom;
+
+	@Column(name = "gp_nom")
+	private String gpNom;
+
+	@Column(name = "gp_phone_number")
+	private String gpPhoneNumber;
+
+	@Column(nullable = false)
+	private Boolean archived = false;
+
+	private LocalDateTime dateCreation;
+	private LocalDateTime dateModification;
+
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
+	}
+
+	public String getUserId() {
+		return userId;
+	}
+
+	public void setUserId(String userId) {
+		this.userId = userId;
+	}
+
+	public String getNom() {
+		return nom;
+	}
+
+	public void setNom(String nom) {
+		this.nom = nom;
+	}
+
+	public String getPrenom() {
+		return prenom;
+	}
+
+	public void setPrenom(String prenom) {
+		this.prenom = prenom;
+	}
+
+	public String getNumeroTelephone() {
+		return numeroTelephone;
+	}
+
+	public void setNumeroTelephone(String numeroTelephone) {
+		this.numeroTelephone = numeroTelephone;
+	}
+
+	public String getEmail() {
+		return email;
+	}
+
+	public void setEmail(String email) {
+		this.email = email;
+	}
+
+	public String getPaysLivraison() {
+		return paysLivraison;
+	}
+
+	public void setPaysLivraison(String paysLivraison) {
+		this.paysLivraison = paysLivraison;
+	}
+
+	public String getVilleLivraison() {
+		return villeLivraison;
+	}
+
+	public void setVilleLivraison(String villeLivraison) {
+		this.villeLivraison = villeLivraison;
+	}
+
+	public String getAdresseLivraison() {
+		return adresseLivraison;
+	}
+
+	public void setAdresseLivraison(String adresseLivraison) {
+		this.adresseLivraison = adresseLivraison;
+	}
+
+	public String getPlateforme() {
+		return plateforme;
+	}
+
+	public void setPlateforme(String plateforme) {
+		this.plateforme = plateforme;
+	}
+
+	public String getLienProduit() {
+		return lienProduit;
+	}
+
+	public void setLienProduit(String lienProduit) {
+		this.lienProduit = lienProduit;
+	}
+
+	public String getDescriptionCommande() {
+		return descriptionCommande;
+	}
+
+	public void setDescriptionCommande(String descriptionCommande) {
+		this.descriptionCommande = descriptionCommande;
+	}
+
+	public Integer getQuantite() {
+		return quantite;
+	}
+
+	public void setQuantite(Integer quantite) {
+		this.quantite = quantite;
+	}
+
+	public BigDecimal getPrixUnitaire() {
+		return prixUnitaire;
+	}
+
+	public void setPrixUnitaire(BigDecimal prixUnitaire) {
+		this.prixUnitaire = prixUnitaire;
+	}
+
+	public BigDecimal getPrixTotal() {
+		return prixTotal;
+	}
+
+	public void setPrixTotal(BigDecimal prixTotal) {
+		this.prixTotal = prixTotal;
+	}
+
+	public String getDevise() {
+		return devise;
+	}
+
+	public void setDevise(String devise) {
+		this.devise = devise;
+	}
+
+	public String getNotesSpeciales() {
+		return notesSpeciales;
+	}
+
+	public void setNotesSpeciales(String notesSpeciales) {
+		this.notesSpeciales = notesSpeciales;
+	}
+
+	public String getStatut() {
+		return statut;
+	}
+
+	public void setStatut(String statut) {
+		this.statut = statut;
+	}
+
+	public Long getGpId() {
+		return gpId;
+	}
+
+	public void setGpId(Long gpId) {
+		this.gpId = gpId;
+	}
+
+	public String getGpPrenom() {
+		return gpPrenom;
+	}
+
+	public void setGpPrenom(String gpPrenom) {
+		this.gpPrenom = gpPrenom;
+	}
+
+	public String getGpNom() {
+		return gpNom;
+	}
+
+	public void setGpNom(String gpNom) {
+		this.gpNom = gpNom;
+	}
+
+	public String getGpPhoneNumber() {
+		return gpPhoneNumber;
+	}
+
+	public void setGpPhoneNumber(String gpPhoneNumber) {
+		this.gpPhoneNumber = gpPhoneNumber;
+	}
+
+	public Boolean getArchived() {
+		return archived;
+	}
+
+	public void setArchived(Boolean archived) {
+		this.archived = archived;
+	}
+
+	public LocalDateTime getDateCreation() {
+		return dateCreation;
+	}
+
+	public void setDateCreation(LocalDateTime dateCreation) {
+		this.dateCreation = dateCreation;
+	}
+
+	public LocalDateTime getDateModification() {
+		return dateModification;
+	}
+
+	public void setDateModification(LocalDateTime dateModification) {
+		this.dateModification = dateModification;
+	}
 }

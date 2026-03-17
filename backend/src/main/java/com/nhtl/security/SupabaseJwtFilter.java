@@ -1,13 +1,17 @@
 package com.nhtl.security;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.MalformedJwtException;
-import io.jsonwebtoken.UnsupportedJwtException;
-import io.jsonwebtoken.security.Keys;
-import lombok.extern.slf4j.Slf4j;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.Key;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -15,139 +19,155 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.UnsupportedJwtException;
+import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
-import java.io.IOException;
-import java.security.Key;
-import java.util.*;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
 public class SupabaseJwtFilter extends OncePerRequestFilter {
 
-    @Value("${supabase.jwt.secret}")
-    private String supabaseJwtSecret;
+	/**
+	 * Supabase JWT secret (HS256) est souvent fourni en Base64 dans les settings
+	 * Supabase. Ici on conserve ton approche: Base64 decode -> hmacShaKeyFor.
+	 */
+	@Value("${supabase.jwt.secret}")
+	private String supabaseJwtSecret;
 
-    private static final List<String> PUBLIC_PATHS = Arrays.asList(
-            "/auth/",
-            "/api/public/",
-            "/actuator/health",
-            "/actuator/info",
-            "/swagger-ui/",
-            "/v3/api-docs/",
-            "/login",
-            "/signup"
-    );
+	private static final List<String> PUBLIC_PATHS = Arrays.asList("/auth/", "/api/public/", "/actuator/health",
+			"/actuator/info", "/swagger-ui/", "/v3/api-docs/", "/login", "/signup", "/api/auth/login",
+			"/api/auth/register");
 
-    @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
-            throws ServletException, IOException {
+	@Override
+	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+			throws ServletException, IOException {
 
-        if (shouldNotFilter(request)) {
-            filterChain.doFilter(request, response);
-            return;
-        }
+		if (shouldNotFilter(request)) {
+			filterChain.doFilter(request, response);
+			return;
+		}
 
-        String authHeader = request.getHeader("Authorization");
-        log.info("Authorization Header: {}", authHeader);
+		final String authHeader = request.getHeader("Authorization");
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json");
-            response.getWriter().write("{\"error\": \"Token JWT manquant ou format incorrect\"}");
-            return;
-        }
+		// Ne JAMAIS logger le JWT en clair
+		log.debug("Authorization header present: {}", authHeader != null);
 
-        String jwt = authHeader.substring(7);
+		if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+			writeJsonError(response, HttpServletResponse.SC_UNAUTHORIZED, "Token JWT manquant ou format incorrect");
+			return;
+		}
 
-        try {
-            // Décodage Base64 du secret Supabase (HS256)
-            byte[] decodedKey = Base64.getDecoder().decode(supabaseJwtSecret);
-            Key key = Keys.hmacShaKeyFor(decodedKey);
+		final String jwt = authHeader.substring(7).trim();
+		if (jwt.isEmpty()) {
+			writeJsonError(response, HttpServletResponse.SC_UNAUTHORIZED, "Token JWT manquant ou format incorrect");
+			return;
+		}
 
-            Claims claims = Jwts.parserBuilder()
-                    .setSigningKey(key)
-                    .build()
-                    .parseClaimsJws(jwt)
-                    .getBody();
+		try {
+			Claims claims = parseClaims(jwt);
 
-            log.info("JWT claims: {}", claims);
+			// subject = user id (uuid supabase)
+			final String userId = claims.getSubject();
 
-            String userId = claims.getSubject();
+			// Role depuis user_metadata.role (ton choix actuel)
+			final String role = extractRole(claims); // ex: USER / ADMIN
 
-            // Extraction du rôle métier (admin/user) depuis user_metadata.role si disponible
-            String role = "USER";
-            Object metadataObj = claims.get("user_metadata");
-            if (metadataObj instanceof Map) {
-                @SuppressWarnings("unchecked")
-                Map<String, Object> userMetadata = (Map<String, Object>) metadataObj;
-                Object roleInMeta = userMetadata.get("role");
-                if (roleInMeta != null) {
-                    role = roleInMeta.toString().toUpperCase();
-                }
-            } else if (claims.get("role") != null) {
-                role = claims.get("role").toString().toUpperCase();
-            }
+			// Authorities
+			final List<GrantedAuthority> authorities = new ArrayList<>();
+			authorities.add(new SimpleGrantedAuthority("ROLE_AUTHENTICATED"));
+			if (role != null && !role.isBlank() && !"AUTHENTICATED".equalsIgnoreCase(role)) {
+				authorities.add(new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()));
+			}
 
-            List<GrantedAuthority> authorities = new ArrayList<>();
-            // Toujours ajouter AUTHENTICATED pour toutes les personnes connectées
-            authorities.add(new SimpleGrantedAuthority("ROLE_AUTHENTICATED"));
+			// Principal = userId (comme ton code)
+			UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userId, null,
+					authorities);
 
-            // Ajouter des rôles métiers supplémentaires s'ils sont présents (user, admin, etc.)
-            if (!role.equals("AUTHENTICATED")) {
-                authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
-            }
+			SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(userId, null, authorities);
+			log.debug("JWT ok userId={} authorities={}", userId,
+					authorities.stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList()));
 
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+		} catch (ExpiredJwtException e) {
+			log.warn("Token JWT expiré : {}", e.getMessage());
+			writeJsonError(response, HttpServletResponse.SC_UNAUTHORIZED, "Token JWT expiré");
+			return;
 
-            log.info("JWT valide et authentifié pour user: {} avec rôles: {}", userId, authorities);
+		} catch (io.jsonwebtoken.security.SecurityException e) {
+			log.warn("Signature JWT invalide : {}", e.getMessage());
+			writeJsonError(response, HttpServletResponse.SC_UNAUTHORIZED, "Signature JWT invalide");
+			return;
 
-        } catch (ExpiredJwtException e) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json");
-            response.getWriter().write("{\"error\": \"Token JWT expiré\"}");
-            log.warn("Token JWT expiré : {}", e.getMessage());
-            return;
+		} catch (MalformedJwtException | UnsupportedJwtException | IllegalArgumentException e) {
+			log.warn("Token JWT invalide : {}", e.getMessage());
+			writeJsonError(response, HttpServletResponse.SC_UNAUTHORIZED, "Token JWT invalide");
+			return;
 
-        } catch (io.jsonwebtoken.security.SecurityException e) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json");
-            response.getWriter().write("{\"error\": \"Signature JWT invalide\"}");
-            log.warn("Signature JWT invalide : {}", e.getMessage());
-            return;
+		} catch (Exception e) {
+			log.error("Erreur inattendue d'authentification: {}", e.getMessage(), e);
+			writeJsonError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erreur interne d'authentification");
+			return;
+		}
 
-        } catch (MalformedJwtException | UnsupportedJwtException | IllegalArgumentException e) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json");
-            response.getWriter().write("{\"error\": \"Token JWT invalide\"}");
-            log.warn("Token JWT invalide : {}", e.getMessage());
-            return;
+		filterChain.doFilter(request, response);
+	}
 
-        } catch (Exception e) {
-            log.error("Erreur inattendue: {}", e.getMessage(), e);
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            response.setContentType("application/json");
-            response.getWriter().write("{\"error\": \"Erreur interne d'authentification\"}");
-            return;
-        }
+	private Claims parseClaims(String jwt) {
+		byte[] decodedKey = Base64.getDecoder().decode(supabaseJwtSecret);
+		Key key = Keys.hmacShaKeyFor(decodedKey);
 
-        filterChain.doFilter(request, response);
-    }
+		return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(jwt).getBody();
+	}
 
-    @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) {
-        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
-            return true;
-        }
-        String path = request.getRequestURI();
-        return PUBLIC_PATHS.stream().anyMatch(path::startsWith);
-    }
+	/**
+	 * Extrait le rôle métier depuis user_metadata.role si présent. Fallback: claim
+	 * "role" si présent (rare, dépend de la config).
+	 */
+	private String extractRole(Claims claims) {
+		String role = "USER";
+
+		Object metadataObj = claims.get("user_metadata");
+		if (metadataObj instanceof Map<?, ?> meta) {
+			Object roleInMeta = meta.get("role");
+			if (roleInMeta != null) {
+				role = roleInMeta.toString();
+			}
+		} else if (claims.get("role") != null) {
+			role = claims.get("role").toString();
+		}
+
+		return role == null ? "USER" : role.toUpperCase();
+	}
+
+	private void writeJsonError(HttpServletResponse response, int statusCode, String message) throws IOException {
+		response.setStatus(statusCode);
+		response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+		response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+		response.getWriter().write("{\"error\": \"" + escapeJson(message) + "\"}");
+	}
+
+	// Évite de casser le JSON si message contient des guillemets/backslashes
+	private String escapeJson(String v) {
+		if (v == null) {
+			return "";
+		}
+		return v.replace("\\", "\\\\").replace("\"", "\\\"");
+	}
+
+	@Override
+	protected boolean shouldNotFilter(HttpServletRequest request) {
+		if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+			return true;
+		}
+		String path = request.getRequestURI();
+		return PUBLIC_PATHS.stream().anyMatch(path::startsWith);
+	}
 }

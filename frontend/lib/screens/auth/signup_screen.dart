@@ -11,9 +11,11 @@ class SignupScreen extends StatefulWidget {
 
 class _SignupScreenState extends State<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _usernameController = TextEditingController();
-  final _fullNameController = TextEditingController();
+
+  final _identifierController = TextEditingController();
+  final _prenomController = TextEditingController();
+  final _nomController = TextEditingController();
+
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
@@ -21,45 +23,103 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
 
+  // Toggle: téléphone désactivé tant que SMS/OTP Supabase n'est pas configuré
+  static const bool _phoneSignupEnabled = false;
+
   @override
   void dispose() {
-    _emailController.dispose();
-    _usernameController.dispose();
-    _fullNameController.dispose();
+    _identifierController.dispose();
+    _prenomController.dispose();
+    _nomController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
   }
 
+  bool _looksLikeEmail(String v) => v.contains('@');
+  bool _looksLikeE164Phone(String v) =>
+      RegExp(r'^\+[1-9]\d{7,14}$').hasMatch(v);
+
+  String? _validateIdentifier(String? v) {
+    final value = (v ?? '').trim();
+    if (value.isEmpty) return 'Email requis';
+
+    // Email
+    if (_looksLikeEmail(value)) {
+      if (!value.contains('.') ||
+          value.startsWith('@') ||
+          value.endsWith('@')) {
+        return 'Email invalide';
+      }
+      return null;
+    }
+
+    // Téléphone (E.164)
+    if (_looksLikeE164Phone(value)) {
+      if (!_phoneSignupEnabled) {
+        return "Inscription par téléphone indisponible pour le moment. Utilisez un email.";
+      }
+      return null;
+    }
+
+    // Ni email ni téléphone valide
+    return _phoneSignupEnabled
+        ? 'Email ou téléphone invalide'
+        : 'Email invalide';
+  }
+
   void _handleSignup() async {
     if (!_formKey.currentState!.validate()) return;
+
+    // Double garde-fou
+    final identifier = _identifierController.text.trim();
+    final isPhone =
+        !_looksLikeEmail(identifier) && _looksLikeE164Phone(identifier);
+    if (isPhone && !_phoneSignupEnabled) {
+      Fluttertoast.showToast(
+        msg: "Inscription par téléphone indisponible. Utilisez un email.",
+        backgroundColor: Colors.orange,
+        toastLength: Toast.LENGTH_LONG,
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
-      // On appelle le service en passant 'user' explicitement
-      await AuthService.signupWithMetadata(
-        email: _emailController.text.trim(),
+      final outcome = await AuthService.signupWithMetadata(
+        identifier: identifier,
         password: _passwordController.text,
-        fullName: _fullNameController.text.trim(),
-        username: _usernameController.text.trim(),
-        role: 'user', // Sécurité : On ne permet pas l'auto-promotion admin ici
+        prenom: _prenomController.text.trim(),
+        nom: _nomController.text.trim(),
+        role: 'user',
       );
 
-      if (mounted) {
+      if (!mounted) return;
+
+      if (outcome == SignupOutcome.confirmationRequired) {
         Fluttertoast.showToast(
-          msg: 'Inscription réussie! Vérifiez votre email puis connectez-vous.',
+          msg:
+              "Inscription enregistrée. Vérifiez votre email puis connectez-vous.",
           backgroundColor: Colors.green,
           toastLength: Toast.LENGTH_LONG,
         );
         Navigator.of(context).pushReplacementNamed('/login');
+        return;
       }
+
+      Fluttertoast.showToast(
+        msg: "Inscription réussie. Votre email est déjà confirmé.",
+        backgroundColor: Colors.green,
+        toastLength: Toast.LENGTH_LONG,
+      );
+      Navigator.of(context).pushReplacementNamed('/login');
     } catch (e) {
-      if (mounted) {
-        Fluttertoast.showToast(
-          msg: e.toString().replaceFirst('Exception: ', ''),
-          backgroundColor: Colors.red,
-        );
-      }
+      if (!mounted) return;
+      Fluttertoast.showToast(
+        msg: e.toString().replaceFirst('Exception: ', ''),
+        backgroundColor: Colors.red,
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -70,7 +130,6 @@ class _SignupScreenState extends State<SignupScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Inscription')),
       body: SingleChildScrollView(
-        // Ajout pour éviter les débordements clavier
         padding: const EdgeInsets.all(20),
         child: Form(
           key: _formKey,
@@ -78,38 +137,39 @@ class _SignupScreenState extends State<SignupScreen> {
             children: [
               const SizedBox(height: 20),
               TextFormField(
-                controller: _emailController,
-                decoration: const InputDecoration(
+                controller: _identifierController,
+                decoration: InputDecoration(
                   labelText: 'Email',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.email),
+                  hintText: 'ex: nom@domaine.com',
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.alternate_email),
+                  helperText: _phoneSignupEnabled
+                      ? 'Email ou téléphone (E.164)'
+                      : 'Téléphone désactivé pour le moment',
                 ),
-                validator: (v) => (v == null || v.isEmpty)
-                    ? 'Email requis'
-                    : (!v.contains('@') ? 'Email invalide' : null),
+                validator: _validateIdentifier,
               ),
               const SizedBox(height: 20),
               TextFormField(
-                controller: _usernameController,
+                controller: _prenomController,
                 decoration: const InputDecoration(
-                  labelText: 'Nom d\'utilisateur',
+                  labelText: 'Prénom',
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.person_outline),
                 ),
-                validator: (v) => (v == null || v.isEmpty)
-                    ? 'Nom d\'utilisateur requis'
-                    : (v.length < 3 ? 'Minimum 3 caractères' : null),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Prénom requis' : null,
               ),
               const SizedBox(height: 20),
               TextFormField(
-                controller: _fullNameController,
+                controller: _nomController,
                 decoration: const InputDecoration(
-                  labelText: 'Nom complet',
+                  labelText: 'Nom',
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.badge),
                 ),
                 validator: (v) =>
-                    (v == null || v.isEmpty) ? 'Nom complet requis' : null,
+                    (v == null || v.trim().isEmpty) ? 'Nom requis' : null,
               ),
               const SizedBox(height: 20),
               TextFormField(
@@ -120,9 +180,11 @@ class _SignupScreenState extends State<SignupScreen> {
                   border: const OutlineInputBorder(),
                   prefixIcon: const Icon(Icons.lock_outline),
                   suffixIcon: IconButton(
-                    icon: Icon(_obscurePassword
-                        ? Icons.visibility_off
-                        : Icons.visibility),
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                    ),
                     onPressed: () =>
                         setState(() => _obscurePassword = !_obscurePassword),
                   ),
@@ -140,9 +202,9 @@ class _SignupScreenState extends State<SignupScreen> {
                   border: const OutlineInputBorder(),
                   prefixIcon: const Icon(Icons.lock_reset),
                   suffixIcon: IconButton(
-                    icon: Icon(_obscureConfirm
-                        ? Icons.visibility_off
-                        : Icons.visibility),
+                    icon: Icon(
+                      _obscureConfirm ? Icons.visibility_off : Icons.visibility,
+                    ),
                     onPressed: () =>
                         setState(() => _obscureConfirm = !_obscureConfirm),
                   ),
@@ -163,8 +225,10 @@ class _SignupScreenState extends State<SignupScreen> {
                   onPressed: _isLoading ? null : _handleSignup,
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('S\'inscrire',
-                          style: TextStyle(fontSize: 16)),
+                      : const Text(
+                          'S\'inscrire',
+                          style: TextStyle(fontSize: 16),
+                        ),
                 ),
               ),
               TextButton(

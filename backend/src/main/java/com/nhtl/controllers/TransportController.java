@@ -1,165 +1,109 @@
 package com.nhtl.controllers;
 
-import com.nhtl.services.TransportService;
-import com.nhtl.dto.TransportDTO;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
-
-import jakarta.validation.Valid;
+import java.security.Principal;
 import java.util.List;
-import java.util.HashMap;
 import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.nhtl.dto.TransportDTO;
+import com.nhtl.services.TransportService;
 
 @RestController
 @RequestMapping("/api/transports")
-@Validated
 public class TransportController {
 
-    @Autowired
-    private TransportService transportService;
+	@Autowired
+	private TransportService transportService;
 
-    @PostMapping
-    public ResponseEntity<Map<String, Object>> createTransport(@Valid @RequestBody TransportDTO transportDTO) {
-        try {
-            TransportDTO savedTransport = transportService.createTransport(transportDTO);
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "Transport créé avec succès");
-            response.put("data", savedTransport);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (Exception e) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("message", "Erreur lors de la création du transport: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-        }
-    }
+	// Récupération de l'identifiant utilisateur
+	private String getUserId(Principal principal) {
+		return principal.getName();
+	}
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> getTransportById(@PathVariable Long id) {
-        TransportDTO transport = transportService.getTransportById(id);
-        Map<String, Object> response = new HashMap<>();
+	// Création transport pour l'utilisateur connecté
+	@PreAuthorize("isAuthenticated()")
+	@PostMapping
+	public ResponseEntity<?> createTransport(@RequestBody TransportDTO dto, Principal principal) {
+		String userId = getUserId(principal);
+		TransportDTO saved = transportService.createTransport(dto, userId);
+		return ResponseEntity.ok(saved);
+	}
 
-        if (transport != null) {
-            response.put("success", true);
-            response.put("message", "Transport trouvé");
-            response.put("data", transport);
-            return ResponseEntity.ok(response);
-        } else {
-            response.put("success", false);
-            response.put("message", "Transport non trouvé");
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
-        }
-    }
+	// Liste de ses propres transports
+	@PreAuthorize("isAuthenticated()")
+	@GetMapping
+	public ResponseEntity<?> getMesTransports(Principal principal) {
+		String userId = getUserId(principal);
+		List<TransportDTO> transports = transportService.getAllTransportsForUser(userId);
+		return ResponseEntity.ok(transports);
+	}
 
-    @GetMapping
-    public ResponseEntity<Map<String, Object>> getAllTransports() {
-        List<TransportDTO> transports = transportService.getAllTransports();
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", "Liste de tous les transports");
-        response.put("count", transports.size());
-        response.put("data", transports);
-        return ResponseEntity.ok(response);
-    }
+	// Liste de ses propres transports archivés
+	@PreAuthorize("isAuthenticated()")
+	@GetMapping("/archives")
+	public ResponseEntity<?> getMesTransportsArchives(Principal principal) {
+		String userId = getUserId(principal);
+		List<TransportDTO> archives = transportService.getTransportsArchivesForUser(userId);
+		return ResponseEntity.ok(archives);
+	}
 
-    @GetMapping("/search/statut")
-    public ResponseEntity<Map<String, Object>> getTransportsByStatut(@RequestParam String statut) {
-        try {
-            List<TransportDTO> transports = transportService.getTransportsByStatut(statut);
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "Transports avec le statut: " + statut);
-            response.put("count", transports.size());
-            response.put("data", transports);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("message", "Statut invalide: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-        }
-    }
+	// Suppression d'un transport archivé (user)
+	@PreAuthorize("isAuthenticated()")
+	@DeleteMapping("/archives/{id}")
+	public ResponseEntity<?> deleteArchiveTransport(@PathVariable Long id, Principal principal) {
+		String userId = getUserId(principal);
+		boolean ok = transportService.deleteTransportArchive(id, userId);
+		if (ok) {
+			return ResponseEntity.ok(Map.of("success", true));
+		} else {
+			return ResponseEntity.status(403).body(Map.of("error", "Accès refusé ou non archivé"));
+		}
+	}
 
-    @GetMapping("/search/phone")
-    public ResponseEntity<Map<String, Object>> getTransportsByPhone(@RequestParam String phone) {
-        List<TransportDTO> transports = transportService.getTransportsByPhoneNumber(phone);
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", "Transports pour le numéro: " + phone);
-        response.put("count", transports.size());
-        response.put("data", transports);
-        return ResponseEntity.ok(response);
-    }
+	// Consultation d'un transport (accès refusé si ce n'est pas le sien)
+	@PreAuthorize("isAuthenticated()")
+	@GetMapping("/{id}")
+	public ResponseEntity<?> getTransport(@PathVariable Long id, Principal principal) {
+		String userId = getUserId(principal);
+		return transportService.getTransportByIdAndUser(id, userId).<ResponseEntity<?>>map(ResponseEntity::ok)
+				.orElseGet(() -> ResponseEntity.status(403).body(Map.of("error", "Accès refusé")));
+	}
 
-    @GetMapping("/search/country")
-    public ResponseEntity<Map<String, Object>> getTransportsByCountry(@RequestParam String country) {
-        List<TransportDTO> transports = transportService.getTransportsByDestinationCountry(country);
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", "Transports vers: " + country);
-        response.put("count", transports.size());
-        response.put("data", transports);
-        return ResponseEntity.ok(response);
-    }
+	// Suppression de son propre transport
+	@PreAuthorize("isAuthenticated()")
+	@DeleteMapping("/{id}")
+	public ResponseEntity<?> deleteTransport(@PathVariable Long id, Principal principal) {
+		String userId = getUserId(principal);
+		boolean ok = transportService.deleteTransport(id, userId);
+		if (ok) {
+			return ResponseEntity.ok(Map.of("success", true));
+		} else {
+			return ResponseEntity.status(403).body(Map.of("error", "Accès refusé"));
+		}
+	}
 
-    @GetMapping("/search")
-    public ResponseEntity<Map<String, Object>> searchTransports(
-            @RequestParam(required = false) String nom,
-            @RequestParam(required = false) String prenom) {
-        List<TransportDTO> transports = transportService.searchByNomOrPrenom(
-            nom != null ? nom : "", prenom != null ? prenom : "");
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", "Résultats de recherche");
-        response.put("count", transports.size());
-        response.put("data", transports);
-        return ResponseEntity.ok(response);
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> updateTransport(
-            @PathVariable Long id,
-            @Valid @RequestBody TransportDTO transportDTO) {
-        try {
-            TransportDTO updatedTransport = transportService.updateTransport(id, transportDTO);
-            Map<String, Object> response = new HashMap<>();
-
-            if (updatedTransport != null) {
-                response.put("success", true);
-                response.put("message", "Transport mis à jour avec succès");
-                response.put("data", updatedTransport);
-                return ResponseEntity.ok(response);
-            } else {
-                response.put("success", false);
-                response.put("message", "Transport non trouvé");
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
-            }
-        } catch (Exception e) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("message", "Erreur lors de la mise à jour: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-        }
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> deleteTransport(@PathVariable Long id) {
-        boolean deleted = transportService.deleteTransport(id);
-        Map<String, Object> response = new HashMap<>();
-
-        if (deleted) {
-            response.put("success", true);
-            response.put("message", "Transport supprimé avec succès");
-            return ResponseEntity.ok(response);
-        } else {
-            response.put("success", false);
-            response.put("message", "Transport non trouvé");
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
-        }
-    }
+	// Modification de son propre transport
+	@PreAuthorize("isAuthenticated()")
+	@PutMapping("/{id}")
+	public ResponseEntity<?> updateTransport(@PathVariable Long id, @RequestBody TransportDTO dto,
+			Principal principal) {
+		String userId = getUserId(principal);
+		TransportDTO updated = transportService.updateTransport(id, dto, userId);
+		if (updated != null) {
+			return ResponseEntity.ok(updated);
+		} else {
+			return ResponseEntity.status(403).body(Map.of("error", "Accès refusé"));
+		}
+	}
 }

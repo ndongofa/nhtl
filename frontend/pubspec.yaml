@@ -1,4 +1,4 @@
-name: nhtl_mobile
+name: sama
 description: "Application Flutter pour transport et commandes en ligne"
 publish_to: 'none'
 
@@ -8,32 +8,34 @@ environment:
   sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
+  font_awesome_flutter: ^10.7.0
   flutter:
     sdk: flutter
 
   # HTTP Client pour API
   http: ^1.1.0
-  
+
   # Notifications Toast
   fluttertoast: ^9.0.0
-  
+
   # Logging
   logger: ^2.0.1
 
   # Pour les dates
   intl: ^0.20.2
-  
+
   # Storage local
   shared_preferences: ^2.2.0
-  
+
   # State Management
   provider: ^6.0.0
-  
+
   # Navigation
   go_router: ^10.0.0
-  
+
   # UI - Responsive design
   flutter_screenutil: ^5.8.0
+
   supabase_flutter: ^2.12.0
 
 dev_dependencies:
@@ -43,3 +45,16 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/flyer1.png
+    - assets/flyer2.png
+    - assets/flyer3.png
+    - assets/flyer4.png
+    - assets/flyer5.png
+    - assets/flyer6.png
+    - assets/flyer7.png
+    - assets/flyer8.png
+    - assets/flyer9.png
+    - assets/flyer10.png
+    # Ajoute ici tous tes autres flyers/images utilisées dans le carousel

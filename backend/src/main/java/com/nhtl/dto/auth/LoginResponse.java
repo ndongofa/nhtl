@@ -8,13 +8,13 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class LoginResponse {
-    
-    private String userId;  // ✅ STRING, pas UUID!
-    private String email;
-    private String phone;
-    private String fullName;
-    private String role;
-    private String accessToken;
-    private String refreshToken;
-    private long expiresIn;
+
+	private String userId; // ✅ STRING, pas UUID!
+	private String email;
+	private String phone;
+	private String fullName;
+	private String role;
+	private String accessToken;
+	private String refreshToken;
+	private long expiresIn;
 }

@@ -4,7 +4,9 @@ import '../services/commande_service.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
 class CommandeFormScreen extends StatefulWidget {
-  const CommandeFormScreen({Key? key}) : super(key: key);
+  final Commande? commande; // null = création, non null = édition
+
+  const CommandeFormScreen({Key? key, this.commande}) : super(key: key);
 
   @override
   State<CommandeFormScreen> createState() => _CommandeFormScreenState();
@@ -15,6 +17,7 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
   final _service = CommandeService();
   bool _isLoading = false;
 
+  // Contrôleurs pour chaque champ
   final nomController = TextEditingController();
   final prenomController = TextEditingController();
   final numeroTelephoneController = TextEditingController();
@@ -45,6 +48,29 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
   final List<String> _devises = ['USD', 'EUR', 'GBP', 'CAD', 'XAF'];
 
   @override
+  void initState() {
+    super.initState();
+    final c = widget.commande;
+    if (c != null) {
+      nomController.text = c.nom ?? '';
+      prenomController.text = c.prenom ?? '';
+      numeroTelephoneController.text = c.numeroTelephone ?? '';
+      emailController.text = c.email ?? '';
+      paysLivraisonController.text = c.paysLivraison ?? '';
+      villeLivraisonController.text = c.villeLivraison ?? '';
+      adresseLivraisonController.text = c.adresseLivraison ?? '';
+      lienProduitController.text = c.lienProduit ?? '';
+      descriptionCommandeController.text = c.descriptionCommande ?? '';
+      quantiteController.text = c.quantite?.toString() ?? '';
+      prixUnitaireController.text = c.prixUnitaire?.toString() ?? '';
+      prixTotalController.text = c.prixTotal?.toString() ?? '';
+      notesSpecialesController.text = c.notesSpeciales ?? '';
+      _platformeSelectionnee = c.plateforme ?? 'AMAZON';
+      _deviseSelectionnee = c.devise ?? 'USD';
+    }
+  }
+
+  @override
   void dispose() {
     nomController.dispose();
     prenomController.dispose();
@@ -62,7 +88,6 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
     super.dispose();
   }
 
-  // ✅ Validateur pour le téléphone
   String? _validatePhoneNumber(String? value) {
     if (value == null || value.isEmpty) {
       return 'Obligatoire';
@@ -74,7 +99,6 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
     return null;
   }
 
-  // ✅ Validateur pour l'email
   String? _validateEmail(String? value) {
     if (value != null && value.isNotEmpty) {
       final emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
@@ -85,7 +109,6 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
     return null;
   }
 
-  // ✅ Validateur pour l'adresse (10-500 caractères)
   String? _validateAddress(String? value) {
     if (value == null || value.isEmpty) {
       return 'Obligatoire';
@@ -99,7 +122,6 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
     return null;
   }
 
-  // ✅ Validateur pour la description (10-1000 caractères)
   String? _validateDescription(String? value) {
     if (value == null || value.isEmpty) {
       return 'Obligatoire';
@@ -113,7 +135,6 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
     return null;
   }
 
-  // ✅ Validateur pour la quantité (minimum 1)
   String? _validateQuantite(String? value) {
     if (value == null || value.isEmpty) {
       return 'Obligatoire';
@@ -125,7 +146,6 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
     return null;
   }
 
-  // ✅ Validateur pour les prix (supérieur à 0)
   String? _validatePrice(String? value) {
     if (value == null || value.isEmpty) {
       return 'Obligatoire';
@@ -142,7 +162,9 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
       setState(() => _isLoading = true);
 
       try {
-        final commande = Commande(
+        final commandeData = Commande(
+          // Pour la modification, tu gardes l’ID
+          id: widget.commande?.id,
           nom: nomController.text.trim(),
           prenom: prenomController.text.trim(),
           numeroTelephone: numeroTelephoneController.text.trim(),
@@ -162,20 +184,26 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
           notesSpeciales: notesSpecialesController.text.trim().isEmpty
               ? null
               : notesSpecialesController.text.trim(),
+          // Ajoute statut/archived si tu veux gérer côté admin
         );
 
-        final result = await _service.createCommande(commande);
+        final result = widget.commande == null
+            ? await _service.createCommande(commandeData)
+            : await _service.updateCommande(commandeData);
 
         if (result != null) {
           Fluttertoast.showToast(
-            msg: '✅ Commande créée!',
+            msg: widget.commande == null
+                ? '✅ Commande créée!'
+                : '✅ Commande modifiée!',
             gravity: ToastGravity.BOTTOM,
             backgroundColor: Colors.green,
           );
-          Navigator.pop(context);
+          Navigator.pop(context, true); // Renvoie true pour rafraîchir la liste
         } else {
           Fluttertoast.showToast(
-            msg: '❌ Erreur lors de la création',
+            msg:
+                '❌ Erreur lors de la ${widget.commande == null ? "création" : "modification"}',
             gravity: ToastGravity.BOTTOM,
             backgroundColor: Colors.red,
           );
@@ -195,7 +223,11 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Nouvelle Commande')),
+      appBar: AppBar(
+        title: Text(widget.commande == null
+            ? 'Nouvelle Commande'
+            : 'Modifier Commande'),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -314,7 +346,9 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
                           width: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('Créer la commande'),
+                      : Text(widget.commande == null
+                          ? 'Créer la commande'
+                          : 'Modifier la commande'),
                 ),
               ),
             ],

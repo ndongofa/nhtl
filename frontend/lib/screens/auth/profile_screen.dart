@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:nhtl_mobile/models/logged_user.dart';
+import 'package:sama/models/logged_user.dart';
 
 class ProfileScreen extends StatelessWidget {
+  const ProfileScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     final user = LoggedUser.fromSupabase();
+
+    final identifier = (user.email != null && user.email!.trim().isNotEmpty)
+        ? user.email!.trim()
+        : ((user.phone ?? '').trim().isNotEmpty ? user.phone!.trim() : '');
 
     return Scaffold(
       appBar: AppBar(title: const Text('Mon Profil Supabase')),
@@ -15,10 +21,11 @@ class ProfileScreen extends StatelessWidget {
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Email : ${user.email}'),
+                  Text('Identifiant : $identifier'),
+                  Text('Email : ${user.email ?? ''}'),
+                  Text('Téléphone : ${user.phone ?? ''}'),
                   Text('Nom d\'utilisateur : ${user.username ?? ''}'),
                   Text('Nom complet : ${user.fullName ?? ''}'),
-                  Text('Téléphone : ${user.phone ?? ''}'),
                   Text('ID utilisateur : ${user.userId}'),
                 ],
               ),
