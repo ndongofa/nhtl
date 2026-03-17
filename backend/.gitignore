@@ -24,6 +24,8 @@ build/
 # Spring Boot
 spring-boot-devtools.properties
 application-local.properties
+application-dev.properties
+*dev*.properties
 
 # Environment
 .env
@@ -60,3 +62,11 @@ coverage/
 # Keep env examples in git
 !.env.example
 !.env.exemple
+# Eclipse / IDE workspace
+.metadata/
+.classpath
+.project
+.settings/
+
+# Eclipse workspace metadata
+.metadata/
