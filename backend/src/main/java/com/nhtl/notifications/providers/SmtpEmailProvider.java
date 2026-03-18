@@ -7,7 +7,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("prod")
+@Profile("smtp")
 public class SmtpEmailProvider implements EmailProvider {
 
 	private final JavaMailSender mailSender;
