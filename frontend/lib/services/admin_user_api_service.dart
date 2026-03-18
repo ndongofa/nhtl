@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:logger/logger.dart';
+import 'package:sama/config/api_config.dart';
 import 'package:sama/services/auth_service.dart';
-import 'package:sama/config/ApiConfig_dev.dart';
 
 class AdminUserApiService {
   final logger = Logger();

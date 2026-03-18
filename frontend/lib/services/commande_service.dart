@@ -1,7 +1,7 @@
 import 'package:http/http.dart' as http;
+import 'package:sama/config/api_config.dart';
 import 'dart:convert';
 import '../models/commande.dart';
-import 'package:sama/config/ApiConfig_dev.dart';
 import 'package:logger/logger.dart';
 import 'auth_service.dart';
 import '../models/logged_user.dart';

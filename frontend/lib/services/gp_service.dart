@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:logger/logger.dart';
+import 'package:sama/config/api_config.dart';
 import '../models/gp_agent.dart';
 import '../services/auth_service.dart';
-import 'package:sama/config/ApiConfig_dev.dart';
 
 class GpService {
   final logger = Logger();
