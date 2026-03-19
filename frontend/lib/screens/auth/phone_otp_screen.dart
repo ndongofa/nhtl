@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
@@ -21,10 +23,34 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
   bool _loading = false;
   String? _msg;
 
+  // ✅ Cooldown "Renvoyer le code" — évite les 429 si l'utilisateur clique plusieurs fois
+  static const int _resendCooldownSeconds = 60;
+  int _resendCountdown = 0;
+  Timer? _resendTimer;
+
   @override
   void dispose() {
     _codeController.dispose();
+    _resendTimer?.cancel();
     super.dispose();
+  }
+
+  void _startResendCooldown() {
+    setState(() => _resendCountdown = _resendCooldownSeconds);
+    _resendTimer?.cancel();
+    _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        if (_resendCountdown > 0) {
+          _resendCountdown--;
+        } else {
+          timer.cancel();
+        }
+      });
+    });
   }
 
   Future<void> _verify() async {
@@ -63,6 +89,8 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
   }
 
   Future<void> _resend() async {
+    if (_resendCountdown > 0) return;
+
     setState(() {
       _loading = true;
       _msg = null;
@@ -70,6 +98,7 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
 
     try {
       await AuthService.sendPhoneOtp(widget.phoneE164);
+      _startResendCooldown();
       setState(() => _msg = "Code renvoyé par SMS.");
     } catch (e) {
       setState(() => _msg = e.toString().replaceFirst('Exception: ', ''));
@@ -80,6 +109,8 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final canResend = _resendCountdown == 0 && !_loading;
+
     return Scaffold(
       appBar: AppBar(title: Text(AppBrand.appName)),
       body: Center(
@@ -121,9 +152,14 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
                         : const Text("Valider"),
                   ),
                 ),
+                // ✅ Bouton renvoyer avec cooldown affiché
                 TextButton(
-                  onPressed: _loading ? null : _resend,
-                  child: const Text("Renvoyer le code"),
+                  onPressed: canResend ? _resend : null,
+                  child: Text(
+                    _resendCountdown > 0
+                        ? "Renvoyer le code (${_resendCountdown}s)"
+                        : "Renvoyer le code",
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(

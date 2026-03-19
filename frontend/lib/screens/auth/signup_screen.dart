@@ -103,25 +103,9 @@ class _SignupScreenState extends State<SignupScreen> {
 
       if (!mounted) return;
 
-      // --- Cas téléphone : on envoie OTP puis on va à l'écran OTP ---
+      // ✅ Cas téléphone : Supabase a déjà envoyé l'OTP lors du signUp.
+      // Ne pas appeler sendPhoneOtp() ici — ce serait un double envoi → 429.
       if (isPhone && outcome == SignupOutcome.confirmationRequired) {
-        try {
-          await AuthService.sendPhoneOtp(identifier);
-        } catch (e) {
-          // si envoi OTP échoue, on reste sur un écran informatif
-          Fluttertoast.showToast(
-            msg: e.toString().replaceFirst('Exception: ', ''),
-            backgroundColor: Colors.red,
-            toastLength: Toast.LENGTH_LONG,
-          );
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (_) => SignupPendingScreen(identifier: identifier),
-            ),
-          );
-          return;
-        }
-
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (_) => PhoneOtpScreen(phoneE164: identifier),
@@ -188,11 +172,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       ? 'ex: nom@domaine.com ou +221783042838'
                       : 'ex: nom@domaine.com',
                   border: const OutlineInputBorder(),
-                  prefixIcon: Icon(
-                    _phoneSignupEnabled
-                        ? Icons.alternate_email
-                        : Icons.alternate_email,
-                  ),
+                  prefixIcon: const Icon(Icons.alternate_email),
                   helperText: _phoneSignupEnabled
                       ? 'Email ou téléphone (E.164: +221...)'
                       : 'Téléphone désactivé pour le moment',

@@ -21,12 +21,6 @@ class AuthService {
   static bool _is429(dynamic statusCode) =>
       statusCode == 429 || statusCode?.toString() == '429';
 
-  static String _stripPlusIfPresent(String phone) {
-    final p = phone.trim();
-    if (p.startsWith('+')) return p.substring(1);
-    return p;
-  }
-
   /// Signup avec metadata (prenom/nom/role).
   /// `identifier` = email OU téléphone E.164 (ex: +221783042838)
   static Future<SignupOutcome> signupWithMetadata({
@@ -87,6 +81,9 @@ class AuthService {
             "Numéro invalide. Utilisez le format international E.164, ex: +221783042838",
           );
         }
+        // ✅ On passe le numéro E.164 tel quel (avec +).
+        // Supabase envoie automatiquement un OTP SMS ici — ne pas appeler
+        // sendPhoneOtp() ensuite, ce serait un double envoi → 429.
         res = await _supabase.auth.signUp(
           phone: phone,
           password: password,
@@ -109,10 +106,9 @@ class AuthService {
       print(
           "[AuthService][signup] AuthException status=${e.statusCode} message=${e.message}");
 
-      // UX: cas critique fréquent -> message user-friendly
       if (_is429(e.statusCode)) {
         throw Exception(
-          "Trop de tentatives d’inscription pour le moment. "
+          "Trop de tentatives d'inscription pour le moment. "
           "Veuillez patienter quelques minutes puis réessayer.\n\n"
           "Si le problème persiste, contactez tech@ngom-holding.com.",
         );
@@ -126,7 +122,9 @@ class AuthService {
     }
   }
 
-  /// Envoi d’un code OTP par SMS via Supabase (nécessite Phone provider configuré)
+  /// Envoi d'un code OTP par SMS via Supabase.
+  /// À utiliser UNIQUEMENT pour le renvoi manuel (bouton "Renvoyer le code").
+  /// Ne pas appeler après signUp() — Supabase envoie déjà l'OTP automatiquement.
   static Future<void> sendPhoneOtp(String phoneE164) async {
     final cleanPhone = phoneE164.trim();
 
@@ -139,14 +137,8 @@ class AuthService {
     // ignore: avoid_print
     print("[AuthService][sendPhoneOtp] start phone=$cleanPhone");
 
-    Future<void> attempt(String phoneValue) async {
-      await _supabase.auth.signInWithOtp(phone: phoneValue);
-    }
-
     try {
-      // 1) essai standard avec "+..."
-      await attempt(cleanPhone);
-
+      await _supabase.auth.signInWithOtp(phone: cleanPhone);
       // ignore: avoid_print
       print("[AuthService][sendPhoneOtp] OK");
     } on AuthException catch (e) {
@@ -154,25 +146,10 @@ class AuthService {
       print(
           "[AuthService][sendPhoneOtp] AuthException status=${e.statusCode} message=${e.message}");
 
-      // fallback: certaines configs/tests peuvent attendre sans "+"
-      final fallbackPhone = _stripPlusIfPresent(cleanPhone);
-      if (fallbackPhone != cleanPhone) {
-        try {
-          // ignore: avoid_print
-          print(
-              "[AuthService][sendPhoneOtp] fallback without +: $fallbackPhone");
-          await attempt(fallbackPhone);
-          // ignore: avoid_print
-          print("[AuthService][sendPhoneOtp] OK (fallback)");
-          return;
-        } catch (_) {
-          // on renvoie l'erreur initiale
-        }
-      }
-
       if (_is429(e.statusCode)) {
         throw Exception(
-          "Trop de demandes de code SMS. Veuillez patienter quelques minutes puis réessayer.",
+          "Un code SMS a déjà été envoyé récemment. "
+          "Veuillez patienter quelques secondes avant de redemander un code.",
         );
       }
 
@@ -203,18 +180,12 @@ class AuthService {
     print(
         "[AuthService][verifyPhoneOtp] start phone=$cleanPhone tokenLen=${cleanToken.length}");
 
-    Future<void> attempt(String phoneValue) async {
+    try {
       await _supabase.auth.verifyOTP(
         type: OtpType.sms,
-        phone: phoneValue,
+        phone: cleanPhone,
         token: cleanToken,
       );
-    }
-
-    try {
-      // 1) essai standard avec "+..."
-      await attempt(cleanPhone);
-
       // ignore: avoid_print
       print("[AuthService][verifyPhoneOtp] OK");
     } on AuthException catch (e) {
@@ -222,20 +193,10 @@ class AuthService {
       print(
           "[AuthService][verifyPhoneOtp] AuthException status=${e.statusCode} message=${e.message}");
 
-      // fallback: sans "+"
-      final fallbackPhone = _stripPlusIfPresent(cleanPhone);
-      if (fallbackPhone != cleanPhone) {
-        try {
-          // ignore: avoid_print
-          print(
-              "[AuthService][verifyPhoneOtp] fallback without +: $fallbackPhone");
-          await attempt(fallbackPhone);
-          // ignore: avoid_print
-          print("[AuthService][verifyPhoneOtp] OK (fallback)");
-          return;
-        } catch (_) {
-          // on renvoie l'erreur initiale
-        }
+      if (_is429(e.statusCode)) {
+        throw Exception(
+          "Trop de tentatives de vérification. Veuillez patienter avant de réessayer.",
+        );
       }
 
       rethrow;
@@ -310,7 +271,6 @@ class AuthService {
       await _supabase.auth.resetPasswordForEmail(
         cleanEmail,
         // IMPORTANT (Flutter Web + hash routing):
-        // On redirige vers une route qui existe: https://ngom-holding.com/#/reset-password
         redirectTo: kIsWeb ? '${Uri.base.origin}/#/reset-password' : null,
       );
       // ignore: avoid_print
@@ -320,7 +280,6 @@ class AuthService {
       print(
           "[AuthService][resetPassword] AuthException status=${e.statusCode} message=${e.message}");
 
-      // UX (rare) : rate limit email reset
       if (_is429(e.statusCode)) {
         throw Exception(
           "Trop de demandes de réinitialisation pour le moment. "
