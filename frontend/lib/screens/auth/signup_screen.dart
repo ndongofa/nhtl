@@ -3,6 +3,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 
 import '../../services/auth_service.dart';
 import '../../ui/app_brand.dart';
+import 'phone_otp_screen.dart';
 import 'signup_pending_screen.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -26,8 +27,8 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
 
-  // Toggle: téléphone désactivé tant que SMS/OTP Supabase n'est pas configuré
-  static const bool _phoneSignupEnabled = false;
+  // ✅ Activation téléphone (Supabase Phone Provider activé)
+  static const bool _phoneSignupEnabled = true;
 
   @override
   void dispose() {
@@ -65,22 +66,21 @@ class _SignupScreenState extends State<SignupScreen> {
       return null;
     }
 
-    // Ni email ni téléphone valide
     return _phoneSignupEnabled
-        ? 'Email ou téléphone invalide'
+        ? 'Email ou téléphone invalide (format téléphone: +221...)'
         : 'Email invalide';
   }
 
   void _handleSignup() async {
-    // garde anti double-submit (utile sur web / double tap)
+    // garde anti double-submit
     if (_isLoading) return;
 
     if (!_formKey.currentState!.validate()) return;
 
-    // Double garde-fou
     final identifier = _identifierController.text.trim();
     final isPhone =
         !_looksLikeEmail(identifier) && _looksLikeE164Phone(identifier);
+
     if (isPhone && !_phoneSignupEnabled) {
       Fluttertoast.showToast(
         msg: "Inscription par téléphone indisponible. Utilisez un email.",
@@ -103,6 +103,34 @@ class _SignupScreenState extends State<SignupScreen> {
 
       if (!mounted) return;
 
+      // --- Cas téléphone : on envoie OTP puis on va à l'écran OTP ---
+      if (isPhone && outcome == SignupOutcome.confirmationRequired) {
+        try {
+          await AuthService.sendPhoneOtp(identifier);
+        } catch (e) {
+          // si envoi OTP échoue, on reste sur un écran informatif
+          Fluttertoast.showToast(
+            msg: e.toString().replaceFirst('Exception: ', ''),
+            backgroundColor: Colors.red,
+            toastLength: Toast.LENGTH_LONG,
+          );
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => SignupPendingScreen(identifier: identifier),
+            ),
+          );
+          return;
+        }
+
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => PhoneOtpScreen(phoneE164: identifier),
+          ),
+        );
+        return;
+      }
+
+      // --- Cas email : comportement existant ---
       if (outcome == SignupOutcome.confirmationRequired) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
@@ -154,12 +182,19 @@ class _SignupScreenState extends State<SignupScreen> {
               TextFormField(
                 controller: _identifierController,
                 decoration: InputDecoration(
-                  labelText: 'Email',
-                  hintText: 'ex: nom@domaine.com',
+                  labelText:
+                      _phoneSignupEnabled ? 'Email ou téléphone' : 'Email',
+                  hintText: _phoneSignupEnabled
+                      ? 'ex: nom@domaine.com ou +221783042838'
+                      : 'ex: nom@domaine.com',
                   border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.alternate_email),
+                  prefixIcon: Icon(
+                    _phoneSignupEnabled
+                        ? Icons.alternate_email
+                        : Icons.alternate_email,
+                  ),
                   helperText: _phoneSignupEnabled
-                      ? 'Email ou téléphone (E.164)'
+                      ? 'Email ou téléphone (E.164: +221...)'
                       : 'Téléphone désactivé pour le moment',
                 ),
                 validator: _validateIdentifier,
