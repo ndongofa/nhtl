@@ -21,6 +21,14 @@ class AuthService {
   static bool _is429(dynamic statusCode) =>
       statusCode == 429 || statusCode?.toString() == '429';
 
+  /// Supabase/Twilio attend le numéro sans "+" pour signUp, signInWithOtp
+  /// et verifyOTP. On conserve le "+" uniquement pour la validation E.164
+  /// côté Flutter.
+  static String _toSupabasePhone(String phoneE164) {
+    final p = phoneE164.trim();
+    return p.startsWith('+') ? p.substring(1) : p;
+  }
+
   /// Signup avec metadata (prenom/nom/role).
   /// `identifier` = email OU téléphone E.164 (ex: +221783042838)
   static Future<SignupOutcome> signupWithMetadata({
@@ -49,7 +57,6 @@ class AuthService {
     }
 
     // IMPORTANT (Flutter Web + hash routing):
-    // On redirige vers une route qui existe: https://ngom-holding.com/#/auth/callback
     final redirectTo = kIsWeb ? '${Uri.base.origin}/#/auth/callback' : null;
 
     // ignore: avoid_print
@@ -75,17 +82,16 @@ class AuthService {
           data: data,
         );
       } else {
-        final phone = cleanIdentifier;
-        if (!_looksLikeE164Phone(phone)) {
+        if (!_looksLikeE164Phone(cleanIdentifier)) {
           throw Exception(
             "Numéro invalide. Utilisez le format international E.164, ex: +221783042838",
           );
         }
-        // ✅ On passe le numéro E.164 tel quel (avec +).
+        // ✅ Strip le "+" — Supabase/Twilio attend le numéro sans préfixe.
         // Supabase envoie automatiquement un OTP SMS ici — ne pas appeler
         // sendPhoneOtp() ensuite, ce serait un double envoi → 429.
         res = await _supabase.auth.signUp(
-          phone: phone,
+          phone: _toSupabasePhone(cleanIdentifier),
           password: password,
           data: data,
         );
@@ -96,7 +102,6 @@ class AuthService {
           "email=${res.user?.email} phone=${res.user?.phone} "
           "session=${res.session != null}");
 
-      // IMPORTANT: confirmation ON => session null mais signup OK
       if (res.session == null) {
         return SignupOutcome.confirmationRequired;
       }
@@ -138,7 +143,10 @@ class AuthService {
     print("[AuthService][sendPhoneOtp] start phone=$cleanPhone");
 
     try {
-      await _supabase.auth.signInWithOtp(phone: cleanPhone);
+      // ✅ Strip le "+" — Supabase/Twilio attend le numéro sans préfixe
+      await _supabase.auth.signInWithOtp(
+        phone: _toSupabasePhone(cleanPhone),
+      );
       // ignore: avoid_print
       print("[AuthService][sendPhoneOtp] OK");
     } on AuthException catch (e) {
@@ -181,9 +189,10 @@ class AuthService {
         "[AuthService][verifyPhoneOtp] start phone=$cleanPhone tokenLen=${cleanToken.length}");
 
     try {
+      // ✅ Strip le "+" — Supabase/Twilio attend le numéro sans préfixe
       await _supabase.auth.verifyOTP(
         type: OtpType.sms,
-        phone: cleanPhone,
+        phone: _toSupabasePhone(cleanPhone),
         token: cleanToken,
       );
       // ignore: avoid_print
@@ -270,7 +279,6 @@ class AuthService {
     try {
       await _supabase.auth.resetPasswordForEmail(
         cleanEmail,
-        // IMPORTANT (Flutter Web + hash routing):
         redirectTo: kIsWeb ? '${Uri.base.origin}/#/reset-password' : null,
       );
       // ignore: avoid_print
