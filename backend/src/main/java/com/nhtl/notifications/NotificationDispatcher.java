@@ -1,5 +1,6 @@
 package com.nhtl.notifications;
 
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import com.nhtl.notifications.providers.EmailProvider;
@@ -22,6 +23,7 @@ public class NotificationDispatcher {
 		this.inAppProvider = inAppProvider;
 	}
 
+	@Async("notificationExecutor")
 	public void dispatch(NotificationEvent evt) {
 		if (evt == null) {
 			return;
