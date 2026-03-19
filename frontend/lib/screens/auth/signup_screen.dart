@@ -72,6 +72,9 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   void _handleSignup() async {
+    // garde anti double-submit (utile sur web / double tap)
+    if (_isLoading) return;
+
     if (!_formKey.currentState!.validate()) return;
 
     // Double garde-fou
@@ -120,6 +123,7 @@ class _SignupScreenState extends State<SignupScreen> {
       Fluttertoast.showToast(
         msg: e.toString().replaceFirst('Exception: ', ''),
         backgroundColor: Colors.red,
+        toastLength: Toast.LENGTH_LONG,
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -143,7 +147,7 @@ class _SignupScreenState extends State<SignupScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                "Sama Services International",
+                AppBrand.appName,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const SizedBox(height: 20),

@@ -18,6 +18,9 @@ class AuthService {
   static bool _looksLikeE164Phone(String v) =>
       RegExp(r'^\+[1-9]\d{7,14}$').hasMatch(v);
 
+  static bool _is429(dynamic statusCode) =>
+      statusCode == 429 || statusCode?.toString() == '429';
+
   /// Signup avec metadata (prenom/nom/role).
   /// `identifier` = email OU téléphone E.164 (ex: +221783042838)
   static Future<SignupOutcome> signupWithMetadata({
@@ -99,10 +102,97 @@ class AuthService {
       // ignore: avoid_print
       print(
           "[AuthService][signup] AuthException status=${e.statusCode} message=${e.message}");
+
+      // UX: cas critique fréquent -> message user-friendly
+      if (_is429(e.statusCode)) {
+        throw Exception(
+          "Trop de tentatives d’inscription pour le moment. "
+          "Veuillez patienter quelques minutes puis réessayer.\n\n"
+          "Si le problème persiste, contactez tech@ngom-holding.com.",
+        );
+      }
+
       rethrow;
     } catch (e) {
       // ignore: avoid_print
       print("[AuthService][signup] Unknown error: $e");
+      rethrow;
+    }
+  }
+
+  /// Envoi d’un code OTP par SMS via Supabase (nécessite Phone provider configuré)
+  static Future<void> sendPhoneOtp(String phoneE164) async {
+    final cleanPhone = phoneE164.trim();
+
+    if (!_looksLikeE164Phone(cleanPhone)) {
+      throw Exception(
+        "Numéro invalide. Utilisez le format international E.164, ex: +221783042838",
+      );
+    }
+
+    // ignore: avoid_print
+    print("[AuthService][sendPhoneOtp] start phone=$cleanPhone");
+
+    try {
+      await _supabase.auth.signInWithOtp(phone: cleanPhone);
+
+      // ignore: avoid_print
+      print("[AuthService][sendPhoneOtp] OK");
+    } on AuthException catch (e) {
+      // ignore: avoid_print
+      print(
+          "[AuthService][sendPhoneOtp] AuthException status=${e.statusCode} message=${e.message}");
+
+      if (_is429(e.statusCode)) {
+        throw Exception(
+          "Trop de demandes de code SMS. Veuillez patienter quelques minutes puis réessayer.",
+        );
+      }
+
+      rethrow;
+    } catch (e) {
+      // ignore: avoid_print
+      print("[AuthService][sendPhoneOtp] Unknown error: $e");
+      rethrow;
+    }
+  }
+
+  /// Vérifie un code OTP SMS via Supabase (nécessite Phone provider configuré)
+  static Future<void> verifyPhoneOtp({
+    required String phoneE164,
+    required String token,
+  }) async {
+    final cleanPhone = phoneE164.trim();
+    final cleanToken = token.trim();
+
+    if (!_looksLikeE164Phone(cleanPhone)) {
+      throw Exception("Numéro invalide (E.164).");
+    }
+    if (cleanToken.length < 4) {
+      throw Exception("Code invalide.");
+    }
+
+    // ignore: avoid_print
+    print(
+        "[AuthService][verifyPhoneOtp] start phone=$cleanPhone tokenLen=${cleanToken.length}");
+
+    try {
+      await _supabase.auth.verifyOTP(
+        type: OtpType.sms,
+        phone: cleanPhone,
+        token: cleanToken,
+      );
+
+      // ignore: avoid_print
+      print("[AuthService][verifyPhoneOtp] OK");
+    } on AuthException catch (e) {
+      // ignore: avoid_print
+      print(
+          "[AuthService][verifyPhoneOtp] AuthException status=${e.statusCode} message=${e.message}");
+      rethrow;
+    } catch (e) {
+      // ignore: avoid_print
+      print("[AuthService][verifyPhoneOtp] Unknown error: $e");
       rethrow;
     }
   }
@@ -180,6 +270,15 @@ class AuthService {
       // ignore: avoid_print
       print(
           "[AuthService][resetPassword] AuthException status=${e.statusCode} message=${e.message}");
+
+      // UX (rare) : rate limit email reset
+      if (_is429(e.statusCode)) {
+        throw Exception(
+          "Trop de demandes de réinitialisation pour le moment. "
+          "Veuillez patienter quelques minutes puis réessayer.",
+        );
+      }
+
       rethrow;
     }
   }
