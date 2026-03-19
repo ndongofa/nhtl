@@ -13,8 +13,12 @@ class ResetPasswordScreen extends StatefulWidget {
 class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   final _pw1 = TextEditingController();
   final _pw2 = TextEditingController();
+
   bool _loading = false;
   String? _msg;
+
+  bool _obscure1 = true;
+  bool _obscure2 = true;
 
   @override
   void dispose() {
@@ -42,15 +46,33 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     });
 
     try {
-      await Supabase.instance.client.auth.updateUser(
+      final client = Supabase.instance.client;
+
+      // Debug utile si updateUser ne marche pas (session recovery absente)
+      // ignore: avoid_print
+      print(
+          "[ResetPasswordScreen] sessionPresent=${client.auth.currentSession != null} "
+          "userPresent=${client.auth.currentUser != null}");
+
+      final res = await client.auth.updateUser(
         UserAttributes(password: p1),
       );
 
-      setState(() => _msg =
-          "Mot de passe mis à jour.\nVous pouvez maintenant vous connecter.");
+      // ignore: avoid_print
+      print("[ResetPasswordScreen] updateUser OK userId=${res.user?.id}");
+
+      setState(() {
+        _msg =
+            "Mot de passe mis à jour.\nVous pouvez maintenant vous connecter.";
+      });
     } on AuthException catch (e) {
+      // ignore: avoid_print
+      print(
+          "[ResetPasswordScreen] AuthException status=${e.statusCode} message=${e.message}");
       setState(() => _msg = "Erreur: ${e.message}");
     } catch (e) {
+      // ignore: avoid_print
+      print("[ResetPasswordScreen] Unknown error: $e");
       setState(() => _msg = "Erreur: $e");
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -80,19 +102,31 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 const SizedBox(height: 12),
                 TextField(
                   controller: _pw1,
-                  obscureText: true,
-                  decoration: const InputDecoration(
+                  obscureText: _obscure1,
+                  decoration: InputDecoration(
                     labelText: "Nouveau mot de passe",
-                    border: OutlineInputBorder(),
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      onPressed: () => setState(() => _obscure1 = !_obscure1),
+                      icon: Icon(
+                        _obscure1 ? Icons.visibility_off : Icons.visibility,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _pw2,
-                  obscureText: true,
-                  decoration: const InputDecoration(
+                  obscureText: _obscure2,
+                  decoration: InputDecoration(
                     labelText: "Confirmer le mot de passe",
-                    border: OutlineInputBorder(),
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      onPressed: () => setState(() => _obscure2 = !_obscure2),
+                      icon: Icon(
+                        _obscure2 ? Icons.visibility_off : Icons.visibility,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -103,7 +137,16 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   height: 48,
                   child: ElevatedButton(
                     onPressed: _loading ? null : _submit,
-                    child: Text(_loading ? "Veuillez patienter..." : "Valider"),
+                    child: _loading
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text("Valider"),
                   ),
                 ),
                 TextButton(
