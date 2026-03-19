@@ -11,6 +11,7 @@ import 'screens/auth/signup_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/landing_screen.dart';
 import 'services/auth_service.dart';
+import 'ui/app_brand.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,18 +37,20 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primary = Color(AppBrand.primaryColorValue);
+
     return MaterialApp(
-      title: 'sama services international',
+      title: AppBrand.appName,
       theme: ThemeData(
         useMaterial3: true,
-        primarySwatch: Colors.blue,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.blue,
+        primaryColor: primary,
+        appBarTheme: AppBarTheme(
+          backgroundColor: primary,
           foregroundColor: Colors.white,
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blue,
+            backgroundColor: primary,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
             shape: RoundedRectangleBorder(
@@ -57,7 +60,7 @@ class MyApp extends StatelessWidget {
         ),
         textButtonTheme: TextButtonThemeData(
           style: TextButton.styleFrom(
-            foregroundColor: Colors.blue,
+            foregroundColor: primary,
           ),
         ),
       ),
@@ -72,11 +75,7 @@ class MyApp extends StatelessWidget {
         '/home': (context) => const HomeScreen(),
         '/admin': (context) => AdminUserScreen(),
         '/profile': (context) => ProfileScreen(),
-
-        // NEW: Supabase email confirmation callback (avoid white page)
         '/auth/callback': (context) => const AuthCallbackScreen(),
-
-        // NEW: Supabase reset password landing page (avoid white page)
         '/reset-password': (context) => const ResetPasswordScreen(),
       },
       debugShowCheckedModeBanner: false,

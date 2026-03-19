@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../ui/app_brand.dart';
 
-class SignupPendingScreen extends StatelessWidget {
-  final String identifier; // email ou téléphone (E.164)
+class PasswordResetSentScreen extends StatelessWidget {
+  final String identifier; // email ou téléphone
 
-  const SignupPendingScreen({
+  const PasswordResetSentScreen({
     super.key,
     required this.identifier,
   });
@@ -13,14 +13,14 @@ class SignupPendingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = "Inscription prise en charge";
+    final title = "Demande envoyée";
 
     final message = _isEmail
-        ? "Nous avons envoyé un email de confirmation à :\n\n$identifier\n\n"
-            "Cliquez sur le lien dans l’email pour activer votre compte.\n\n"
-            "Ensuite, revenez ici pour vous connecter."
-        : "Nous avons envoyé un code de validation par SMS au :\n\n$identifier\n\n"
-            "Entrez ce code pour activer votre compte.";
+        ? "Si un compte existe avec l’adresse :\n\n$identifier\n\n"
+            "Vous allez recevoir un lien pour réinitialiser votre mot de passe.\n\n"
+            "Pensez à vérifier votre boîte spam."
+        : "Si un compte existe avec le numéro :\n\n$identifier\n\n"
+            "Vous allez recevoir un message avec les instructions de réinitialisation.";
 
     return Scaffold(
       appBar: AppBar(title: Text(AppBrand.appName)),
@@ -39,11 +39,11 @@ class SignupPendingScreen extends StatelessWidget {
                 ElevatedButton(
                   onPressed: () => Navigator.of(context)
                       .pushNamedAndRemoveUntil('/login', (_) => false),
-                  child: const Text("Aller à la connexion"),
+                  child: const Text("Retour à la connexion"),
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  "Besoin d'aide ? ${AppBrand.supportEmail}",
+                  "Support: ${AppBrand.supportEmail}",
                   textAlign: TextAlign.center,
                 ),
               ],

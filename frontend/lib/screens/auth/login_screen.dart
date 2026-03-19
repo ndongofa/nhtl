@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+
 import '../../services/auth_service.dart';
+import '../../ui/app_brand.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -12,7 +14,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Ancien _emailController -> devient "identifier" (email OU téléphone)
+  // "identifier" (email OU téléphone)
   final _identifierController = TextEditingController();
   final _passwordController = TextEditingController();
 
@@ -64,7 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (mounted) {
         Fluttertoast.showToast(
-          msg: 'Connexion réussie!',
+          msg: 'Connexion réussie !',
           backgroundColor: Colors.green,
           toastLength: Toast.LENGTH_LONG,
         );
@@ -93,14 +95,24 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Connexion')),
+      appBar: AppBar(title: Text(AppBrand.appName)),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Form(
           key: _formKey,
           child: Column(
             children: [
-              const SizedBox(height: 40),
+              const SizedBox(height: 28),
+              Text(
+                "Connexion",
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                "Sama Services International",
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 28),
               TextFormField(
                 controller: _identifierController,
                 decoration: const InputDecoration(
@@ -132,15 +144,19 @@ class _LoginScreenState extends State<LoginScreen> {
                     : (v.length < 8 ? 'Minimum 8 caractères' : null),
               ),
               const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _isLoading ? null : _handleLogin,
-                child: _isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Se connecter'),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _handleLogin,
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Se connecter'),
+                ),
               ),
               TextButton(
                 onPressed: () {
@@ -153,6 +169,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   Navigator.of(context).pushReplacementNamed('/signup');
                 },
                 child: const Text('Créer un compte'),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "Support: ${AppBrand.supportEmail}",
+                textAlign: TextAlign.center,
               ),
             ],
           ),

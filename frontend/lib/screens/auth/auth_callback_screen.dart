@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Page de réception des redirections Supabase (confirmation email, magic link, etc.)
-/// Objectif: éviter une page blanche et donner un feedback clair à l’utilisateur.
+import '../../ui/app_brand.dart';
+
 class AuthCallbackScreen extends StatefulWidget {
   const AuthCallbackScreen({super.key});
 
@@ -22,22 +22,21 @@ class _AuthCallbackScreenState extends State<AuthCallbackScreen> {
 
   Future<void> _run() async {
     try {
-      // Laisse le temps au SDK de traiter l’URL (surtout sur Flutter Web)
       await Future.delayed(const Duration(milliseconds: 600));
 
       final user = Supabase.instance.client.auth.currentUser;
       final session = Supabase.instance.client.auth.currentSession;
 
-      // Selon config Supabase, la confirmation peut créer une session ou non.
       if (user != null && session != null) {
         setState(() {
-          _status = "Email confirmé. Votre compte est maintenant actif.";
+          _status =
+              "Votre compte est confirmé.\nVous pouvez maintenant vous connecter.";
           _done = true;
         });
       } else {
         setState(() {
           _status =
-              "Lien traité. Si votre email est confirmé, vous pouvez vous connecter.";
+              "Lien traité.\nSi votre compte est confirmé, vous pouvez vous connecter.";
           _done = true;
         });
       }
@@ -56,7 +55,7 @@ class _AuthCallbackScreenState extends State<AuthCallbackScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Confirmation")),
+      appBar: AppBar(title: Text(AppBrand.appName)),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 520),
@@ -65,6 +64,11 @@ class _AuthCallbackScreenState extends State<AuthCallbackScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                Text(
+                  "Activation du compte",
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 12),
                 Text(_status, textAlign: TextAlign.center),
                 const SizedBox(height: 16),
                 if (_done)
@@ -72,6 +76,11 @@ class _AuthCallbackScreenState extends State<AuthCallbackScreen> {
                     onPressed: _goLogin,
                     child: const Text("Aller à la connexion"),
                   ),
+                const SizedBox(height: 12),
+                Text(
+                  "Besoin d'aide ? ${AppBrand.supportEmail}",
+                  textAlign: TextAlign.center,
+                ),
               ],
             ),
           ),

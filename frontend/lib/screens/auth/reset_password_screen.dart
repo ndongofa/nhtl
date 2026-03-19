@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Page appelée après clic sur le lien "Reset password" Supabase.
-/// L'utilisateur saisit un nouveau mot de passe, puis on appelle updateUser().
+import '../../ui/app_brand.dart';
+
 class ResetPasswordScreen extends StatefulWidget {
   const ResetPasswordScreen({super.key});
 
@@ -47,13 +47,13 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       );
 
       setState(() => _msg =
-          "Mot de passe mis à jour. Vous pouvez maintenant vous connecter.");
+          "Mot de passe mis à jour.\nVous pouvez maintenant vous connecter.");
     } on AuthException catch (e) {
       setState(() => _msg = "Erreur: ${e.message}");
     } catch (e) {
       setState(() => _msg = "Erreur: $e");
     } finally {
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -64,7 +64,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Réinitialiser le mot de passe")),
+      appBar: AppBar(title: Text(AppBrand.appName)),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 520),
@@ -73,11 +73,17 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                Text(
+                  "Réinitialiser le mot de passe",
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 12),
                 TextField(
                   controller: _pw1,
                   obscureText: true,
                   decoration: const InputDecoration(
                     labelText: "Nouveau mot de passe",
+                    border: OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -86,26 +92,29 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   obscureText: true,
                   decoration: const InputDecoration(
                     labelText: "Confirmer le mot de passe",
+                    border: OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 16),
                 if (_msg != null) Text(_msg!, textAlign: TextAlign.center),
                 const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    ElevatedButton(
-                      onPressed: _loading ? null : _submit,
-                      child:
-                          Text(_loading ? "Veuillez patienter..." : "Valider"),
-                    ),
-                    const SizedBox(width: 12),
-                    TextButton(
-                      onPressed: _loading ? null : _goLogin,
-                      child: const Text("Connexion"),
-                    ),
-                  ],
-                )
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: _loading ? null : _submit,
+                    child: Text(_loading ? "Veuillez patienter..." : "Valider"),
+                  ),
+                ),
+                TextButton(
+                  onPressed: _loading ? null : _goLogin,
+                  child: const Text("Connexion"),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "Support: ${AppBrand.supportEmail}",
+                  textAlign: TextAlign.center,
+                ),
               ],
             ),
           ),

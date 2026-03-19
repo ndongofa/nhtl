@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
 import '../../services/auth_service.dart';
+import '../../ui/app_brand.dart';
 import 'signup_pending_screen.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -100,7 +101,6 @@ class _SignupScreenState extends State<SignupScreen> {
       if (!mounted) return;
 
       if (outcome == SignupOutcome.confirmationRequired) {
-        // UX: écran clair "inscription prise en charge" au lieu d'un simple toast
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (_) => SignupPendingScreen(identifier: identifier),
@@ -109,7 +109,6 @@ class _SignupScreenState extends State<SignupScreen> {
         return;
       }
 
-      // Cas (rare) où l'email/phone est auto-confirmé => on peut envoyer vers login (ou home)
       Fluttertoast.showToast(
         msg: "Inscription réussie. Votre compte est déjà actif.",
         backgroundColor: Colors.green,
@@ -130,13 +129,23 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Inscription')),
+      appBar: AppBar(title: Text(AppBrand.appName)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Form(
           key: _formKey,
           child: Column(
             children: [
+              const SizedBox(height: 12),
+              Text(
+                "Créer un compte",
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                "Sama Services International",
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
               const SizedBox(height: 20),
               TextFormField(
                 controller: _identifierController,
@@ -238,6 +247,11 @@ class _SignupScreenState extends State<SignupScreen> {
                   Navigator.of(context).pushReplacementNamed('/login');
                 },
                 child: const Text('Déjà inscrit ? Se connecter'),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "Support: ${AppBrand.supportEmail}",
+                textAlign: TextAlign.center,
               ),
             ],
           ),
