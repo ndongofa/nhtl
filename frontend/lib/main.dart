@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:sama/screens/auth/profile_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'screens/auth/login_screen.dart';
-import 'screens/auth/signup_screen.dart';
-import 'screens/auth/forgot_password_screen.dart';
-import 'screens/home_screen.dart';
+
 import 'screens/admin/admin_user_screen.dart';
+import 'screens/auth/auth_callback_screen.dart';
+import 'screens/auth/forgot_password_screen.dart';
+import 'screens/auth/login_screen.dart';
+import 'screens/auth/reset_password_screen.dart';
+import 'screens/auth/signup_screen.dart';
+import 'screens/home_screen.dart';
 import 'screens/landing_screen.dart';
 import 'services/auth_service.dart';
 
@@ -18,7 +21,7 @@ void main() async {
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im91c3dscGt4c3N6cHhyZnl2bGRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzMzYwMTEsImV4cCI6MjA4NjkxMjAxMX0.r43EKDGLX4iahz3cRliwBAQkV4Tgtsu80rTRGpSYP_w',
   );
 
-  final isLoggedIn = await AuthService.isLoggedIn();
+  final isLoggedIn = AuthService.isLoggedIn();
 
   runApp(MyApp(isLoggedIn: isLoggedIn));
 }
@@ -69,6 +72,12 @@ class MyApp extends StatelessWidget {
         '/home': (context) => const HomeScreen(),
         '/admin': (context) => AdminUserScreen(),
         '/profile': (context) => ProfileScreen(),
+
+        // NEW: Supabase email confirmation callback (avoid white page)
+        '/auth/callback': (context) => const AuthCallbackScreen(),
+
+        // NEW: Supabase reset password landing page (avoid white page)
+        '/reset-password': (context) => const ResetPasswordScreen(),
       },
       debugShowCheckedModeBanner: false,
     );

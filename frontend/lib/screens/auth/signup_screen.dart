@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+
 import '../../services/auth_service.dart';
+import 'signup_pending_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({Key? key}) : super(key: key);
@@ -98,18 +100,18 @@ class _SignupScreenState extends State<SignupScreen> {
       if (!mounted) return;
 
       if (outcome == SignupOutcome.confirmationRequired) {
-        Fluttertoast.showToast(
-          msg:
-              "Inscription enregistrée. Vérifiez votre email puis connectez-vous.",
-          backgroundColor: Colors.green,
-          toastLength: Toast.LENGTH_LONG,
+        // UX: écran clair "inscription prise en charge" au lieu d'un simple toast
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => SignupPendingScreen(identifier: identifier),
+          ),
         );
-        Navigator.of(context).pushReplacementNamed('/login');
         return;
       }
 
+      // Cas (rare) où l'email/phone est auto-confirmé => on peut envoyer vers login (ou home)
       Fluttertoast.showToast(
-        msg: "Inscription réussie. Votre email est déjà confirmé.",
+        msg: "Inscription réussie. Votre compte est déjà actif.",
         backgroundColor: Colors.green,
         toastLength: Toast.LENGTH_LONG,
       );
