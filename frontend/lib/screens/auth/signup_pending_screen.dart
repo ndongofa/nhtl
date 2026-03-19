@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../../ui/app_brand.dart';
 import 'phone_otp_screen.dart';
 
@@ -59,9 +58,8 @@ class SignupPendingScreen extends StatelessWidget {
                       onPressed: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (_) => PhoneOtpScreen(
-                              phoneE164: identifier.trim(),
-                            ),
+                            builder: (_) =>
+                                PhoneOtpScreen(phoneE164: identifier.trim()),
                           ),
                         );
                       },

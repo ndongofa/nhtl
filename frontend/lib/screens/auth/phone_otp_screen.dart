@@ -18,7 +18,6 @@ class PhoneOtpScreen extends StatefulWidget {
 
 class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
   final _codeController = TextEditingController();
-
   bool _loading = false;
   String? _msg;
 
@@ -30,6 +29,11 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
 
   Future<void> _verify() async {
     final code = _codeController.text.trim();
+
+    if (code.isEmpty) {
+      setState(() => _msg = "Veuillez entrer le code reçu par SMS.");
+      return;
+    }
 
     setState(() {
       _loading = true;
@@ -45,7 +49,7 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
       if (!mounted) return;
 
       Fluttertoast.showToast(
-        msg: "Téléphone confirmé. Votre compte est actif.",
+        msg: "Téléphone confirmé. Vous pouvez maintenant vous connecter.",
         backgroundColor: Colors.green,
         toastLength: Toast.LENGTH_LONG,
       );
@@ -112,7 +116,9 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
                   height: 48,
                   child: ElevatedButton(
                     onPressed: _loading ? null : _verify,
-                    child: Text(_loading ? "Veuillez patienter..." : "Valider"),
+                    child: _loading
+                        ? const Text("Veuillez patienter...")
+                        : const Text("Valider"),
                   ),
                 ),
                 TextButton(

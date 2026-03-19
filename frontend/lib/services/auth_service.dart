@@ -21,6 +21,12 @@ class AuthService {
   static bool _is429(dynamic statusCode) =>
       statusCode == 429 || statusCode?.toString() == '429';
 
+  static String _stripPlusIfPresent(String phone) {
+    final p = phone.trim();
+    if (p.startsWith('+')) return p.substring(1);
+    return p;
+  }
+
   /// Signup avec metadata (prenom/nom/role).
   /// `identifier` = email OU téléphone E.164 (ex: +221783042838)
   static Future<SignupOutcome> signupWithMetadata({
@@ -133,8 +139,13 @@ class AuthService {
     // ignore: avoid_print
     print("[AuthService][sendPhoneOtp] start phone=$cleanPhone");
 
+    Future<void> attempt(String phoneValue) async {
+      await _supabase.auth.signInWithOtp(phone: phoneValue);
+    }
+
     try {
-      await _supabase.auth.signInWithOtp(phone: cleanPhone);
+      // 1) essai standard avec "+..."
+      await attempt(cleanPhone);
 
       // ignore: avoid_print
       print("[AuthService][sendPhoneOtp] OK");
@@ -142,6 +153,22 @@ class AuthService {
       // ignore: avoid_print
       print(
           "[AuthService][sendPhoneOtp] AuthException status=${e.statusCode} message=${e.message}");
+
+      // fallback: certaines configs/tests peuvent attendre sans "+"
+      final fallbackPhone = _stripPlusIfPresent(cleanPhone);
+      if (fallbackPhone != cleanPhone) {
+        try {
+          // ignore: avoid_print
+          print(
+              "[AuthService][sendPhoneOtp] fallback without +: $fallbackPhone");
+          await attempt(fallbackPhone);
+          // ignore: avoid_print
+          print("[AuthService][sendPhoneOtp] OK (fallback)");
+          return;
+        } catch (_) {
+          // on renvoie l'erreur initiale
+        }
+      }
 
       if (_is429(e.statusCode)) {
         throw Exception(
@@ -176,12 +203,17 @@ class AuthService {
     print(
         "[AuthService][verifyPhoneOtp] start phone=$cleanPhone tokenLen=${cleanToken.length}");
 
-    try {
+    Future<void> attempt(String phoneValue) async {
       await _supabase.auth.verifyOTP(
         type: OtpType.sms,
-        phone: cleanPhone,
+        phone: phoneValue,
         token: cleanToken,
       );
+    }
+
+    try {
+      // 1) essai standard avec "+..."
+      await attempt(cleanPhone);
 
       // ignore: avoid_print
       print("[AuthService][verifyPhoneOtp] OK");
@@ -189,6 +221,23 @@ class AuthService {
       // ignore: avoid_print
       print(
           "[AuthService][verifyPhoneOtp] AuthException status=${e.statusCode} message=${e.message}");
+
+      // fallback: sans "+"
+      final fallbackPhone = _stripPlusIfPresent(cleanPhone);
+      if (fallbackPhone != cleanPhone) {
+        try {
+          // ignore: avoid_print
+          print(
+              "[AuthService][verifyPhoneOtp] fallback without +: $fallbackPhone");
+          await attempt(fallbackPhone);
+          // ignore: avoid_print
+          print("[AuthService][verifyPhoneOtp] OK (fallback)");
+          return;
+        } catch (_) {
+          // on renvoie l'erreur initiale
+        }
+      }
+
       rethrow;
     } catch (e) {
       // ignore: avoid_print
