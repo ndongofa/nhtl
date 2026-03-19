@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -16,15 +18,27 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
   bool _loading = false;
   String? _msg;
+  bool _success = false;
 
   bool _obscure1 = true;
   bool _obscure2 = true;
 
+  Timer? _redirectTimer;
+
   @override
   void dispose() {
+    _redirectTimer?.cancel();
     _pw1.dispose();
     _pw2.dispose();
     super.dispose();
+  }
+
+  void _scheduleRedirectToLogin() {
+    _redirectTimer?.cancel();
+    _redirectTimer = Timer(const Duration(seconds: 2), () {
+      if (!mounted) return;
+      Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
+    });
   }
 
   Future<void> _submit() async {
@@ -32,23 +46,29 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     final p2 = _pw2.text.trim();
 
     if (p1.length < 8) {
-      setState(() => _msg = "Mot de passe: 8 caractères minimum.");
+      setState(() {
+        _success = false;
+        _msg = "Mot de passe: 8 caractères minimum.";
+      });
       return;
     }
     if (p1 != p2) {
-      setState(() => _msg = "Les mots de passe ne correspondent pas.");
+      setState(() {
+        _success = false;
+        _msg = "Les mots de passe ne correspondent pas.";
+      });
       return;
     }
 
     setState(() {
       _loading = true;
       _msg = null;
+      _success = false;
     });
 
     try {
       final client = Supabase.instance.client;
 
-      // Debug utile si updateUser ne marche pas (session recovery absente)
       // ignore: avoid_print
       print(
           "[ResetPasswordScreen] sessionPresent=${client.auth.currentSession != null} "
@@ -62,29 +82,35 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       print("[ResetPasswordScreen] updateUser OK userId=${res.user?.id}");
 
       setState(() {
-        _msg =
-            "Mot de passe mis à jour.\nVous pouvez maintenant vous connecter.";
+        _success = true;
+        _msg = "Mot de passe mis à jour.\nRedirection vers la connexion...";
       });
+
+      _scheduleRedirectToLogin();
     } on AuthException catch (e) {
       // ignore: avoid_print
       print(
           "[ResetPasswordScreen] AuthException status=${e.statusCode} message=${e.message}");
-      setState(() => _msg = "Erreur: ${e.message}");
+      setState(() {
+        _success = false;
+        _msg = "Erreur: ${e.message}";
+      });
     } catch (e) {
       // ignore: avoid_print
       print("[ResetPasswordScreen] Unknown error: $e");
-      setState(() => _msg = "Erreur: $e");
+      setState(() {
+        _success = false;
+        _msg = "Erreur: $e";
+      });
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
-  void _goLogin() {
-    Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
-  }
-
   @override
   Widget build(BuildContext context) {
+    final bannerColor = _success ? Colors.green : Colors.red;
+
     return Scaffold(
       appBar: AppBar(title: Text(AppBrand.appName)),
       body: Center(
@@ -130,7 +156,21 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                if (_msg != null) Text(_msg!, textAlign: TextAlign.center),
+                if (_msg != null)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: bannerColor.withOpacity(0.12),
+                      border: Border.all(color: bannerColor.withOpacity(0.35)),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      _msg!,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: bannerColor),
+                    ),
+                  ),
                 const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
@@ -150,7 +190,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   ),
                 ),
                 TextButton(
-                  onPressed: _loading ? null : _goLogin,
+                  onPressed: _loading
+                      ? null
+                      : () => Navigator.of(context)
+                          .pushNamedAndRemoveUntil('/login', (_) => false),
                   child: const Text("Connexion"),
                 ),
                 const SizedBox(height: 8),

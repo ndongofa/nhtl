@@ -14,45 +14,76 @@ class ForgotPasswordScreen extends StatefulWidget {
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _identifierController = TextEditingController();
   bool _isLoading = false;
+
+  bool _looksLikeEmail(String v) => v.contains('@');
+  bool _looksLikeE164Phone(String v) =>
+      RegExp(r'^\+[1-9]\d{7,14}$').hasMatch(v);
+
+  String? _validateIdentifier(String? v) {
+    final value = (v ?? '').trim();
+    if (value.isEmpty) return 'Email ou téléphone requis';
+
+    if (_looksLikeEmail(value)) {
+      if (!value.contains('.') ||
+          value.startsWith('@') ||
+          value.endsWith('@')) {
+        return 'Email invalide';
+      }
+      return null;
+    }
+
+    if (_looksLikeE164Phone(value)) {
+      return null;
+    }
+
+    return 'Email ou téléphone invalide (téléphone au format +221...)';
+  }
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _identifierController.dispose();
     super.dispose();
   }
 
-  void _handleResetPassword() async {
+  Future<void> _handleResetPassword() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
 
-    final identifier = _emailController.text.trim();
+    final identifier = _identifierController.text.trim();
+    final isEmail = _looksLikeEmail(identifier);
+    final isPhone = !isEmail && _looksLikeE164Phone(identifier);
 
     try {
-      await AuthService.resetPasswordForEmail(identifier);
+      if (isEmail) {
+        await AuthService.resetPasswordForEmail(identifier);
+      } else if (isPhone) {
+        // Pour l’instant on informe l’utilisateur (le flux SMS/OTP sera ajouté au step OTP)
+        // IMPORTANT: ne pas casser le flow email existant.
+        Fluttertoast.showToast(
+          msg:
+              "Réinitialisation par téléphone: vous recevrez un SMS (en cours d’activation).",
+          backgroundColor: Colors.orange,
+          toastLength: Toast.LENGTH_LONG,
+        );
+      }
 
       if (!mounted) return;
 
-      // Option: toast discret
-      Fluttertoast.showToast(
-        msg: 'Demande envoyée.',
-        backgroundColor: Colors.green,
-      );
-
-      // IMPORTANT UX: écran clair sur la suite
+      // UX: écran clair sur la suite (email OU téléphone)
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => PasswordResetSentScreen(identifier: identifier),
         ),
       );
     } catch (e) {
-      if (mounted) {
-        Fluttertoast.showToast(
-          msg: e.toString().replaceFirst('Exception: ', ''),
-          backgroundColor: Colors.red,
-        );
-      }
+      if (!mounted) return;
+      Fluttertoast.showToast(
+        msg: e.toString().replaceFirst('Exception: ', ''),
+        backgroundColor: Colors.red,
+        toastLength: Toast.LENGTH_LONG,
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -75,19 +106,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               ),
               const SizedBox(height: 12),
               const Text(
-                "Entrez votre email. Si un compte existe, nous vous enverrons un lien de réinitialisation.",
+                "Entrez votre email ou votre numéro de téléphone.\n"
+                "Si un compte existe, vous recevrez un lien (email) ou un message (SMS) pour réinitialiser votre mot de passe.",
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
               TextFormField(
-                controller: _emailController,
+                controller: _identifierController,
                 decoration: const InputDecoration(
-                  labelText: 'Email',
+                  labelText: 'Email ou téléphone',
+                  hintText: 'ex: nom@domaine.com ou +221783042838',
                   border: OutlineInputBorder(),
                 ),
-                validator: (v) => (v == null || v.isEmpty)
-                    ? 'Email requis'
-                    : (!v.contains('@') ? 'Email invalide' : null),
+                validator: _validateIdentifier,
               ),
               const SizedBox(height: 20),
               SizedBox(
@@ -101,7 +132,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           height: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('Envoyer le lien'),
+                      : const Text('Continuer'),
                 ),
               ),
               const SizedBox(height: 12),
