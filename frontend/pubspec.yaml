@@ -8,9 +8,14 @@ environment:
   sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
-  font_awesome_flutter: ^10.7.0
   flutter:
     sdk: flutter
+
+  # Icônes
+  font_awesome_flutter: ^10.7.0
+
+  # Champ téléphone international
+  intl_phone_field: ^3.2.0
 
   # HTTP Client pour API
   http: ^1.1.0
@@ -36,6 +41,7 @@ dependencies:
   # UI - Responsive design
   flutter_screenutil: ^5.8.0
 
+  # Supabase
   supabase_flutter: ^2.12.0
 
 dev_dependencies:
