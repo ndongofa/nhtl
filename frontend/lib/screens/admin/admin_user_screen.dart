@@ -13,9 +13,19 @@ class AdminUserScreen extends StatefulWidget {
 }
 
 class _AdminUserScreenState extends State<AdminUserScreen> {
+  static const Color _bg = Color(0xFF0D1B2E);
+  static const Color _bgSection = Color(0xFF112236);
+  static const Color _bgCard = Color(0xFF1A2E45);
+  static const Color _appBlue = Color(0xFF2296F3);
+  static const Color _amber = Color(0xFFFFB300);
+  static const Color _teal = Color(0xFF00D4C8);
+  static const Color _green = Color(0xFF22C55E);
+  static const Color _textPrimary = Color(0xFFF0F6FF);
+  static const Color _textMuted = Color(0xFF7A94B0);
+  static const Color _border = Color(0xFF1E3A55);
+
   final UserService userService = UserService();
   final AdminUserApiService adminApi = AdminUserApiService();
-
   List<appUser.User> users = [];
   bool _isLoading = false;
 
@@ -36,13 +46,9 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
   }
 
   Future<void> _addOrEditUser({appUser.User? user, bool isEdit = false}) async {
-    final result = await showUserFormDialog(
-      context: context,
-      user: user,
-      isEdit: isEdit,
-    );
+    final result =
+        await showUserFormDialog(context: context, user: user, isEdit: isEdit);
     if (result == null) return;
-
     try {
       if (isEdit && user != null) {
         await adminApi.updateUser(
@@ -53,11 +59,9 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
           nom: result['nom'],
           role: result['role'],
         );
-
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Modifications enregistrées")),
-        );
+            const SnackBar(content: Text("Modifications enregistrées")));
       } else {
         await adminApi.createUser(
           identifier: result['identifier'],
@@ -66,66 +70,62 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
           nom: result['nom'],
           role: result['role'],
         );
-
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Utilisateur créé")),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text("Utilisateur créé")));
       }
-
       await Future.delayed(const Duration(milliseconds: 350));
       await _loadUsers();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            "Erreur: ${e.toString().replaceFirst('Exception: ', '')}",
-          ),
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content:
+              Text("Erreur: ${e.toString().replaceFirst('Exception: ', '')}")));
     }
   }
 
   Future<void> _deleteUser(String id) async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Supprimer ?"),
-        content: const Text("Cette action est irréversible."),
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _bgCard,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text("Supprimer ?",
+            style: TextStyle(color: _textPrimary, fontWeight: FontWeight.w800)),
+        content: const Text("Cette action est irréversible.",
+            style: TextStyle(color: _textMuted)),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("Annuler"),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text("Supprimer", style: TextStyle(color: Colors.red)),
+              onPressed: () => Navigator.pop(ctx, false),
+              child:
+                  const Text("Annuler", style: TextStyle(color: _textMuted))),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red.shade700,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8))),
+            child: const Text("Supprimer",
+                style: TextStyle(fontWeight: FontWeight.w700)),
           ),
         ],
       ),
     );
-
     if (confirm == true) {
       try {
         await adminApi.deleteUser(supabaseUserId: id);
-
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Supprimé")),
-        );
-
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text("Supprimé")));
         await Future.delayed(const Duration(milliseconds: 350));
         await _loadUsers();
       } catch (e) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text(
-              "Erreur: ${e.toString().replaceFirst('Exception: ', '')}",
-            ),
-          ),
-        );
+                "Erreur: ${e.toString().replaceFirst('Exception: ', '')}")));
       }
     }
   }
@@ -138,161 +138,224 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
 
     final ok = await showDialog<bool>(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text("Réinitialiser le mot de passe"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                "Utilisateur: ${user.displayName}",
-                style: const TextStyle(fontSize: 13),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: controller,
-                obscureText: obscure1,
-                decoration: InputDecoration(
-                  labelText: "Nouveau mot de passe",
-                  helperText: "Minimum 8 caractères",
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      obscure1 ? Icons.visibility_off : Icons.visibility,
-                    ),
-                    onPressed: () => setDialogState(() => obscure1 = !obscure1),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: confirmController,
-                obscureText: obscure2,
-                decoration: InputDecoration(
-                  labelText: "Confirmer le mot de passe",
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      obscure2 ? Icons.visibility_off : Icons.visibility,
-                    ),
-                    onPressed: () => setDialogState(() => obscure2 = !obscure2),
-                  ),
-                ),
-              ),
-            ],
-          ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: _bgCard,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text("Réinitialiser le mot de passe",
+              style:
+                  TextStyle(color: _textPrimary, fontWeight: FontWeight.w800)),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text("Utilisateur: ${user.displayName}",
+                style: const TextStyle(color: _textMuted, fontSize: 13)),
+            const SizedBox(height: 12),
+            _dialogTextField(controller, "Nouveau mot de passe", obscure1,
+                () => setDialogState(() => obscure1 = !obscure1)),
+            const SizedBox(height: 10),
+            _dialogTextField(confirmController, "Confirmer le mot de passe",
+                obscure2, () => setDialogState(() => obscure2 = !obscure2)),
+          ]),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text("Annuler"),
-            ),
+                onPressed: () => Navigator.pop(ctx, false),
+                child:
+                    const Text("Annuler", style: TextStyle(color: _textMuted))),
             ElevatedButton(
               onPressed: () {
-                final p1 = controller.text;
-                final p2 = confirmController.text;
-                if (p1.length < 8) return;
-                if (p1 != p2) return;
-                Navigator.pop(context, true);
+                if (controller.text.length < 8) return;
+                if (controller.text != confirmController.text) return;
+                Navigator.pop(ctx, true);
               },
-              child: const Text("Valider"),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: _appBlue,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8))),
+              child: const Text("Valider",
+                  style: TextStyle(fontWeight: FontWeight.w700)),
             ),
           ],
         ),
       ),
     );
-
     if (ok != true) return;
-
     try {
       await adminApi.resetPassword(
-        supabaseUserId: user.id,
-        newPassword: controller.text,
-      );
-
+          supabaseUserId: user.id, newPassword: controller.text);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Mot de passe réinitialisé")),
-      );
+          const SnackBar(content: Text("Mot de passe réinitialisé")));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            "Erreur reset password: ${e.toString().replaceFirst('Exception: ', '')}",
-          ),
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content:
+              Text("Erreur: ${e.toString().replaceFirst('Exception: ', '')}")));
     }
+  }
+
+  Widget _dialogTextField(TextEditingController ctrl, String label,
+      bool obscure, VoidCallback toggle) {
+    return TextField(
+      controller: ctrl,
+      obscureText: obscure,
+      style: const TextStyle(color: _textPrimary),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: _textMuted),
+        enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: _border)),
+        focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: _appBlue, width: 1.8)),
+        filled: true,
+        fillColor: _bg,
+        suffixIcon: IconButton(
+          icon: Icon(obscure ? Icons.visibility_off : Icons.visibility,
+              color: _textMuted, size: 18),
+          onPressed: toggle,
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final logged = LoggedUser.fromSupabase();
-
     if (logged.role != "admin") {
       return Scaffold(
-        appBar: AppBar(title: const Text("Sécurité")),
-        body: const Center(child: Text("Accès refusé.")),
+        backgroundColor: _bg,
+        appBar: AppBar(
+            backgroundColor: _bgSection,
+            title: const Text("Sécurité",
+                style: TextStyle(
+                    color: _textPrimary, fontWeight: FontWeight.w800))),
+        body: const Center(
+            child:
+                Text("Accès refusé.", style: TextStyle(color: _textPrimary))),
       );
     }
 
     return Scaffold(
+      backgroundColor: _bg,
       appBar: AppBar(
-        title: const Text("Gestion Utilisateurs"),
+        backgroundColor: _bgSection,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: _textPrimary),
+        title: const Text("Gestion Utilisateurs",
+            style: TextStyle(
+                color: _textPrimary,
+                fontWeight: FontWeight.w800,
+                fontSize: 16)),
         actions: [
-          IconButton(onPressed: _loadUsers, icon: const Icon(Icons.refresh)),
+          IconButton(
+              onPressed: _loadUsers,
+              icon: const Icon(Icons.refresh, color: _textPrimary)),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _addOrEditUser(isEdit: false),
+        backgroundColor: _appBlue,
+        child: const Icon(Icons.person_add, color: Colors.white),
+      ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: _appBlue))
           : users.isEmpty
-              ? const Center(child: Text("Aucun utilisateur trouvé"))
+              ? const Center(
+                  child: Text("Aucun utilisateur trouvé",
+                      style: TextStyle(color: _textPrimary)))
               : ListView.separated(
+                  padding: const EdgeInsets.all(16),
                   itemCount: users.length,
-                  separatorBuilder: (context, index) => const Divider(),
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final u = users[index];
                     final contact =
                         (u.email != null && u.email!.trim().isNotEmpty)
                             ? u.email!
                             : (u.phone ?? '');
+                    final isAdmin = u.role == 'admin';
 
-                    return ListTile(
-                      leading: CircleAvatar(
-                        child: Text(u.role[0].toUpperCase()),
-                        backgroundColor:
-                            u.role == 'admin' ? Colors.orange : Colors.blueGrey,
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: _bgCard,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                            color: isAdmin
+                                ? _amber.withValues(alpha: 0.30)
+                                : _border),
                       ),
-                      title: Text(u.displayName),
-                      subtitle: Text(
-                        '${contact.isEmpty ? "—" : contact}\nRôle: ${u.role}',
-                      ),
-                      isThreeLine: true,
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            tooltip: 'Reset password',
-                            icon:
-                                const Icon(Icons.key, color: Colors.deepPurple),
-                            onPressed: () => _resetPassword(u),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      child: Row(children: [
+                        Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: (isAdmin ? _amber : _appBlue)
+                                .withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.edit, color: Colors.blue),
-                            onPressed: () =>
-                                _addOrEditUser(user: u, isEdit: true),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () => _deleteUser(u.id),
-                          ),
-                        ],
-                      ),
+                          child: Center(
+                              child: Text(u.role[0].toUpperCase(),
+                                  style: TextStyle(
+                                      color: isAdmin ? _amber : _appBlue,
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 16))),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                            child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                              Text(u.displayName,
+                                  style: const TextStyle(
+                                      color: _textPrimary,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 14)),
+                              Text(contact.isEmpty ? "—" : contact,
+                                  style: const TextStyle(
+                                      color: _textMuted, fontSize: 12)),
+                              Container(
+                                margin: const EdgeInsets.only(top: 4),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: (isAdmin ? _amber : _teal)
+                                      .withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(u.role,
+                                    style: TextStyle(
+                                        color: isAdmin ? _amber : _teal,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 11)),
+                              ),
+                            ])),
+                        Row(mainAxisSize: MainAxisSize.min, children: [
+                          _actionIcon(Icons.key, Colors.deepPurple.shade300,
+                              "Reset password", () => _resetPassword(u)),
+                          _actionIcon(Icons.edit, _appBlue, "Modifier",
+                              () => _addOrEditUser(user: u, isEdit: true)),
+                          _actionIcon(Icons.delete, Colors.red.shade400,
+                              "Supprimer", () => _deleteUser(u.id)),
+                        ]),
+                      ]),
                     );
                   },
                 ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _addOrEditUser(isEdit: false),
-        child: const Icon(Icons.person_add),
-      ),
+    );
+  }
+
+  Widget _actionIcon(
+      IconData icon, Color color, String tooltip, VoidCallback onTap) {
+    return IconButton(
+      icon: Icon(icon, color: color, size: 20),
+      tooltip: tooltip,
+      onPressed: onTap,
+      splashRadius: 18,
     );
   }
 }
