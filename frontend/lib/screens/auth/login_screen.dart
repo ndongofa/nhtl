@@ -3,6 +3,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 
 import '../../services/auth_service.dart';
 import '../../ui/app_brand.dart';
+import '../../widgets/phone_input_field.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -13,56 +14,42 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-
-  // "identifier" (email OU téléphone)
-  final _identifierController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  // ✅ Numéro E.164 retourné par PhoneInputField
+  String? _phoneE164;
 
   bool _isLoading = false;
   bool _obscurePassword = true;
+  bool _usePhone = false;
 
-  bool _looksLikeEmail(String v) => v.contains('@');
-  bool _looksLikeE164Phone(String v) =>
-      RegExp(r'^\+[1-9]\d{7,14}$').hasMatch(v);
-
-  String? _validateIdentifier(String? v) {
-    final value = (v ?? '').trim();
-    if (value.isEmpty) return 'Email ou téléphone requis';
-
-    if (_looksLikeEmail(value)) {
-      // validation légère email
-      if (!value.contains('.') ||
-          value.startsWith('@') ||
-          value.endsWith('@')) {
-        return 'Email invalide';
-      }
-      return null;
-    }
-
-    if (_looksLikeE164Phone(value)) {
-      return null;
-    }
-
-    return 'Email ou téléphone invalide (téléphone au format +221...)';
-  }
-
-  String _normalizeIdentifier(String v) {
-    final value = v.trim();
-    if (_looksLikeEmail(value)) return value.toLowerCase();
-    return value; // phone: garder tel quel
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   void _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
+
+    if (_usePhone && (_phoneE164 == null || _phoneE164!.isEmpty)) {
+      Fluttertoast.showToast(
+        msg: "Veuillez entrer un numéro de téléphone valide.",
+        backgroundColor: Colors.red,
+        toastLength: Toast.LENGTH_LONG,
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
-      final identifier = _normalizeIdentifier(_identifierController.text);
+      final identifier =
+          _usePhone ? _phoneE164! : _emailController.text.trim().toLowerCase();
 
-      await AuthService.login(
-        identifier,
-        _passwordController.text,
-      );
+      await AuthService.login(identifier, _passwordController.text);
 
       if (mounted) {
         Fluttertoast.showToast(
@@ -86,13 +73,6 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   @override
-  void dispose() {
-    _identifierController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(AppBrand.appName)),
@@ -103,25 +83,65 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             children: [
               const SizedBox(height: 28),
-              Text(
-                "Connexion",
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
+              Text("Connexion", style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 6),
-              Text(
-                "Sama Services International",
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
+              Text("Sama Services International",
+                  style: Theme.of(context).textTheme.bodyMedium),
               const SizedBox(height: 28),
-              TextFormField(
-                controller: _identifierController,
-                decoration: const InputDecoration(
-                  labelText: 'Email ou téléphone',
-                  hintText: 'ex: nom@domaine.com ou +221783042838',
-                  border: OutlineInputBorder(),
-                ),
-                validator: _validateIdentifier,
+
+              // ✅ Toggle email / téléphone
+              SegmentedButton<bool>(
+                segments: const [
+                  ButtonSegment(
+                    value: false,
+                    label: Text('Email'),
+                    icon: Icon(Icons.alternate_email),
+                  ),
+                  ButtonSegment(
+                    value: true,
+                    label: Text('Téléphone'),
+                    icon: Icon(Icons.phone),
+                  ),
+                ],
+                selected: {_usePhone},
+                onSelectionChanged: (val) {
+                  setState(() {
+                    _usePhone = val.first;
+                    _phoneE164 = null;
+                  });
+                },
               ),
+
+              const SizedBox(height: 20),
+
+              // ✅ Champ email OU PhoneInputField selon le mode
+              if (!_usePhone)
+                TextFormField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    hintText: 'ex: nom@domaine.com',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.alternate_email),
+                  ),
+                  validator: (v) {
+                    final value = (v ?? '').trim();
+                    if (value.isEmpty) return 'Email requis';
+                    if (!value.contains('@') ||
+                        !value.contains('.') ||
+                        value.startsWith('@') ||
+                        value.endsWith('@')) return 'Email invalide';
+                    return null;
+                  },
+                )
+              else
+                PhoneInputField(
+                  label: 'Téléphone',
+                  initialCountryCode: 'SN',
+                  onChanged: (e164) => setState(() => _phoneE164 = e164),
+                ),
+
               const SizedBox(height: 20),
               TextFormField(
                 controller: _passwordController,
@@ -129,12 +149,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 decoration: InputDecoration(
                   labelText: 'Mot de passe',
                   border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.lock_outline),
                   suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility_off
-                          : Icons.visibility,
-                    ),
+                    icon: Icon(_obscurePassword
+                        ? Icons.visibility_off
+                        : Icons.visibility),
                     onPressed: () =>
                         setState(() => _obscurePassword = !_obscurePassword),
                   ),
@@ -159,22 +178,18 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               TextButton(
-                onPressed: () {
-                  Navigator.of(context).pushNamed('/forgot-password');
-                },
+                onPressed: () =>
+                    Navigator.of(context).pushNamed('/forgot-password'),
                 child: const Text('Mot de passe oublié ?'),
               ),
               TextButton(
-                onPressed: () {
-                  Navigator.of(context).pushReplacementNamed('/signup');
-                },
+                onPressed: () =>
+                    Navigator.of(context).pushReplacementNamed('/signup'),
                 child: const Text('Créer un compte'),
               ),
               const SizedBox(height: 8),
-              Text(
-                "Support: ${AppBrand.supportEmail}",
-                textAlign: TextAlign.center,
-              ),
+              Text("Support: ${AppBrand.supportEmail}",
+                  textAlign: TextAlign.center),
             ],
           ),
         ),
