@@ -47,4 +47,31 @@ class NotificationService {
       throw Exception("Erreur: impossible de marquer comme lu");
     }
   }
+
+  /// ✅ Supprimer une notification par ID
+  Future<void> deleteNotification(int id) async {
+    final headers = await _headers();
+    final url = '${ApiConfig.baseUrl}/api/notifications/$id';
+    logger.i('DELETE $url');
+
+    final res = await http.delete(Uri.parse(url), headers: headers);
+    if (res.statusCode != 200 && res.statusCode != 204) {
+      logger.e('❌ delete notification failed: ${res.statusCode} ${res.body}');
+      throw Exception("Erreur: impossible de supprimer la notification");
+    }
+  }
+
+  /// ✅ Supprimer toutes les notifications de l'utilisateur connecté
+  Future<void> deleteAllNotifications() async {
+    final headers = await _headers();
+    final url = '${ApiConfig.baseUrl}/api/notifications';
+    logger.i('DELETE $url (all)');
+
+    final res = await http.delete(Uri.parse(url), headers: headers);
+    if (res.statusCode != 200 && res.statusCode != 204) {
+      logger.e(
+          '❌ delete all notifications failed: ${res.statusCode} ${res.body}');
+      throw Exception("Erreur: impossible de supprimer les notifications");
+    }
+  }
 }

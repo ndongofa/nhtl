@@ -16,32 +16,26 @@ import 'transports_list_screen.dart';
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
 
-  // ── Palette harmonisée avec l'app ─────────────────────────────────────────
   static const Color _appBlue = Color(0xFF2296F3);
   static const Color _blueLight = Color(0xFFE8F4FE);
   static const Color _blueDark = Color(0xFF0D5EBF);
   static const Color _amber = Color(0xFFFFB300);
-  static const Color _teal = Color(0xFF00BCD4);
   static const Color _green = Color(0xFF22C55E);
   static const Color _bg = Color(0xFFF4F8FF);
   static const Color _surface = Colors.white;
-  static const Color _cardBg = Color(0xFFFAFCFF);
   static const Color _textMain = Color(0xFF0F2040);
   static const Color _textMuted = Color(0xFF6B7A99);
   static const Color _border = Color(0xFFDDE3EF);
 
-  // ── Brand data ────────────────────────────────────────────────────────────
   static const String _waFrance = "33768913074";
   static const String _waDakar = "221783042838";
 
-  // ✅ Départs corrigés
   static const List<Map<String, String>> _departures = [
     {"date": "23 mars 2026", "route": "Dakar → Paris", "flag": "🇸🇳🇫🇷"},
     {"date": "23 mars 2026", "route": "Dakar → Casablanca", "flag": "🇸🇳🇲🇦"},
     {"date": "25 mars 2026", "route": "Casablanca → Paris", "flag": "🇲🇦🇫🇷"},
   ];
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
   Future<void> _wa(String digits) async {
     final uri = Uri.parse(
         "https://wa.me/$digits?text=${Uri.encodeComponent("Bonjour SAMA, j'aimerais un devis.")}");
@@ -69,8 +63,9 @@ class HomeScreen extends StatelessWidget {
               Navigator.pop(ctx);
               await AuthService.logout();
               if (context.mounted) {
+                // ✅ Redirection vers le landing page
                 Navigator.of(context)
-                    .pushNamedAndRemoveUntil('/login', (_) => false);
+                    .pushNamedAndRemoveUntil('/', (_) => false);
               }
             },
             style: ElevatedButton.styleFrom(
@@ -87,7 +82,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ── Build ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final user = LoggedUser.fromSupabase();
@@ -100,7 +94,7 @@ class HomeScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            _topBar(context, user),
+            _topBar(context, user, isAdmin),
             Expanded(
               child: SingleChildScrollView(
                 padding: EdgeInsets.symmetric(
@@ -137,8 +131,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ── TOP BAR ───────────────────────────────────────────────────────────────
-  Widget _topBar(BuildContext context, LoggedUser user) {
+  Widget _topBar(BuildContext context, LoggedUser user, bool isAdmin) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: const BoxDecoration(
@@ -176,11 +169,13 @@ class HomeScreen extends StatelessWidget {
             Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const NotificationsScreen()));
           }),
-          _topBarIcon(Icons.bug_report_outlined, () {
-            printSupabaseTokens();
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                content: Text("Token imprimé dans la console.")));
-          }),
+          // ✅ Debug visible uniquement pour les admins
+          if (isAdmin)
+            _topBarIcon(Icons.bug_report_outlined, () {
+              printSupabaseTokens();
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  content: Text("Token imprimé dans la console.")));
+            }, color: Colors.white.withValues(alpha: 0.60)),
           _topBarIcon(Icons.person_outline, () {
             Navigator.of(context).pushNamed('/profile');
           }),
@@ -200,7 +195,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ── GREETING ──────────────────────────────────────────────────────────────
   Widget _greeting(LoggedUser user) {
     final hour = DateTime.now().hour;
     final salut = hour < 12
@@ -208,8 +202,8 @@ class HomeScreen extends StatelessWidget {
         : hour < 18
             ? "Bon après-midi"
             : "Bonsoir";
-    final displayName =
-        (user.fullName?.isNotEmpty ?? false) ? user.fullName! : "vous";
+    final prenom = _extractPrenom(user);
+    final displayName = prenom.isNotEmpty ? prenom : "vous";
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -228,7 +222,25 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ── QUICK ACTIONS ─────────────────────────────────────────────────────────
+  String _extractPrenom(LoggedUser user) {
+    final metadata = AuthService.userMetadata;
+    if (metadata != null) {
+      final prenom = metadata['prenom']?.toString().trim() ?? '';
+      if (prenom.isNotEmpty) return _capitalize(prenom);
+    }
+    final fullName = user.fullName?.trim() ?? '';
+    if (fullName.isNotEmpty) {
+      final parts = fullName.split(' ');
+      if (parts.isNotEmpty && parts[0].isNotEmpty) return _capitalize(parts[0]);
+    }
+    return '';
+  }
+
+  String _capitalize(String s) {
+    if (s.isEmpty) return s;
+    return s[0].toUpperCase() + s.substring(1).toLowerCase();
+  }
+
   Widget _quickActions(BuildContext context, bool isDesktop) {
     final actions = [
       {
@@ -309,9 +321,8 @@ class HomeScreen extends StatelessWidget {
               width: 42,
               height: 42,
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(12),
-              ),
+                  color: color.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(12)),
               child: Icon(icon, color: color, size: 18),
             ),
             const SizedBox(height: 8),
@@ -328,7 +339,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ── MY ACTIVITIES ─────────────────────────────────────────────────────────
   Widget _myActivitiesSection(BuildContext context, bool isDesktop) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -411,9 +421,8 @@ class HomeScreen extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(14),
-              ),
+                  color: color.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(14)),
               child: Icon(icon, color: color, size: 22),
             ),
             const SizedBox(width: 14),
@@ -441,16 +450,14 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ── SAMA INFO BAND ────────────────────────────────────────────────────────
   Widget _samaInfoBand() {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [_appBlue, _blueDark],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
+            colors: [_appBlue, _blueDark],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -494,7 +501,6 @@ class HomeScreen extends StatelessWidget {
             children: [
               _tarif("🇫🇷", "Paris", "10€/kg"),
               _tarifDivider(),
-              // ✅ Prix Casablanca corrigé
               _tarif("🇲🇦", "Casablanca", "65DH/kg"),
               _tarifDivider(),
               _tarif("🇸🇳", "Dakar", "6500 FCFA"),
@@ -535,7 +541,6 @@ class HomeScreen extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 4));
   }
 
-  // ── NEXT DEPARTURES ───────────────────────────────────────────────────────
   Widget _nextDepartures() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -559,10 +564,7 @@ class HomeScreen extends StatelessWidget {
         const SizedBox(height: 12),
         ..._departures.asMap().entries.map((e) {
           final dep = e.value;
-          final isFirst = e.key == 0;
-          final isSameDay = e.key == 1 && dep['date'] == _departures[0]['date'];
-          final highlight = isFirst || isSameDay;
-
+          final highlight = e.key <= 1;
           return Container(
             margin: const EdgeInsets.only(bottom: 8),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -578,22 +580,19 @@ class HomeScreen extends StatelessWidget {
                 Text(dep['flag']!, style: const TextStyle(fontSize: 18)),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    "${dep['route']} · ${dep['date']}",
-                    style: TextStyle(
-                        color: highlight ? _appBlue : _textMain,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13),
-                  ),
+                  child: Text("${dep['route']} · ${dep['date']}",
+                      style: TextStyle(
+                          color: highlight ? _appBlue : _textMain,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13)),
                 ),
                 if (highlight)
                   Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: _appBlue.withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
+                        color: _appBlue.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(20)),
                     child: const Text("BIENTÔT",
                         style: TextStyle(
                             color: _appBlue,
@@ -609,7 +608,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ── ADMIN SECTION ─────────────────────────────────────────────────────────
   Widget _adminSection(BuildContext context, bool isDesktop) {
     final items = [
       {
@@ -631,29 +629,26 @@ class HomeScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: _amber.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: _amber.withValues(alpha: 0.3)),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.shield_outlined, color: _amber, size: 12),
-                  SizedBox(width: 5),
-                  Text("Administration",
-                      style: TextStyle(
-                          color: _amber,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 11,
-                          letterSpacing: 0.5)),
-                ],
-              ),
-            ),
-          ],
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: _amber.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: _amber.withValues(alpha: 0.3)),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.shield_outlined, color: _amber, size: 12),
+              SizedBox(width: 5),
+              Text("Administration",
+                  style: TextStyle(
+                      color: _amber,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 11,
+                      letterSpacing: 0.5)),
+            ],
+          ),
         ),
         const SizedBox(height: 12),
         Row(
@@ -703,7 +698,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ── UTILS ─────────────────────────────────────────────────────────────────
   Widget _sectionLabel(String label) {
     return Text(label.toUpperCase(),
         style: const TextStyle(
