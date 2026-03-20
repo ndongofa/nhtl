@@ -12,19 +12,24 @@ class LandingScreenSamaServicesInternational extends StatefulWidget {
 
 class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
     with TickerProviderStateMixin {
+  static const Color _bg = Color(0xFF0D1B2E);
+  static const Color _bgSection = Color(0xFF112236);
+  static const Color _bgCard = Color(0xFF1A2E45);
   static const Color _appBlue = Color(0xFF2296F3);
-  static const Color _blueDark = Color(0xFF0D5EBF);
-  static const Color _blueLight = Color(0xFFE8F4FE);
+  static const Color _blueBright = Color(0xFF42AAFE);
   static const Color _blueMid = Color(0xFF1A7ED4);
   static const Color _amber = Color(0xFFFFB300);
-  static const Color _amberLight = Color(0xFFFFF3D0);
-  static const Color _teal = Color(0xFF00BCD4);
-  static const Color _bg = Color(0xFFF4F8FF);
-  static const Color _surface = Colors.white;
-  static const Color _textMain = Color(0xFF0F2040);
-  static const Color _textMuted = Color(0xFF6B7A99);
-  static const Color _border = Color(0xFFDDE3EF);
+  static const Color _teal = Color(0xFF00D4C8);
   static const Color _green = Color(0xFF22C55E);
+  static const Color _textPrimary = Color(0xFFF0F6FF);
+  static const Color _textSecond = Color(0xFFB0C4DE);
+  static const Color _textMuted = Color(0xFF7A94B0);
+  static const Color _border = Color(0xFF1E3A55);
+  static const Color _borderBright = Color(0xFF2A5070);
+  static const Color _sectionLight = Color(0xFFF0F6FF);
+  static const Color _sectionLightAlt = Color(0xFFE8F4FE);
+  static const Color _textDark = Color(0xFF0F2040);
+  static const Color _textDarkMuted = Color(0xFF4A6A8A);
 
   static const String _waFrance = "33768913074";
   static const String _waDakar = "221783042838";
@@ -69,7 +74,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
       "icon": FontAwesomeIcons.store,
       "title": "Achats sur mesure",
       "desc": "Marchés & boutiques spécialisés",
-      "color": _appBlue
+      "color": _blueBright
     },
   ];
 
@@ -145,16 +150,24 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
             SliverToBoxAdapter(child: _topBar(isDesktop)),
             SliverToBoxAdapter(child: _hero(isDesktop)),
             SliverToBoxAdapter(child: _ticker()),
-            SliverToBoxAdapter(child: _servicesSection(isDesktop)),
             SliverToBoxAdapter(
                 child: Container(
-                    key: _pricingKey, child: _pricingSection(isDesktop))),
+                    color: _bgSection, child: _servicesSection(isDesktop))),
             SliverToBoxAdapter(
                 child: Container(
-                    key: _departuresKey, child: _departuresSection(isDesktop))),
+                    key: _pricingKey,
+                    color: _sectionLight,
+                    child: _pricingSection(isDesktop))),
             SliverToBoxAdapter(
                 child: Container(
-                    key: _contactKey, child: _contactSection(isDesktop))),
+                    key: _departuresKey,
+                    color: _bg,
+                    child: _departuresSection(isDesktop))),
+            SliverToBoxAdapter(
+                child: Container(
+                    key: _contactKey,
+                    color: _sectionLightAlt,
+                    child: _contactSection(isDesktop))),
             SliverToBoxAdapter(child: _footer()),
           ],
         ),
@@ -166,90 +179,77 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
     return Container(
       padding:
           EdgeInsets.symmetric(horizontal: isDesktop ? 40 : 16, vertical: 14),
-      decoration: const BoxDecoration(
-        color: _appBlue,
-        boxShadow: [
-          BoxShadow(
-              color: Color(0x222296F3), blurRadius: 20, offset: Offset(0, 4))
-        ],
+      decoration: BoxDecoration(
+        color: _bg,
+        border: const Border(bottom: BorderSide(color: _border, width: 1)),
       ),
-      child: Row(
-        children: [
-          _brandLogo(light: true),
-          const Spacer(),
-          if (!isDesktop)
-            _menuButton()
-          else ...[
-            _navLink("Tarifs", () => _scroll(_pricingKey), light: true),
-            _navLink("Départs", () => _scroll(_departuresKey), light: true),
-            _navLink("Contact", () => _scroll(_contactKey), light: true),
-            const SizedBox(width: 16),
-            _outlineBtn("Connexion", () => _push('/login'), light: true),
-            const SizedBox(width: 10),
-            _solidBtn("Créer un compte", Colors.white, _appBlue,
-                () => _push('/signup')),
-          ],
+      child: Row(children: [
+        _brandLogo(),
+        const Spacer(),
+        if (!isDesktop)
+          _menuButton()
+        else ...[
+          _navLink("Tarifs", () => _scroll(_pricingKey)),
+          _navLink("Départs", () => _scroll(_departuresKey)),
+          _navLink("Contact", () => _scroll(_contactKey)),
+          const SizedBox(width: 16),
+          _outlineBtn("Connexion", () => _push('/login')),
+          const SizedBox(width: 10),
+          _solidBtn("Créer un compte", _appBlue, Colors.white,
+              () => _push('/signup')),
         ],
-      ),
+      ]),
     );
   }
 
-  Widget _brandLogo({bool light = false}) {
-    return Row(
-      children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            color: light ? Colors.white.withValues(alpha: 0.20) : _blueLight,
-          ),
-          child: Icon(FontAwesomeIcons.boxOpen,
-              color: light ? Colors.white : _appBlue, size: 16),
+  Widget _brandLogo() {
+    return Row(children: [
+      Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          gradient: const LinearGradient(
+              colors: [_appBlue, _teal],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight),
         ),
-        const SizedBox(width: 10),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text("SAMA",
-                style: TextStyle(
-                    color: light ? Colors.white : _textMain,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 15,
-                    letterSpacing: 2)),
-            Text("Services International",
-                style: TextStyle(
-                    color: light
-                        ? Colors.white.withValues(alpha: 0.75)
-                        : _textMuted,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 10,
-                    letterSpacing: 0.5)),
-          ],
-        ),
-      ],
-    );
+        child:
+            const Icon(FontAwesomeIcons.boxOpen, color: Colors.white, size: 16),
+      ),
+      const SizedBox(width: 10),
+      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Text("SAMA",
+            style: TextStyle(
+                color: _textPrimary,
+                fontWeight: FontWeight.w900,
+                fontSize: 15,
+                letterSpacing: 2)),
+        const Text("Services International",
+            style: TextStyle(
+                color: _textMuted,
+                fontWeight: FontWeight.w600,
+                fontSize: 10,
+                letterSpacing: 0.5)),
+      ]),
+    ]);
   }
 
-  Widget _navLink(String label, VoidCallback onTap, {bool light = false}) {
+  Widget _navLink(String label, VoidCallback onTap) {
     return TextButton(
       onPressed: onTap,
-      style: TextButton.styleFrom(
-          foregroundColor:
-              light ? Colors.white.withValues(alpha: 0.85) : _textMuted),
+      style: TextButton.styleFrom(foregroundColor: _textSecond),
       child: Text(label,
           style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
     );
   }
 
-  Widget _outlineBtn(String label, VoidCallback onTap, {bool light = false}) {
+  Widget _outlineBtn(String label, VoidCallback onTap) {
     return OutlinedButton(
       onPressed: onTap,
       style: OutlinedButton.styleFrom(
-        foregroundColor: light ? Colors.white : _textMain,
-        side: BorderSide(
-            color: light ? Colors.white.withValues(alpha: 0.5) : _border,
-            width: 1.5),
+        foregroundColor: _textPrimary,
+        side: const BorderSide(color: _borderBright, width: 1.5),
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
@@ -274,7 +274,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
 
   Widget _menuButton() {
     return PopupMenuButton<String>(
-      color: _surface,
+      color: _bgCard,
       onSelected: (v) async {
         switch (v) {
           case 'tarifs':
@@ -318,9 +318,9 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.15),
+            border: Border.all(color: _borderBright),
             borderRadius: BorderRadius.circular(10)),
-        child: const Icon(Icons.menu, color: Colors.white, size: 22),
+        child: const Icon(Icons.menu, color: _textPrimary, size: 22),
       ),
     );
   }
@@ -332,8 +332,8 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
         Icon(icon, size: 16, color: _appBlue),
         const SizedBox(width: 10),
         Text(label,
-            style:
-                const TextStyle(color: _textMain, fontWeight: FontWeight.w600)),
+            style: const TextStyle(
+                color: _textPrimary, fontWeight: FontWeight.w600)),
       ]),
     );
   }
@@ -343,14 +343,20 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
       animation: _bgAnim,
       builder: (context, _) {
         return Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
-                colors: [_appBlue, _blueDark],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight),
+              colors: [
+                const Color(0xFF0A1628),
+                const Color(0xFF0D3060),
+                Color.lerp(const Color(0xFF0D3060), const Color(0xFF1565C0),
+                    _bgAnim.value)!,
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
           ),
           padding: EdgeInsets.symmetric(
-              horizontal: isDesktop ? 64 : 20, vertical: isDesktop ? 72 : 48),
+              horizontal: isDesktop ? 64 : 20, vertical: isDesktop ? 80 : 52),
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1100),
@@ -365,7 +371,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
                   : Column(children: [
                       _heroText(isDesktop),
                       const SizedBox(height: 32),
-                      _heroCard()
+                      _heroCard(),
                     ]),
             ),
           ),
@@ -382,20 +388,20 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.15),
+            color: _appBlue.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+            border: Border.all(color: _appBlue.withValues(alpha: 0.4)),
           ),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
             Container(
                 width: 6,
                 height: 6,
-                decoration: const BoxDecoration(
-                    shape: BoxShape.circle, color: Colors.white)),
+                decoration:
+                    const BoxDecoration(shape: BoxShape.circle, color: _teal)),
             const SizedBox(width: 8),
             const Text("Paris • Casablanca • Dakar",
                 style: TextStyle(
-                    color: Colors.white,
+                    color: _teal,
                     fontWeight: FontWeight.w700,
                     fontSize: 12,
                     letterSpacing: 0.5)),
@@ -414,15 +420,15 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
         Text("Services International",
             textAlign: isDesktop ? TextAlign.left : TextAlign.center,
             style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.85),
+                color: _blueBright,
                 fontWeight: FontWeight.w600,
                 fontSize: isDesktop ? 20 : 15,
                 letterSpacing: 1)),
         const SizedBox(height: 16),
         Text("Transport · Shopping · Convoyage\nSuivi GPS · Achats sur demande",
             textAlign: isDesktop ? TextAlign.left : TextAlign.center,
-            style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.80),
+            style: const TextStyle(
+                color: _textSecond,
                 fontWeight: FontWeight.w400,
                 fontSize: 15,
                 height: 1.65)),
@@ -432,10 +438,10 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
           runSpacing: 12,
           alignment: isDesktop ? WrapAlignment.start : WrapAlignment.center,
           children: [
-            _solidBtn("Créer un compte", Colors.white, _appBlue,
+            _solidBtn("Créer un compte", _appBlue, Colors.white,
                 () => _push('/signup')),
             _solidBtn("WhatsApp", _amber, Colors.white, () => _wa(_waFrance)),
-            _outlineBtn("Tarifs", () => _scroll(_pricingKey), light: true),
+            _outlineBtn("Tarifs", () => _scroll(_pricingKey)),
           ],
         ),
       ],
@@ -446,81 +452,80 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _bgCard,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _borderBright, width: 1.5),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.12),
+              color: _appBlue.withValues(alpha: 0.15),
               blurRadius: 40,
               offset: const Offset(0, 16))
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(children: [
-            const Icon(Icons.bolt, color: _amber, size: 16),
-            const SizedBox(width: 6),
-            const Text("Infos essentielles",
-                style: TextStyle(
-                    color: _textMain,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 13)),
-          ]),
-          const SizedBox(height: 16),
-          _heroInfoRow(Icons.local_offer_outlined, _appBlue, "Tarifs",
-              "10€/kg · 65DH/kg · 6 500 FCFA/kg"),
-          const SizedBox(height: 12),
-          _heroInfoRow(Icons.percent, _amber, "Promo web", "–50 % via l'app"),
-          const SizedBox(height: 12),
-          _heroInfoRow(Icons.event_available, _teal, "Prochain départ",
-              "${_departures[0]['date']} · ${_departures[0]['route']}"),
-          const SizedBox(height: 20),
-          const Divider(color: _border),
-          const SizedBox(height: 16),
-          Row(children: [
-            Expanded(
-                child: OutlinedButton(
-              onPressed: () => _push('/login'),
-              style: OutlinedButton.styleFrom(
-                  foregroundColor: _textMain,
-                  side: const BorderSide(color: _border),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                  padding: const EdgeInsets.symmetric(vertical: 12)),
-              child: const Text("Connexion",
-                  style: TextStyle(fontWeight: FontWeight.w700)),
-            )),
-            const SizedBox(width: 10),
-            Expanded(
-                child: ElevatedButton(
-              onPressed: () => _push('/signup'),
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: _appBlue,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                  padding: const EdgeInsets.symmetric(vertical: 12)),
-              child: const Text("S'inscrire",
-                  style: TextStyle(fontWeight: FontWeight.w800)),
-            )),
-          ]),
-        ],
-      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          const Icon(Icons.bolt, color: _amber, size: 16),
+          const SizedBox(width: 6),
+          const Text("Infos essentielles",
+              style: TextStyle(
+                  color: _textPrimary,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13)),
+        ]),
+        const SizedBox(height: 16),
+        _heroInfoRow(Icons.local_offer_outlined, _appBlue, "Tarifs",
+            "10€/kg · 65DH/kg · 6 500 FCFA/kg"),
+        const SizedBox(height: 12),
+        _heroInfoRow(Icons.percent, _amber, "Promo web", "–50 % via l'app"),
+        const SizedBox(height: 12),
+        _heroInfoRow(Icons.event_available, _teal, "Prochain départ",
+            "${_departures[0]['date']} · ${_departures[0]['route']}"),
+        const SizedBox(height: 20),
+        Divider(color: _borderBright),
+        const SizedBox(height: 16),
+        Row(children: [
+          Expanded(
+              child: OutlinedButton(
+            onPressed: () => _push('/login'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: _textPrimary,
+              side: const BorderSide(color: _borderBright),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+            child: const Text("Connexion",
+                style: TextStyle(fontWeight: FontWeight.w700)),
+          )),
+          const SizedBox(width: 10),
+          Expanded(
+              child: ElevatedButton(
+            onPressed: () => _push('/signup'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _appBlue,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+            child: const Text("S'inscrire",
+                style: TextStyle(fontWeight: FontWeight.w800)),
+          )),
+        ]),
+      ]),
     );
   }
 
   Widget _heroInfoRow(IconData icon, Color color, String title, String value) {
     return Row(children: [
       Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.10),
-            borderRadius: BorderRadius.circular(10)),
-        child: Icon(icon, color: color, size: 16),
-      ),
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(10)),
+          child: Icon(icon, color: color, size: 16)),
       const SizedBox(width: 12),
       Expanded(
           child:
@@ -530,7 +535,9 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
                 color: _textMuted, fontWeight: FontWeight.w600, fontSize: 11)),
         Text(value,
             style: const TextStyle(
-                color: _textMain, fontWeight: FontWeight.w700, fontSize: 13)),
+                color: _textPrimary,
+                fontWeight: FontWeight.w700,
+                fontSize: 13)),
       ])),
     ]);
   }
@@ -546,7 +553,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            color: _amber.withValues(alpha: 0.10),
+            color: _amber.withValues(alpha: 0.12),
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               const Icon(Icons.flight_takeoff, color: _amber, size: 14),
               const SizedBox(width: 8),
@@ -577,6 +584,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
   Widget _servicesSection(bool isDesktop) {
     return _sectionWrap(
       isDesktop: isDesktop,
+      dark: true,
       title: "Nos Services",
       subtitle: "Tout ce qu'il faut pour expédier, acheter et suivre.",
       child: Wrap(
@@ -596,12 +604,12 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
       width: 220,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: _surface,
+        color: _bgCard,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _border),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
         boxShadow: [
           BoxShadow(
-              color: color.withValues(alpha: 0.06),
+              color: color.withValues(alpha: 0.08),
               blurRadius: 20,
               offset: const Offset(0, 6))
         ],
@@ -611,13 +619,15 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.10),
+                color: color.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12)),
             child: Icon(icon, color: color, size: 18)),
         const SizedBox(height: 12),
         Text(title,
             style: const TextStyle(
-                color: _textMain, fontWeight: FontWeight.w800, fontSize: 14)),
+                color: _textPrimary,
+                fontWeight: FontWeight.w800,
+                fontSize: 14)),
         const SizedBox(height: 4),
         Text(desc,
             style: const TextStyle(
@@ -630,43 +640,42 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
   }
 
   Widget _pricingSection(bool isDesktop) {
-    return Container(
-      color: _blueLight,
-      child: _sectionWrap(
-        isDesktop: isDesktop,
-        title: "Tarifs",
-        subtitle: "Prix au kilo. Réduction web disponible.",
-        child: Column(children: [
-          Wrap(
-            spacing: 14,
-            runSpacing: 14,
-            alignment: WrapAlignment.center,
-            children: [
-              _priceCard("🇫🇷 Paris", "10 €", "par kg", _appBlue),
-              _priceCard("🇲🇦 Casablanca", "65 DH", "par kg", _blueMid),
-              _priceCard("🇸🇳 Dakar", "6 500 FCFA", "par kg", _teal),
-              _priceCard("🌐 Web", "–50 %", "via l'app", _amber),
-            ],
+    return _sectionWrap(
+      isDesktop: isDesktop,
+      dark: false,
+      title: "Tarifs",
+      subtitle: "Prix au kilo. Réduction web disponible.",
+      child: Column(children: [
+        Wrap(
+          spacing: 14,
+          runSpacing: 14,
+          alignment: WrapAlignment.center,
+          children: [
+            _priceCard("🇫🇷 Paris", "10 €", "par kg", _appBlue),
+            _priceCard("🇲🇦 Casablanca", "65 DH", "par kg", _blueMid),
+            _priceCard("🇸🇳 Dakar", "6 500 FCFA", "par kg", _teal),
+            _priceCard("🌐 Web", "–50 %", "via l'app", _amber),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF3D0),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: _amber.withValues(alpha: 0.35)),
           ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-                color: _amberLight,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _amber.withValues(alpha: 0.3))),
-            child: const Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.star, color: _amber, size: 14),
-              SizedBox(width: 8),
-              Text("Réduction web : –50 % (selon disponibilité)",
-                  style: TextStyle(
-                      color: Color(0xFF7A4F00),
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13)),
-            ]),
-          ),
-        ]),
-      ),
+          child: const Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(Icons.star, color: _amber, size: 14),
+            SizedBox(width: 8),
+            Text("Réduction web : –50 % (selon disponibilité)",
+                style: TextStyle(
+                    color: Color(0xFF7A4F00),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13)),
+          ]),
+        ),
+      ]),
     );
   }
 
@@ -675,12 +684,12 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
       width: 180,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: _surface,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: accent.withValues(alpha: 0.2), width: 1.5),
         boxShadow: [
           BoxShadow(
-              color: accent.withValues(alpha: 0.08),
+              color: accent.withValues(alpha: 0.10),
               blurRadius: 16,
               offset: const Offset(0, 6))
         ],
@@ -688,7 +697,9 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(location,
             style: const TextStyle(
-                color: _textMuted, fontWeight: FontWeight.w600, fontSize: 12)),
+                color: _textDarkMuted,
+                fontWeight: FontWeight.w600,
+                fontSize: 12)),
         const SizedBox(height: 8),
         Text(price,
             style: TextStyle(
@@ -698,7 +709,9 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
                 letterSpacing: -0.5)),
         Text(unit,
             style: const TextStyle(
-                color: _textMuted, fontWeight: FontWeight.w500, fontSize: 12)),
+                color: _textDarkMuted,
+                fontWeight: FontWeight.w500,
+                fontSize: 12)),
       ]),
     );
   }
@@ -706,14 +719,16 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
   Widget _departuresSection(bool isDesktop) {
     return _sectionWrap(
       isDesktop: isDesktop,
+      dark: true,
       title: "Départs à venir",
       subtitle: "Les prochaines dates de convoyage disponibles.",
       child: Column(
-          children: _departures
-              .asMap()
-              .entries
-              .map((e) => _departureRow(e.key, e.value))
-              .toList()),
+        children: _departures
+            .asMap()
+            .entries
+            .map((e) => _departureRow(e.key, e.value))
+            .toList(),
+      ),
     );
   }
 
@@ -723,10 +738,10 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       decoration: BoxDecoration(
-        color: highlight ? _blueLight : _surface,
+        color: highlight ? _appBlue.withValues(alpha: 0.12) : _bgCard,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-            color: highlight ? _appBlue.withValues(alpha: 0.25) : _border),
+            color: highlight ? _appBlue.withValues(alpha: 0.40) : _border),
       ),
       child: Row(children: [
         Text(dep['flag']!, style: const TextStyle(fontSize: 20)),
@@ -736,7 +751,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(dep['route']!,
               style: TextStyle(
-                  color: highlight ? _appBlue : _textMain,
+                  color: highlight ? _blueBright : _textPrimary,
                   fontWeight: FontWeight.w700,
                   fontSize: 14)),
           Text(dep['date']!,
@@ -749,11 +764,11 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-                color: _appBlue.withValues(alpha: 0.10),
+                color: _appBlue.withValues(alpha: 0.20),
                 borderRadius: BorderRadius.circular(20)),
             child: const Text("BIENTÔT",
                 style: TextStyle(
-                    color: _appBlue,
+                    color: _blueBright,
                     fontWeight: FontWeight.w800,
                     fontSize: 10,
                     letterSpacing: 1)),
@@ -779,25 +794,23 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
   }
 
   Widget _contactSection(bool isDesktop) {
-    return Container(
-      color: _blueLight,
-      child: _sectionWrap(
-        isDesktop: isDesktop,
-        title: "Contact",
-        subtitle: "Nous sommes disponibles 7j/7.",
-        child: Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          alignment: WrapAlignment.center,
-          children: [
-            _contactBtn(FontAwesomeIcons.whatsapp, "WhatsApp France",
-                "+33 76 891 30 74", _green, () => _wa(_waFrance)),
-            _contactBtn(FontAwesomeIcons.whatsapp, "WhatsApp Dakar",
-                "+221 78 304 28 38", _green, () => _wa(_waDakar)),
-            _contactBtn(
-                Icons.email_outlined, "Email", _email, _appBlue, _openEmail),
-          ],
-        ),
+    return _sectionWrap(
+      isDesktop: isDesktop,
+      dark: false,
+      title: "Contact",
+      subtitle: "Nous sommes disponibles 7j/7.",
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        alignment: WrapAlignment.center,
+        children: [
+          _contactBtn(FontAwesomeIcons.whatsapp, "WhatsApp France",
+              "+33 76 891 30 74", _green, () => _wa(_waFrance)),
+          _contactBtn(FontAwesomeIcons.whatsapp, "WhatsApp Dakar",
+              "+221 78 304 28 38", _green, () => _wa(_waDakar)),
+          _contactBtn(
+              Icons.email_outlined, "Email", _email, _appBlue, _openEmail),
+        ],
       ),
     );
   }
@@ -810,12 +823,12 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
         width: 240,
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: _surface,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: color.withValues(alpha: 0.20)),
           boxShadow: [
             BoxShadow(
-                color: color.withValues(alpha: 0.06),
+                color: color.withValues(alpha: 0.08),
                 blurRadius: 16,
                 offset: const Offset(0, 6))
           ],
@@ -835,12 +848,12 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
                   children: [
                 Text(title,
                     style: const TextStyle(
-                        color: _textMain,
+                        color: _textDark,
                         fontWeight: FontWeight.w700,
                         fontSize: 13)),
                 Text(subtitle,
                     style: const TextStyle(
-                        color: _textMuted,
+                        color: _textDarkMuted,
                         fontWeight: FontWeight.w500,
                         fontSize: 11),
                     overflow: TextOverflow.ellipsis),
@@ -853,26 +866,35 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
   Widget _footer() {
     return Container(
       padding: const EdgeInsets.all(24),
-      decoration: const BoxDecoration(color: _appBlue),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+            colors: [Color(0xFF0A1628), Color(0xFF0D3060)],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight),
+      ),
       child: Column(children: [
-        _brandLogo(light: true),
+        _brandLogo(),
         const SizedBox(height: 12),
         Text(
             "© 2026 SAMA · Services International · Paris · Casablanca · Dakar",
             textAlign: TextAlign.center,
             style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.70),
+                color: _textMuted.withValues(alpha: 0.80),
                 fontWeight: FontWeight.w500,
                 fontSize: 12)),
       ]),
     );
   }
 
-  Widget _sectionWrap(
-      {required bool isDesktop,
-      required String title,
-      required String subtitle,
-      required Widget child}) {
+  Widget _sectionWrap({
+    required bool isDesktop,
+    required bool dark,
+    required String title,
+    required String subtitle,
+    required Widget child,
+  }) {
+    final titleColor = dark ? _textPrimary : _textDark;
+    final subtitleColor = dark ? _textMuted : _textDarkMuted;
     return Padding(
       padding: EdgeInsets.symmetric(
           horizontal: isDesktop ? 64 : 20, vertical: isDesktop ? 56 : 36),
@@ -883,15 +905,15 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
             Text(title,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                    color: _textMain,
+                    color: titleColor,
                     fontWeight: FontWeight.w900,
                     fontSize: isDesktop ? 30 : 22,
                     letterSpacing: -0.3)),
             const SizedBox(height: 6),
             Text(subtitle,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                    color: _textMuted,
+                style: TextStyle(
+                    color: subtitleColor,
                     fontWeight: FontWeight.w400,
                     fontSize: 14)),
             const SizedBox(height: 28),
