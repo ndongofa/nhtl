@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -13,9 +14,14 @@ import 'notifications/notifications_screen.dart';
 import 'transport_form_screen.dart';
 import 'transports_list_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
 
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
   static const Color _bg = Color(0xFF0D1B2E);
   static const Color _bgSection = Color(0xFF112236);
   static const Color _bgCard = Color(0xFF1A2E45);
@@ -35,11 +41,52 @@ class HomeScreen extends StatelessWidget {
   static const String _waFrance = "33768913074";
   static const String _waDakar = "221783042838";
 
-  static const List<Map<String, String>> _departures = [
+  static final DateTime _targetDate = DateTime(2026, 3, 23);
+
+  static const List<Map<String, String>> _nextDepartures = [
+    {"route": "Dakar → Paris", "flag": "🇸🇳🇫🇷"},
+    {"route": "Dakar → Casablanca", "flag": "🇸🇳🇲🇦"},
+  ];
+
+  static const List<Map<String, String>> _allDepartures = [
     {"date": "23 mars 2026", "route": "Dakar → Paris", "flag": "🇸🇳🇫🇷"},
     {"date": "23 mars 2026", "route": "Dakar → Casablanca", "flag": "🇸🇳🇲🇦"},
     {"date": "25 mars 2026", "route": "Casablanca → Paris", "flag": "🇲🇦🇫🇷"},
   ];
+
+  Timer? _countdownTimer;
+  Duration _remaining = Duration.zero;
+  int _tickerIndex = 0;
+  Timer? _tickerTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _updateCountdown();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) _updateCountdown();
+    });
+    _tickerTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (mounted)
+        setState(
+            () => _tickerIndex = (_tickerIndex + 1) % _nextDepartures.length);
+    });
+  }
+
+  void _updateCountdown() {
+    final now = DateTime.now();
+    final diff = _targetDate.difference(now);
+    setState(() => _remaining = diff.isNegative ? Duration.zero : diff);
+  }
+
+  @override
+  void dispose() {
+    _countdownTimer?.cancel();
+    _tickerTimer?.cancel();
+    super.dispose();
+  }
+
+  String _pad(int n) => n.toString().padLeft(2, '0');
 
   Future<void> _wa(String digits) async {
     final uri = Uri.parse(
@@ -68,7 +115,6 @@ class HomeScreen extends StatelessWidget {
               Navigator.pop(ctx);
               await AuthService.logout();
               if (context.mounted) {
-                // ✅ Redirection vers le landing page
                 Navigator.of(context)
                     .pushNamedAndRemoveUntil('/', (_) => false);
               }
@@ -92,7 +138,6 @@ class HomeScreen extends StatelessWidget {
     final user = LoggedUser.fromSupabase();
     final w = MediaQuery.of(context).size.width;
     final isDesktop = w >= 900;
-    // ✅ Rôle admin détecté
     final isAdmin = user.role == 'admin';
 
     return Scaffold(
@@ -101,6 +146,7 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           children: [
             _topBar(context, user, isAdmin),
+            _tickerBanner(),
             Expanded(
               child: SingleChildScrollView(
                 padding: EdgeInsets.symmetric(
@@ -112,6 +158,8 @@ class HomeScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _greeting(user),
+                        const SizedBox(height: 20),
+                        _countdownSection(),
                         const SizedBox(height: 24),
                         _quickActions(context, isDesktop),
                         const SizedBox(height: 28),
@@ -119,7 +167,7 @@ class HomeScreen extends StatelessWidget {
                         const SizedBox(height: 28),
                         _samaInfoBand(),
                         const SizedBox(height: 28),
-                        _nextDepartures(),
+                        _nextDeparturesSection(),
                         if (isAdmin) ...[
                           const SizedBox(height: 28),
                           _adminSection(context, isDesktop),
@@ -134,6 +182,182 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _tickerBanner() {
+    final dep = _nextDepartures[_tickerIndex];
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 400),
+      child: Container(
+        key: ValueKey(_tickerIndex),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+        color: _amber,
+        child: Row(children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+                color: _bg, borderRadius: BorderRadius.circular(5)),
+            child: const Text("DÉPARTS",
+                style: TextStyle(
+                    color: _amber,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.5)),
+          ),
+          const SizedBox(width: 12),
+          Text(dep['flag']!, style: const TextStyle(fontSize: 16)),
+          const SizedBox(width: 6),
+          Expanded(
+              child: Text("23 mars 2026  ·  ${dep['route']}",
+                  style: const TextStyle(
+                      color: _bg, fontWeight: FontWeight.w800, fontSize: 13),
+                  overflow: TextOverflow.ellipsis)),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () => _wa(_waDakar),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                  color: _bg, borderRadius: BorderRadius.circular(7)),
+              child: const Text("Réserver →",
+                  style: TextStyle(
+                      color: _amber,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 11)),
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  Widget _countdownSection() {
+    final days = _remaining.inDays;
+    final hours = _remaining.inHours % 24;
+    final minutes = _remaining.inMinutes % 60;
+    final seconds = _remaining.inSeconds % 60;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: _bgCard,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _amber.withValues(alpha: 0.35)),
+        boxShadow: [
+          BoxShadow(
+              color: _amber.withValues(alpha: 0.08),
+              blurRadius: 16,
+              offset: const Offset(0, 4))
+        ],
+      ),
+      child: Column(children: [
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Container(
+              width: 7,
+              height: 7,
+              decoration:
+                  const BoxDecoration(shape: BoxShape.circle, color: _green)),
+          const SizedBox(width: 8),
+          const Text("PROCHAINS DÉPARTS — 23 MARS 2026",
+              style: TextStyle(
+                  color: _green,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.2)),
+        ]),
+        const SizedBox(height: 14),
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          _countUnit(_pad(days), "JOURS", _amber),
+          _sep(),
+          _countUnit(_pad(hours), "HEURES", _appBlue),
+          _sep(),
+          _countUnit(_pad(minutes), "MIN", _appBlue),
+          _sep(),
+          _countUnit(_pad(seconds), "SEC", _textMuted),
+        ]),
+        const SizedBox(height: 16),
+        LayoutBuilder(builder: (context, constraints) {
+          final isWide = constraints.maxWidth > 420;
+          final cards = _nextDepartures.map((dep) => _departCard(dep)).toList();
+          return isWide
+              ? Row(children: [
+                  Expanded(child: cards[0]),
+                  const SizedBox(width: 10),
+                  Expanded(child: cards[1]),
+                ])
+              : Column(
+                  children: [cards[0], const SizedBox(height: 8), cards[1]]);
+        }),
+      ]),
+    );
+  }
+
+  Widget _countUnit(String value, String label, Color color) {
+    return Column(children: [
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Text(value,
+            style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.w900,
+                fontSize: 20,
+                letterSpacing: 1)),
+      ),
+      const SizedBox(height: 4),
+      Text(label,
+          style: const TextStyle(
+              color: _textMuted,
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8)),
+    ]);
+  }
+
+  Widget _sep() {
+    return const Padding(
+      padding: EdgeInsets.only(bottom: 16, left: 5, right: 5),
+      child: Text(":",
+          style: TextStyle(
+              color: _textMuted, fontSize: 18, fontWeight: FontWeight.w700)),
+    );
+  }
+
+  Widget _departCard(Map<String, String> dep) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: _appBlue.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: _appBlue.withValues(alpha: 0.30)),
+      ),
+      child: Row(children: [
+        Text(dep['flag']!, style: const TextStyle(fontSize: 18)),
+        const SizedBox(width: 8),
+        Expanded(
+            child: Text(dep['route']!,
+                style: const TextStyle(
+                    color: _blueBright,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12))),
+        GestureDetector(
+          onTap: () => _wa(_waDakar),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+                color: _amber, borderRadius: BorderRadius.circular(7)),
+            child: const Text("Réserver",
+                style: TextStyle(
+                    color: _bg, fontWeight: FontWeight.w800, fontSize: 11)),
+          ),
+        ),
+      ]),
     );
   }
 
@@ -172,7 +396,6 @@ class HomeScreen extends StatelessWidget {
           Navigator.push(context,
               MaterialPageRoute(builder: (_) => const NotificationsScreen()));
         }),
-        // ✅ Debug — visible UNIQUEMENT pour les admins
         if (isAdmin)
           _topBarIcon(Icons.bug_report_outlined, () {
             printSupabaseTokens();
@@ -270,21 +493,17 @@ class HomeScreen extends StatelessWidget {
       _sectionLabel("Actions rapides"),
       const SizedBox(height: 12),
       Row(
-        children: actions.asMap().entries.map((e) {
-          final a = e.value;
-          return Expanded(
-            child: Padding(
-              padding:
-                  EdgeInsets.only(right: e.key < actions.length - 1 ? 10 : 0),
-              child: _quickActionCard(
-                  a['icon'] as IconData,
-                  a['label'] as String,
-                  a['color'] as Color,
-                  a['onTap'] as VoidCallback),
-            ),
-          );
-        }).toList(),
-      ),
+          children: actions.asMap().entries.map((e) {
+        final a = e.value;
+        return Expanded(
+          child: Padding(
+            padding:
+                EdgeInsets.only(right: e.key < actions.length - 1 ? 10 : 0),
+            child: _quickActionCard(a['icon'] as IconData, a['label'] as String,
+                a['color'] as Color, a['onTap'] as VoidCallback),
+          ),
+        );
+      }).toList()),
     ]);
   }
 
@@ -307,13 +526,12 @@ class HomeScreen extends StatelessWidget {
         ),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12)),
-            child: Icon(icon, color: color, size: 18),
-          ),
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12)),
+              child: Icon(icon, color: color, size: 18)),
           const SizedBox(height: 8),
           Text(label,
               textAlign: TextAlign.center,
@@ -402,13 +620,12 @@ class HomeScreen extends StatelessWidget {
         ),
         child: Row(children: [
           Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(14)),
-            child: Icon(icon, color: color, size: 22),
-          ),
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(14)),
+              child: Icon(icon, color: color, size: 22)),
           const SizedBox(width: 14),
           Expanded(
               child: Column(
@@ -456,10 +673,9 @@ class HomeScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFF3D0),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: _amber.withValues(alpha: 0.4)),
-            ),
+                color: const Color(0xFFFFF3D0),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: _amber.withValues(alpha: 0.4))),
             child: const Text("–50% WEB",
                 style: TextStyle(
                     color: Color(0xFF7A4F00),
@@ -505,10 +721,10 @@ class HomeScreen extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 4));
   }
 
-  Widget _nextDepartures() {
+  Widget _nextDeparturesSection() {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [
-        _sectionLabel("Prochains départs"),
+        _sectionLabel("Tous les départs"),
         const Spacer(),
         GestureDetector(
           onTap: () => _wa(_waDakar),
@@ -522,7 +738,7 @@ class HomeScreen extends StatelessWidget {
         ),
       ]),
       const SizedBox(height: 12),
-      ..._departures.asMap().entries.map((e) {
+      ..._allDepartures.asMap().entries.map((e) {
         final dep = e.value;
         final highlight = e.key <= 1;
         return Container(
@@ -547,11 +763,12 @@ class HomeScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                    color: _appBlue.withValues(alpha: 0.20),
-                    borderRadius: BorderRadius.circular(20)),
+                    color: _amber.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: _amber.withValues(alpha: 0.4))),
                 child: const Text("BIENTÔT",
                     style: TextStyle(
-                        color: _blueBright,
+                        color: _amber,
                         fontWeight: FontWeight.w800,
                         fontSize: 9,
                         letterSpacing: 0.8)),
@@ -583,10 +800,9 @@ class HomeScreen extends StatelessWidget {
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: _amber.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: _amber.withValues(alpha: 0.3)),
-        ),
+            color: _amber.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: _amber.withValues(alpha: 0.3))),
         child: const Row(mainAxisSize: MainAxisSize.min, children: [
           Icon(Icons.shield_outlined, color: _amber, size: 12),
           SizedBox(width: 5),
@@ -600,46 +816,42 @@ class HomeScreen extends StatelessWidget {
       ),
       const SizedBox(height: 12),
       Row(
-        children: items.asMap().entries.map((e) {
-          final item = e.value;
-          return Expanded(
-            child: Padding(
-              padding:
-                  EdgeInsets.only(right: e.key < items.length - 1 ? 12 : 0),
-              child: GestureDetector(
-                onTap: item['onTap'] as VoidCallback,
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: _bgCard,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                        color:
-                            (item['color'] as Color).withValues(alpha: 0.25)),
-                    boxShadow: [
-                      BoxShadow(
-                          color:
-                              (item['color'] as Color).withValues(alpha: 0.08),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4))
-                    ],
-                  ),
-                  child: Row(children: [
-                    Icon(item['icon'] as IconData,
-                        color: item['color'] as Color, size: 20),
-                    const SizedBox(width: 10),
-                    Text(item['label'] as String,
-                        style: const TextStyle(
-                            color: _textPrimary,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13)),
-                  ]),
+          children: items.asMap().entries.map((e) {
+        final item = e.value;
+        return Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(right: e.key < items.length - 1 ? 12 : 0),
+            child: GestureDetector(
+              onTap: item['onTap'] as VoidCallback,
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: _bgCard,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                      color: (item['color'] as Color).withValues(alpha: 0.25)),
+                  boxShadow: [
+                    BoxShadow(
+                        color: (item['color'] as Color).withValues(alpha: 0.08),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4))
+                  ],
                 ),
+                child: Row(children: [
+                  Icon(item['icon'] as IconData,
+                      color: item['color'] as Color, size: 20),
+                  const SizedBox(width: 10),
+                  Text(item['label'] as String,
+                      style: const TextStyle(
+                          color: _textPrimary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13)),
+                ]),
               ),
             ),
-          );
-        }).toList(),
-      ),
+          ),
+        );
+      }).toList()),
     ]);
   }
 

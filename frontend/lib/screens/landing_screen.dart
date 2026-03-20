@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -35,7 +36,14 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
   static const String _waDakar = "221783042838";
   static const String _email = "contact@sama-logistique.com";
 
-  static const List<Map<String, String>> _departures = [
+  static final DateTime _targetDate = DateTime(2026, 3, 23);
+
+  static const List<Map<String, String>> _nextDepartures = [
+    {"route": "Dakar → Paris", "flag": "🇸🇳🇫🇷"},
+    {"route": "Dakar → Casablanca", "flag": "🇸🇳🇲🇦"},
+  ];
+
+  static const List<Map<String, String>> _allDepartures = [
     {"date": "23 mars 2026", "route": "Dakar → Paris", "flag": "🇸🇳🇫🇷"},
     {"date": "23 mars 2026", "route": "Dakar → Casablanca", "flag": "🇸🇳🇲🇦"},
     {"date": "25 mars 2026", "route": "Casablanca → Paris", "flag": "🇲🇦🇫🇷"},
@@ -83,8 +91,10 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
   final _contactKey = GlobalKey();
 
   late final AnimationController _bgAnim;
-  late final AnimationController _tickerAnim;
+  Timer? _countdownTimer;
+  Duration _remaining = Duration.zero;
   int _tickerIndex = 0;
+  Timer? _tickerTimer;
 
   @override
   void initState() {
@@ -92,22 +102,28 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
     _bgAnim =
         AnimationController(vsync: this, duration: const Duration(seconds: 8))
           ..repeat(reverse: true);
-    _tickerAnim =
-        AnimationController(vsync: this, duration: const Duration(seconds: 4))
-          ..addStatusListener((s) {
-            if (s == AnimationStatus.completed) {
-              setState(
-                  () => _tickerIndex = (_tickerIndex + 1) % _departures.length);
-              _tickerAnim.forward(from: 0);
-            }
-          })
-          ..forward();
+    _updateCountdown();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) _updateCountdown();
+    });
+    _tickerTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (mounted)
+        setState(
+            () => _tickerIndex = (_tickerIndex + 1) % _nextDepartures.length);
+    });
+  }
+
+  void _updateCountdown() {
+    final now = DateTime.now();
+    final diff = _targetDate.difference(now);
+    setState(() => _remaining = diff.isNegative ? Duration.zero : diff);
   }
 
   @override
   void dispose() {
     _bgAnim.dispose();
-    _tickerAnim.dispose();
+    _countdownTimer?.cancel();
+    _tickerTimer?.cancel();
     super.dispose();
   }
 
@@ -138,6 +154,8 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
     if (await canLaunchUrl(uri)) await launchUrl(uri);
   }
 
+  String _pad(int n) => n.toString().padLeft(2, '0');
+
   @override
   Widget build(BuildContext context) {
     final w = MediaQuery.of(context).size.width;
@@ -148,8 +166,9 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
         child: CustomScrollView(
           slivers: [
             SliverToBoxAdapter(child: _topBar(isDesktop)),
+            SliverToBoxAdapter(child: _tickerBanner()),
             SliverToBoxAdapter(child: _hero(isDesktop)),
-            SliverToBoxAdapter(child: _ticker()),
+            SliverToBoxAdapter(child: _countdownBanner()),
             SliverToBoxAdapter(
                 child: Container(
                     color: _bgSection, child: _servicesSection(isDesktop))),
@@ -175,13 +194,190 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
     );
   }
 
+  Widget _tickerBanner() {
+    final dep = _nextDepartures[_tickerIndex];
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 400),
+      child: Container(
+        key: ValueKey(_tickerIndex),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        color: _amber,
+        child: Row(children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+                color: _bg, borderRadius: BorderRadius.circular(6)),
+            child: const Text("DÉPARTS",
+                style: TextStyle(
+                    color: _amber,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.5)),
+          ),
+          const SizedBox(width: 14),
+          Text(dep['flag']!, style: const TextStyle(fontSize: 18)),
+          const SizedBox(width: 8),
+          Expanded(
+              child: Text("23 mars 2026  ·  ${dep['route']}",
+                  style: const TextStyle(
+                      color: _bg, fontWeight: FontWeight.w800, fontSize: 14),
+                  overflow: TextOverflow.ellipsis)),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () => _wa(_waDakar),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+              decoration: BoxDecoration(
+                  color: _bg, borderRadius: BorderRadius.circular(8)),
+              child: const Text("Réserver →",
+                  style: TextStyle(
+                      color: _amber,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 12)),
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  Widget _countdownBanner() {
+    final days = _remaining.inDays;
+    final hours = _remaining.inHours % 24;
+    final minutes = _remaining.inMinutes % 60;
+    final seconds = _remaining.inSeconds % 60;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      decoration: const BoxDecoration(
+        color: _bgSection,
+        border: Border.symmetric(
+          horizontal: BorderSide(color: Color(0xFF1E3A55)),
+        ),
+      ),
+      child: Column(children: [
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Container(
+              width: 8,
+              height: 8,
+              decoration:
+                  const BoxDecoration(shape: BoxShape.circle, color: _green)),
+          const SizedBox(width: 8),
+          const Text("PROCHAINS DÉPARTS — 23 MARS 2026",
+              style: TextStyle(
+                  color: _green,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.2)),
+        ]),
+        const SizedBox(height: 14),
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          _countUnit(_pad(days), "JOURS", _amber),
+          _sep(),
+          _countUnit(_pad(hours), "HEURES", _appBlue),
+          _sep(),
+          _countUnit(_pad(minutes), "MIN", _appBlue),
+          _sep(),
+          _countUnit(_pad(seconds), "SEC", _textMuted),
+        ]),
+        const SizedBox(height: 14),
+        LayoutBuilder(builder: (context, constraints) {
+          final isWide = constraints.maxWidth > 480;
+          final cards = _nextDepartures.map((dep) => _departCard(dep)).toList();
+          return isWide
+              ? Row(children: [
+                  Expanded(child: cards[0]),
+                  const SizedBox(width: 10),
+                  Expanded(child: cards[1]),
+                ])
+              : Column(
+                  children: [cards[0], const SizedBox(height: 8), cards[1]]);
+        }),
+      ]),
+    );
+  }
+
+  Widget _countUnit(String value, String label, Color color) {
+    return Column(children: [
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Text(value,
+            style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.w900,
+                fontSize: 22,
+                letterSpacing: 1)),
+      ),
+      const SizedBox(height: 4),
+      Text(label,
+          style: const TextStyle(
+              color: _textMuted,
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1)),
+    ]);
+  }
+
+  Widget _sep() {
+    return const Padding(
+      padding: EdgeInsets.only(bottom: 18, left: 6, right: 6),
+      child: Text(":",
+          style: TextStyle(
+              color: _textMuted, fontSize: 20, fontWeight: FontWeight.w700)),
+    );
+  }
+
+  Widget _departCard(Map<String, String> dep) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: _appBlue.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: _appBlue.withValues(alpha: 0.35)),
+      ),
+      child: Row(children: [
+        Text(dep['flag']!, style: const TextStyle(fontSize: 20)),
+        const SizedBox(width: 10),
+        Expanded(
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(dep['route']!,
+              style: const TextStyle(
+                  color: _blueBright,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13)),
+          const Text("23 mars 2026",
+              style: TextStyle(color: _textMuted, fontSize: 11)),
+        ])),
+        GestureDetector(
+          onTap: () => _wa(_waDakar),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+            decoration: BoxDecoration(
+                color: _amber, borderRadius: BorderRadius.circular(8)),
+            child: const Text("Réserver",
+                style: TextStyle(
+                    color: _bg, fontWeight: FontWeight.w800, fontSize: 11)),
+          ),
+        ),
+      ]),
+    );
+  }
+
   Widget _topBar(bool isDesktop) {
     return Container(
       padding:
           EdgeInsets.symmetric(horizontal: isDesktop ? 40 : 16, vertical: 14),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: _bg,
-        border: const Border(bottom: BorderSide(color: _border, width: 1)),
+        border: Border(bottom: BorderSide(color: _border, width: 1)),
       ),
       child: Row(children: [
         _brandLogo(),
@@ -218,14 +414,14 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
             const Icon(FontAwesomeIcons.boxOpen, color: Colors.white, size: 16),
       ),
       const SizedBox(width: 10),
-      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text("SAMA",
+      const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text("SAMA",
             style: TextStyle(
                 color: _textPrimary,
                 fontWeight: FontWeight.w900,
                 fontSize: 15,
                 letterSpacing: 2)),
-        const Text("Services International",
+        Text("Services International",
             style: TextStyle(
                 color: _textMuted,
                 fontWeight: FontWeight.w600,
@@ -449,6 +645,10 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
   }
 
   Widget _heroCard() {
+    final days = _remaining.inDays;
+    final hours = _remaining.inHours % 24;
+    final minutes = _remaining.inMinutes % 60;
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -478,10 +678,43 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
         const SizedBox(height: 12),
         _heroInfoRow(Icons.percent, _amber, "Promo web", "–50 % via l'app"),
         const SizedBox(height: 12),
-        _heroInfoRow(Icons.event_available, _teal, "Prochain départ",
-            "${_departures[0]['date']} · ${_departures[0]['route']}"),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: _amber.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: _amber.withValues(alpha: 0.3)),
+          ),
+          child: Column(children: [
+            Row(children: [
+              const Icon(Icons.flight_takeoff, color: _amber, size: 14),
+              const SizedBox(width: 6),
+              const Text("Prochain départ — 23 mars 2026",
+                  style: TextStyle(
+                      color: _amber,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12)),
+            ]),
+            const SizedBox(height: 10),
+            Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+              _miniCountUnit(_pad(days), "J", _amber),
+              const Text(":",
+                  style: TextStyle(
+                      color: _textMuted,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700)),
+              _miniCountUnit(_pad(hours), "H", _appBlue),
+              const Text(":",
+                  style: TextStyle(
+                      color: _textMuted,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700)),
+              _miniCountUnit(_pad(minutes), "MIN", _appBlue),
+            ]),
+          ]),
+        ),
         const SizedBox(height: 20),
-        Divider(color: _borderBright),
+        const Divider(color: Color(0xFF2A5070)),
         const SizedBox(height: 16),
         Row(children: [
           Expanded(
@@ -517,6 +750,32 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
     );
   }
 
+  Widget _miniCountUnit(String value, String label, Color color) {
+    return Column(children: [
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Text(value,
+            style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.w900,
+                fontSize: 18,
+                letterSpacing: 1)),
+      ),
+      const SizedBox(height: 3),
+      Text(label,
+          style: const TextStyle(
+              color: _textMuted,
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1)),
+    ]);
+  }
+
   Widget _heroInfoRow(IconData icon, Color color, String title, String value) {
     return Row(children: [
       Container(
@@ -540,45 +799,6 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
                 fontSize: 13)),
       ])),
     ]);
-  }
-
-  Widget _ticker() {
-    final dep = _departures[_tickerIndex];
-    return AnimatedBuilder(
-      animation: _tickerAnim,
-      builder: (context, _) {
-        final opacity = _tickerAnim.value < 0.2 ? _tickerAnim.value / 0.2 : 1.0;
-        return Opacity(
-          opacity: opacity.clamp(0.0, 1.0),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            color: _amber.withValues(alpha: 0.12),
-            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              const Icon(Icons.flight_takeoff, color: _amber, size: 14),
-              const SizedBox(width: 8),
-              Text("Départ · ${dep['flag']} ${dep['date']} · ${dep['route']}",
-                  style: const TextStyle(
-                      color: _amber,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12.5,
-                      letterSpacing: 0.3)),
-              const SizedBox(width: 16),
-              GestureDetector(
-                onTap: () => _scroll(_departuresKey),
-                child: const Text("Voir tous →",
-                    style: TextStyle(
-                        color: _amber,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 12,
-                        decoration: TextDecoration.underline,
-                        decorationColor: _amber)),
-              ),
-            ]),
-          ),
-        );
-      },
-    );
   }
 
   Widget _servicesSection(bool isDesktop) {
@@ -723,12 +943,11 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
       title: "Départs à venir",
       subtitle: "Les prochaines dates de convoyage disponibles.",
       child: Column(
-        children: _departures
-            .asMap()
-            .entries
-            .map((e) => _departureRow(e.key, e.value))
-            .toList(),
-      ),
+          children: _allDepartures
+              .asMap()
+              .entries
+              .map((e) => _departureRow(e.key, e.value))
+              .toList()),
     );
   }
 
@@ -764,11 +983,12 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-                color: _appBlue.withValues(alpha: 0.20),
-                borderRadius: BorderRadius.circular(20)),
+                color: _amber.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: _amber.withValues(alpha: 0.4))),
             child: const Text("BIENTÔT",
                 style: TextStyle(
-                    color: _blueBright,
+                    color: _amber,
                     fontWeight: FontWeight.w800,
                     fontSize: 10,
                     letterSpacing: 1)),
@@ -778,7 +998,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
           onPressed: () => _wa(_waDakar),
           style: ElevatedButton.styleFrom(
             backgroundColor: _amber,
-            foregroundColor: Colors.white,
+            foregroundColor: _bg,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -893,8 +1113,6 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
     required String subtitle,
     required Widget child,
   }) {
-    final titleColor = dark ? _textPrimary : _textDark;
-    final subtitleColor = dark ? _textMuted : _textDarkMuted;
     return Padding(
       padding: EdgeInsets.symmetric(
           horizontal: isDesktop ? 64 : 20, vertical: isDesktop ? 56 : 36),
@@ -905,7 +1123,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
             Text(title,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                    color: titleColor,
+                    color: dark ? _textPrimary : _textDark,
                     fontWeight: FontWeight.w900,
                     fontSize: isDesktop ? 30 : 22,
                     letterSpacing: -0.3)),
@@ -913,7 +1131,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
             Text(subtitle,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                    color: subtitleColor,
+                    color: dark ? _textMuted : _textDarkMuted,
                     fontWeight: FontWeight.w400,
                     fontSize: 14)),
             const SizedBox(height: 28),
