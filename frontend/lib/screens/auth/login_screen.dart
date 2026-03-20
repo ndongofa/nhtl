@@ -20,8 +20,14 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _phoneE164;
   bool _isLoading = false;
   bool _obscurePassword = true;
-  // ✅ Téléphone par défaut
+  // ✅ TÉLÉPHONE PAR DÉFAUT
   bool _usePhone = true;
+
+  static const Color _appBlue = Color(0xFF2296F3);
+  static const Color _bgLight = Color(0xFFF4F8FF);
+  static const Color _textMain = Color(0xFF0F2040);
+  static const Color _textMuted = Color(0xFF6B7A99);
+  static const Color _borderColor = Color(0xFFDDE3EF);
 
   @override
   void dispose() {
@@ -73,23 +79,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const Color appBlue = Color(0xFF2296F3);
-    const Color bgLight = Color(0xFFF4F8FF);
-    const Color textMain = Color(0xFF0F2040);
-    const Color textMuted = Color(0xFF6B7A99);
-    const Color borderColor = Color(0xFFDDE3EF);
-
     return Scaffold(
-      backgroundColor: bgLight,
+      backgroundColor: _bgLight,
       appBar: AppBar(
-        backgroundColor: appBlue,
+        backgroundColor: _appBlue,
         elevation: 0,
         title: Text(AppBrand.appName,
             style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.3)),
-        centerTitle: false,
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -103,7 +102,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                      color: appBlue.withValues(alpha: 0.07),
+                      color: _appBlue.withValues(alpha: 0.07),
                       blurRadius: 32,
                       offset: const Offset(0, 8))
                 ],
@@ -113,49 +112,45 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                              color: appBlue.withValues(alpha: 0.10),
-                              borderRadius: BorderRadius.circular(12)),
-                          child:
-                              const Icon(Icons.login, color: appBlue, size: 20),
-                        ),
-                        const SizedBox(width: 12),
-                        Column(
+                    Row(children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                            color: _appBlue.withValues(alpha: 0.10),
+                            borderRadius: BorderRadius.circular(12)),
+                        child:
+                            const Icon(Icons.login, color: _appBlue, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text("Connexion",
                                 style: TextStyle(
-                                    color: textMain,
+                                    color: _textMain,
                                     fontWeight: FontWeight.w900,
                                     fontSize: 18)),
                             Text(AppBrand.appName,
                                 style: const TextStyle(
-                                    color: textMuted,
+                                    color: _textMuted,
                                     fontWeight: FontWeight.w500,
                                     fontSize: 12)),
-                          ],
-                        ),
-                      ],
-                    ),
+                          ]),
+                    ]),
                     const SizedBox(height: 24),
+                    // ✅ Toggle — Téléphone en premier et sélectionné par défaut
                     Container(
                       decoration: BoxDecoration(
-                        color: bgLight,
+                        color: _bgLight,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: borderColor),
+                        border: Border.all(color: _borderColor),
                       ),
-                      child: Row(
-                        children: [
-                          _toggleTab("Téléphone", Icons.phone, true, appBlue),
-                          _toggleTab(
-                              "Email", Icons.alternate_email, false, appBlue),
-                        ],
-                      ),
+                      child: Row(children: [
+                        _toggleTab("Téléphone", Icons.phone, true, _appBlue),
+                        _toggleTab(
+                            "Email", Icons.alternate_email, false, _appBlue),
+                      ]),
                     ),
                     const SizedBox(height: 20),
                     if (_usePhone)
@@ -206,7 +201,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap),
                         child: const Text("Mot de passe oublié ?",
                             style: TextStyle(
-                                color: appBlue,
+                                color: _appBlue,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 13)),
                       ),
@@ -218,7 +213,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _handleLogin,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: appBlue,
+                          backgroundColor: _appBlue,
                           foregroundColor: Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
@@ -237,23 +232,20 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 16),
                     Center(
-                      child: TextButton(
-                        onPressed: () => Navigator.of(context)
-                            .pushReplacementNamed('/signup'),
-                        child: const Text(
-                            "Pas encore inscrit ? Créer un compte",
-                            style: TextStyle(
-                                color: appBlue,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13)),
-                      ),
-                    ),
+                        child: TextButton(
+                      onPressed: () =>
+                          Navigator.of(context).pushReplacementNamed('/signup'),
+                      child: const Text("Pas encore inscrit ? Créer un compte",
+                          style: TextStyle(
+                              color: _appBlue,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13)),
+                    )),
                     const SizedBox(height: 8),
                     Center(
-                      child: Text("Support : ${AppBrand.supportEmail}",
-                          style:
-                              const TextStyle(color: textMuted, fontSize: 11)),
-                    ),
+                        child: Text("Support : ${AppBrand.supportEmail}",
+                            style: const TextStyle(
+                                color: _textMuted, fontSize: 11))),
                   ],
                 ),
               ),
@@ -280,21 +272,17 @@ class _LoginScreenState extends State<LoginScreen> {
             color: isSelected ? appBlue : Colors.transparent,
             borderRadius: BorderRadius.circular(9),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon,
-                  size: 15,
-                  color: isSelected ? Colors.white : const Color(0xFF6B7A99)),
-              const SizedBox(width: 6),
-              Text(label,
-                  style: TextStyle(
-                      color:
-                          isSelected ? Colors.white : const Color(0xFF6B7A99),
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13)),
-            ],
-          ),
+          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(icon,
+                size: 15,
+                color: isSelected ? Colors.white : const Color(0xFF6B7A99)),
+            const SizedBox(width: 6),
+            Text(label,
+                style: TextStyle(
+                    color: isSelected ? Colors.white : const Color(0xFF6B7A99),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13)),
+          ]),
         ),
       ),
     );

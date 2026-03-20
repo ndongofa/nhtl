@@ -12,13 +12,15 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
+  static const Color _bg = Color(0xFF0D1B2E);
+  static const Color _bgCard = Color(0xFF1A2E45);
+  static const Color _bgSection = Color(0xFF112236);
   static const Color _appBlue = Color(0xFF2296F3);
-  static const Color _bg = Color(0xFFF4F8FF);
-  static const Color _surface = Colors.white;
-  static const Color _textMain = Color(0xFF0F2040);
-  static const Color _textMuted = Color(0xFF6B7A99);
-  static const Color _border = Color(0xFFDDE3EF);
+  static const Color _blueBright = Color(0xFF42AAFE);
   static const Color _amber = Color(0xFFFFB300);
+  static const Color _textPrimary = Color(0xFFF0F6FF);
+  static const Color _textMuted = Color(0xFF7A94B0);
+  static const Color _border = Color(0xFF1E3A55);
 
   final NotificationService _service = NotificationService();
   bool _loading = false;
@@ -83,10 +85,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: _bgCard,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text("Tout supprimer",
             style: TextStyle(
-                color: _textMain, fontWeight: FontWeight.w800, fontSize: 16)),
+                color: _textPrimary,
+                fontWeight: FontWeight.w800,
+                fontSize: 16)),
         content: const Text("Voulez-vous supprimer toutes les notifications ?",
             style: TextStyle(color: _textMuted)),
         actions: [
@@ -97,7 +102,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade600,
+                backgroundColor: Colors.red.shade700,
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
@@ -128,41 +133,40 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return Scaffold(
       backgroundColor: _bg,
       appBar: AppBar(
-        backgroundColor: _appBlue,
+        backgroundColor: _bgSection,
         elevation: 0,
-        title: Row(
-          children: [
-            const Text("Notifications",
-                style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16)),
-            if (unreadCount > 0) ...[
-              const SizedBox(width: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                    color: _amber, borderRadius: BorderRadius.circular(20)),
-                child: Text("$unreadCount non lue${unreadCount > 1 ? 's' : ''}",
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 11)),
-              ),
-            ],
+        iconTheme: const IconThemeData(color: _textPrimary),
+        title: Row(children: [
+          const Text("Notifications",
+              style: TextStyle(
+                  color: _textPrimary,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 16)),
+          if (unreadCount > 0) ...[
+            const SizedBox(width: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                  color: _amber, borderRadius: BorderRadius.circular(20)),
+              child: Text("$unreadCount non lue${unreadCount > 1 ? 's' : ''}",
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 11)),
+            ),
           ],
-        ),
+        ]),
         actions: [
           IconButton(
             onPressed: () => _load(playSound: true),
-            icon: const Icon(Icons.refresh, color: Colors.white),
+            icon: const Icon(Icons.refresh, color: _textPrimary),
             tooltip: "Rafraîchir",
           ),
           if (_items.isNotEmpty)
             IconButton(
               onPressed: _deleteAll,
               icon:
-                  const Icon(Icons.delete_sweep_outlined, color: Colors.white),
+                  const Icon(Icons.delete_sweep_outlined, color: _textPrimary),
               tooltip: "Tout supprimer",
             ),
         ],
@@ -173,6 +177,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               ? _emptyState()
               : RefreshIndicator(
                   color: _appBlue,
+                  backgroundColor: _bgCard,
                   onRefresh: () => _load(playSound: true),
                   child: ListView.separated(
                     padding: const EdgeInsets.all(16),
@@ -193,7 +198,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
         decoration: BoxDecoration(
-            color: Colors.red.shade600,
+            color: Colors.red.shade700,
             borderRadius: BorderRadius.circular(14)),
         child: const Icon(Icons.delete_outline, color: Colors.white, size: 24),
       ),
@@ -206,104 +211,94 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: isUnread ? const Color(0xFFE8F4FE) : _surface,
+            color: isUnread ? _appBlue.withValues(alpha: 0.12) : _bgCard,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-                color: isUnread ? _appBlue.withValues(alpha: 0.25) : _border),
+                color: isUnread ? _appBlue.withValues(alpha: 0.40) : _border),
             boxShadow: [
               BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
+                  color: isUnread
+                      ? _appBlue.withValues(alpha: 0.10)
+                      : Colors.black.withValues(alpha: 0.06),
                   blurRadius: 8,
                   offset: const Offset(0, 3))
             ],
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: isUnread
-                      ? _appBlue.withValues(alpha: 0.12)
-                      : Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  isUnread
-                      ? Icons.notifications_active
-                      : Icons.notifications_none,
-                  color: isUnread ? _appBlue : _textMuted,
-                  size: 20,
-                ),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: isUnread
+                    ? _appBlue.withValues(alpha: 0.20)
+                    : Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(12),
               ),
-              const SizedBox(width: 12),
-              Expanded(
+              child: Icon(
+                isUnread
+                    ? Icons.notifications_active
+                    : Icons.notifications_none,
+                color: isUnread ? _blueBright : _textMuted,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(n.title,
-                              style: TextStyle(
-                                  color: _textMain,
-                                  fontWeight: isUnread
-                                      ? FontWeight.w800
-                                      : FontWeight.w600,
-                                  fontSize: 14)),
-                        ),
-                        if (isUnread)
-                          Container(
-                              width: 8,
-                              height: 8,
-                              decoration: const BoxDecoration(
-                                  shape: BoxShape.circle, color: _appBlue)),
-                      ],
-                    ),
-                    if (n.message != null && n.message!.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(n.message!,
-                          style: const TextStyle(
-                              color: _textMuted,
-                              fontWeight: FontWeight.w400,
-                              fontSize: 13,
-                              height: 1.4),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis),
-                    ],
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        if (isUnread)
-                          Text("Appuyer pour marquer lu",
-                              style: TextStyle(
-                                  color: _appBlue.withValues(alpha: 0.7),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500)),
-                        const Spacer(),
-                        GestureDetector(
-                          onTap: () => _deleteOne(n),
-                          child: Row(
-                            children: [
-                              Icon(Icons.delete_outline,
-                                  size: 14, color: Colors.red.shade400),
-                              const SizedBox(width: 3),
-                              Text("Supprimer",
-                                  style: TextStyle(
-                                      color: Colors.red.shade400,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600)),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                  Row(children: [
+                    Expanded(
+                        child: Text(n.title,
+                            style: TextStyle(
+                                color: isUnread ? _blueBright : _textPrimary,
+                                fontWeight: isUnread
+                                    ? FontWeight.w800
+                                    : FontWeight.w600,
+                                fontSize: 14))),
+                    if (isUnread)
+                      Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                              shape: BoxShape.circle, color: _appBlue)),
+                  ]),
+                  if (n.message != null && n.message!.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(n.message!,
+                        style: const TextStyle(
+                            color: _textMuted,
+                            fontWeight: FontWeight.w400,
+                            fontSize: 13,
+                            height: 1.4),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis),
                   ],
-                ),
-              ),
-            ],
-          ),
+                  const SizedBox(height: 8),
+                  Row(children: [
+                    if (isUnread)
+                      Text("Appuyer pour marquer lu",
+                          style: TextStyle(
+                              color: _appBlue.withValues(alpha: 0.7),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500)),
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: () => _deleteOne(n),
+                      child: Row(children: [
+                        Icon(Icons.delete_outline,
+                            size: 14, color: Colors.red.shade400),
+                        const SizedBox(width: 3),
+                        Text("Supprimer",
+                            style: TextStyle(
+                                color: Colors.red.shade400,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600)),
+                      ]),
+                    ),
+                  ]),
+                ])),
+          ]),
         ),
       ),
     );
@@ -311,27 +306,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Widget _emptyState() {
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-                color: _appBlue.withValues(alpha: 0.08),
-                shape: BoxShape.circle),
-            child:
-                const Icon(Icons.notifications_none, color: _appBlue, size: 36),
-          ),
-          const SizedBox(height: 16),
-          const Text("Aucune notification",
-              style: TextStyle(
-                  color: _textMain, fontWeight: FontWeight.w700, fontSize: 16)),
-          const SizedBox(height: 6),
-          const Text("Vous êtes à jour !",
-              style: TextStyle(color: _textMuted, fontSize: 13)),
-        ],
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+      Container(
+        width: 72,
+        height: 72,
+        decoration: BoxDecoration(
+            color: _appBlue.withValues(alpha: 0.10), shape: BoxShape.circle),
+        child: const Icon(Icons.notifications_none, color: _appBlue, size: 36),
       ),
-    );
+      const SizedBox(height: 16),
+      const Text("Aucune notification",
+          style: TextStyle(
+              color: _textPrimary, fontWeight: FontWeight.w700, fontSize: 16)),
+      const SizedBox(height: 6),
+      const Text("Vous êtes à jour !",
+          style: TextStyle(color: _textMuted, fontSize: 13)),
+    ]));
   }
 }

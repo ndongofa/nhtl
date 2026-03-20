@@ -3,7 +3,7 @@ import 'dart:html' as html;
 
 void playNotificationSound() {
   try {
-    html.ScriptElement script = html.ScriptElement();
+    final script = html.ScriptElement();
     script.text = '''
       (function() {
         try {
@@ -33,7 +33,7 @@ void playNotificationSound() {
       })();
     ''';
     html.document.head!.append(script);
-    Future.delayed(const Duration(milliseconds: 100), () {
+    Future.delayed(const Duration(milliseconds: 200), () {
       try {
         script.remove();
       } catch (_) {}
