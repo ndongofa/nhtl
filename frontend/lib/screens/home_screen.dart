@@ -22,21 +22,20 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  static const Color _bg = Color(0xFF0D1B2E);
-  static const Color _bgSection = Color(0xFF112236);
-  static const Color _bgCard = Color(0xFF1A2E45);
+  // ── Palette style signup — fond clair ─────────────────────────────────────
   static const Color _appBlue = Color(0xFF2296F3);
-  static const Color _blueBright = Color(0xFF42AAFE);
+  static const Color _blueDark = Color(0xFF0D5EBF);
+  static const Color _blueLight = Color(0xFFE8F4FE);
   static const Color _amber = Color(0xFFFFB300);
-  static const Color _teal = Color(0xFF00D4C8);
+  static const Color _amberLight = Color(0xFFFFF3D0);
+  static const Color _teal = Color(0xFF00BCD4);
   static const Color _green = Color(0xFF22C55E);
-  static const Color _textPrimary = Color(0xFFF0F6FF);
-  static const Color _textSecond = Color(0xFFB0C4DE);
-  static const Color _textMuted = Color(0xFF7A94B0);
-  static const Color _border = Color(0xFF1E3A55);
-  static const Color _lightBg = Color(0xFFF0F6FF);
-  static const Color _textDark = Color(0xFF0F2040);
-  static const Color _textDarkMuted = Color(0xFF4A6A8A);
+  static const Color _bg = Color(0xFFF4F8FF);
+  static const Color _surface = Colors.white;
+  static const Color _textMain = Color(0xFF0F2040);
+  static const Color _textMuted = Color(0xFF6B7A99);
+  static const Color _border = Color(0xFFDDE3EF);
+  static const Color _sectionAlt = Color(0xFFEEF5FF);
 
   static const String _waFrance = "33768913074";
   static const String _waDakar = "221783042838";
@@ -99,10 +98,9 @@ class _HomeScreenState extends State<HomeScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: _bgCard,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text("Déconnexion",
-            style: TextStyle(color: _textPrimary, fontWeight: FontWeight.w800)),
+            style: TextStyle(color: _textMain, fontWeight: FontWeight.w800)),
         content: const Text("Êtes-vous sûr de vouloir vous déconnecter ?",
             style: TextStyle(color: _textMuted)),
         actions: [
@@ -120,7 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
               }
             },
             style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade700,
+                backgroundColor: Colors.red.shade600,
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
@@ -198,7 +196,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-                color: _bg, borderRadius: BorderRadius.circular(5)),
+                color: _textMain, borderRadius: BorderRadius.circular(5)),
             child: const Text("DÉPARTS",
                 style: TextStyle(
                     color: _amber,
@@ -212,7 +210,9 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
               child: Text("23 mars 2026  ·  ${dep['route']}",
                   style: const TextStyle(
-                      color: _bg, fontWeight: FontWeight.w800, fontSize: 13),
+                      color: _textMain,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13),
                   overflow: TextOverflow.ellipsis)),
           const SizedBox(width: 8),
           GestureDetector(
@@ -220,7 +220,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                  color: _bg, borderRadius: BorderRadius.circular(7)),
+                  color: _textMain, borderRadius: BorderRadius.circular(7)),
               child: const Text("Réserver →",
                   style: TextStyle(
                       color: _amber,
@@ -240,11 +240,11 @@ class _HomeScreenState extends State<HomeScreen> {
     final seconds = _remaining.inSeconds % 60;
 
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: _bgCard,
+        color: _surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _amber.withValues(alpha: 0.35)),
+        border: Border.all(color: _amber.withValues(alpha: 0.30)),
         boxShadow: [
           BoxShadow(
               color: _amber.withValues(alpha: 0.08),
@@ -299,9 +299,9 @@ class _HomeScreenState extends State<HomeScreen> {
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
+          color: color.withValues(alpha: 0.10),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
         ),
         child: Text(value,
             style: TextStyle(
@@ -333,9 +333,9 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: _appBlue.withValues(alpha: 0.10),
+        color: _blueLight,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: _appBlue.withValues(alpha: 0.30)),
+        border: Border.all(color: _appBlue.withValues(alpha: 0.25)),
       ),
       child: Row(children: [
         Text(dep['flag']!, style: const TextStyle(fontSize: 18)),
@@ -343,7 +343,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Expanded(
             child: Text(dep['route']!,
                 style: const TextStyle(
-                    color: _blueBright,
+                    color: _appBlue,
                     fontWeight: FontWeight.w700,
                     fontSize: 12))),
         GestureDetector(
@@ -354,7 +354,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: _amber, borderRadius: BorderRadius.circular(7)),
             child: const Text("Réserver",
                 style: TextStyle(
-                    color: _bg, fontWeight: FontWeight.w800, fontSize: 11)),
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 11)),
           ),
         ),
       ]),
@@ -365,8 +367,11 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: const BoxDecoration(
-        color: _bgSection,
-        border: Border(bottom: BorderSide(color: _border, width: 1)),
+        color: _appBlue,
+        boxShadow: [
+          BoxShadow(
+              color: Color(0x202296F3), blurRadius: 16, offset: Offset(0, 4))
+        ],
       ),
       child: Row(children: [
         Row(children: [
@@ -374,11 +379,8 @@ class _HomeScreenState extends State<HomeScreen> {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.20),
               borderRadius: BorderRadius.circular(9),
-              gradient: const LinearGradient(
-                  colors: [_appBlue, _teal],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight),
             ),
             child: const Icon(FontAwesomeIcons.boxOpen,
                 color: Colors.white, size: 14),
@@ -386,7 +388,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(width: 8),
           const Text("SAMA",
               style: TextStyle(
-                  color: _textPrimary,
+                  color: Colors.white,
                   fontWeight: FontWeight.w900,
                   fontSize: 14,
                   letterSpacing: 2)),
@@ -401,18 +403,19 @@ class _HomeScreenState extends State<HomeScreen> {
             printSupabaseTokens();
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                 content: Text("Token imprimé dans la console.")));
-          }, color: _textMuted),
+          }, color: Colors.white.withValues(alpha: 0.55)),
         _topBarIcon(Icons.person_outline,
             () => Navigator.of(context).pushNamed('/profile')),
         _topBarIcon(Icons.logout, () => _logout(context),
-            color: Colors.red.shade300),
+            color: Colors.white.withValues(alpha: 0.75)),
       ]),
     );
   }
 
   Widget _topBarIcon(IconData icon, VoidCallback onTap, {Color? color}) {
     return IconButton(
-      icon: Icon(icon, color: color ?? _textSecond, size: 20),
+      icon: Icon(icon,
+          color: color ?? Colors.white.withValues(alpha: 0.90), size: 20),
       onPressed: onTap,
       splashRadius: 20,
     );
@@ -430,7 +433,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text("$salut, $displayName 👋",
           style: const TextStyle(
-              color: _textPrimary,
+              color: _textMain,
               fontWeight: FontWeight.w900,
               fontSize: 22,
               letterSpacing: -0.3)),
@@ -514,13 +517,13 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
         decoration: BoxDecoration(
-          color: _bgCard,
+          color: _surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withValues(alpha: 0.30)),
+          border: Border.all(color: color.withValues(alpha: 0.20)),
           boxShadow: [
             BoxShadow(
-                color: color.withValues(alpha: 0.10),
-                blurRadius: 14,
+                color: color.withValues(alpha: 0.08),
+                blurRadius: 12,
                 offset: const Offset(0, 4))
           ],
         ),
@@ -529,14 +532,14 @@ class _HomeScreenState extends State<HomeScreen> {
               width: 42,
               height: 42,
               decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15),
+                  color: color.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(12)),
               child: Icon(icon, color: color, size: 18)),
           const SizedBox(height: 8),
           Text(label,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                  color: _textPrimary,
+                  color: _textMain,
                   fontWeight: FontWeight.w700,
                   fontSize: 11,
                   height: 1.3)),
@@ -608,13 +611,13 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: _bgCard,
+          color: _surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withValues(alpha: 0.25)),
+          border: Border.all(color: _border),
           boxShadow: [
             BoxShadow(
-                color: color.withValues(alpha: 0.08),
-                blurRadius: 12,
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 10,
                 offset: const Offset(0, 4))
           ],
         ),
@@ -623,7 +626,7 @@ class _HomeScreenState extends State<HomeScreen> {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15),
+                  color: color.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(14)),
               child: Icon(icon, color: color, size: 22)),
           const SizedBox(width: 14),
@@ -633,7 +636,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                 Text(title,
                     style: const TextStyle(
-                        color: _textPrimary,
+                        color: _textMain,
                         fontWeight: FontWeight.w800,
                         fontSize: 15)),
                 Text(subtitle,
@@ -652,12 +655,14 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: _lightBg,
+        gradient: LinearGradient(
+            colors: [_appBlue, _blueDark],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _appBlue.withValues(alpha: 0.20)),
         boxShadow: [
           BoxShadow(
-              color: _appBlue.withValues(alpha: 0.12),
+              color: _appBlue.withValues(alpha: 0.25),
               blurRadius: 20,
               offset: const Offset(0, 6))
         ],
@@ -668,14 +673,17 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(width: 8),
           const Text("Tarifs SAMA",
               style: TextStyle(
-                  color: _textDark, fontWeight: FontWeight.w800, fontSize: 14)),
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14)),
           const Spacer(),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-                color: const Color(0xFFFFF3D0),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: _amber.withValues(alpha: 0.4))),
+              color: _amberLight,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: _amber.withValues(alpha: 0.4)),
+            ),
             child: const Text("–50% WEB",
                 style: TextStyle(
                     color: Color(0xFF7A4F00),
@@ -701,15 +709,15 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(children: [
       Text("$flag $city",
           textAlign: TextAlign.center,
-          style: const TextStyle(
-              color: _textDarkMuted,
+          style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.75),
               fontWeight: FontWeight.w600,
               fontSize: 11)),
       const SizedBox(height: 4),
       Text(price,
           textAlign: TextAlign.center,
-          style: TextStyle(
-              color: color, fontWeight: FontWeight.w800, fontSize: 14)),
+          style: const TextStyle(
+              color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14)),
     ]));
   }
 
@@ -717,7 +725,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
         width: 1,
         height: 32,
-        color: const Color(0xFFDDE3EF),
+        color: Colors.white.withValues(alpha: 0.20),
         margin: const EdgeInsets.symmetric(horizontal: 4));
   }
 
@@ -730,11 +738,11 @@ class _HomeScreenState extends State<HomeScreen> {
           onTap: () => _wa(_waDakar),
           child: const Text("Réserver →",
               style: TextStyle(
-                  color: _blueBright,
+                  color: _appBlue,
                   fontWeight: FontWeight.w700,
                   fontSize: 12,
                   decoration: TextDecoration.underline,
-                  decorationColor: _blueBright)),
+                  decorationColor: _appBlue)),
         ),
       ]),
       const SizedBox(height: 12),
@@ -745,10 +753,10 @@ class _HomeScreenState extends State<HomeScreen> {
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: highlight ? _appBlue.withValues(alpha: 0.12) : _bgCard,
+            color: highlight ? _blueLight : _surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-                color: highlight ? _appBlue.withValues(alpha: 0.35) : _border),
+                color: highlight ? _appBlue.withValues(alpha: 0.25) : _border),
           ),
           child: Row(children: [
             Text(dep['flag']!, style: const TextStyle(fontSize: 18)),
@@ -756,19 +764,19 @@ class _HomeScreenState extends State<HomeScreen> {
             Expanded(
                 child: Text("${dep['route']} · ${dep['date']}",
                     style: TextStyle(
-                        color: highlight ? _blueBright : _textPrimary,
+                        color: highlight ? _appBlue : _textMain,
                         fontWeight: FontWeight.w700,
                         fontSize: 13))),
             if (highlight)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                    color: _amber.withValues(alpha: 0.15),
+                    color: _amberLight,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: _amber.withValues(alpha: 0.4))),
                 child: const Text("BIENTÔT",
                     style: TextStyle(
-                        color: _amber,
+                        color: Color(0xFF7A4F00),
                         fontWeight: FontWeight.w800,
                         fontSize: 9,
                         letterSpacing: 0.8)),
@@ -800,7 +808,7 @@ class _HomeScreenState extends State<HomeScreen> {
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-            color: _amber.withValues(alpha: 0.12),
+            color: _amber.withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: _amber.withValues(alpha: 0.3))),
         child: const Row(mainAxisSize: MainAxisSize.min, children: [
@@ -826,14 +834,14 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: _bgCard,
+                  color: _surface,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                      color: (item['color'] as Color).withValues(alpha: 0.25)),
+                      color: (item['color'] as Color).withValues(alpha: 0.20)),
                   boxShadow: [
                     BoxShadow(
-                        color: (item['color'] as Color).withValues(alpha: 0.08),
-                        blurRadius: 12,
+                        color: (item['color'] as Color).withValues(alpha: 0.07),
+                        blurRadius: 10,
                         offset: const Offset(0, 4))
                   ],
                 ),
@@ -843,7 +851,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(width: 10),
                   Text(item['label'] as String,
                       style: const TextStyle(
-                          color: _textPrimary,
+                          color: _textMain,
                           fontWeight: FontWeight.w700,
                           fontSize: 13)),
                 ]),
