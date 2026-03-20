@@ -1,342 +1,224 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Landing SAMA — Services international
-/// - Scroll vers sections "Tarifs", "Départs", "Contact" (GlobalKey + ensureVisible)
-/// - CTA WhatsApp + e-mail branchés via url_launcher
-/// - Flutter r��cent: withOpacity() évité -> withValues(alpha: ...)
-///
-/// À faire côté projet:
-/// - pubspec.yaml: url_launcher: ^6.3.0 (ou version compatible)
-/// - flutter pub get
-///
-/// Routes attendues (si configurées):
-/// - /login
-/// - /signup
-/// - /public (optionnel)
+/// Design: Cargo Premium — dark navy / ambre / turquoise électrique
 class LandingScreenSamaServicesInternational extends StatefulWidget {
   const LandingScreenSamaServicesInternational({Key? key}) : super(key: key);
 
   @override
   State<LandingScreenSamaServicesInternational> createState() =>
-      _LandingScreenSamaServicesInternationalState();
+      _LandingScreenState();
 }
 
-class _LandingScreenSamaServicesInternationalState
-    extends State<LandingScreenSamaServicesInternational>
-    with SingleTickerProviderStateMixin {
-  // Brand palette
-  final Color mainBlue = const Color(0xFF2296F3);
-  final Color turquoise = const Color(0xFF39E4E2);
-  final Color orange = const Color(0xFFFFB300);
+class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
+    with TickerProviderStateMixin {
+  // ── Palette ────────────────────────────────────────────────────────────────
+  static const Color _navy = Color(0xFF080E1C);
+  static const Color _navyMid = Color(0xFF0F1A2E);
+  static const Color _navySurface = Color(0xFF162035);
+  static const Color _teal = Color(0xFF00D4C8);
+  static const Color _amber = Color(0xFFFFB300);
+  static const Color _amberLight = Color(0xFFFFD166);
+  static const Color _textPrimary = Color(0xFFF0F4FF);
+  static const Color _textMuted = Color(0xFF8A9BBF);
+  static const Color _border = Color(0xFF1E2E48);
 
-  // High-contrast neutrals
-  final Color text = const Color(0xFF0F172A);
-  final Color muted = const Color(0xFF475569);
-  final Color surface = Colors.white;
-  final Color bg = const Color(0xFFF6F8FC);
+  // ── Brand data ──────────────────────────────────────────────────────────────
+  static const String _waFrance = "33768913074";
+  static const String _waDakar = "221783042838";
+  static const String _email = "contact@sama-logistique.com";
 
-  // Contacts (E.164 digits)
-  final String whatsappFranceDigits = "33768913074"; // +33768913074
-  final String whatsappDakarDigits = "221783042838"; // +221783042838
-  final String email = "contact@sama-logistique.com";
-
-  // Pricing (hardcoded)
-  final String priceParis = "10 € / kg";
-  final String priceCasablanca = "100 DH / kg";
-  final String priceDakar = "6 500 FCFA / kg";
-  final String promoWeb = "–50 % via l’application web";
-
-  // Departures (hardcoded)
-  final List<Map<String, String>> departures = const [
-    {"date": "23 mars 2026", "route": "Dakar → Paris"},
-    {"date": "25 mars 2026", "route": "Casablanca → Paris"},
-    {"date": "28 avril 2026", "route": "Paris → Casablanca"},
-    {"date": "29 avril 2026", "route": "Casablanca → Dakar"},
-    {"date": "30 avril 2026", "route": "Dakar → Casablanca"},
+  static const List<Map<String, String>> _departures = [
+    {"date": "23 mars 2026", "route": "Dakar → Paris", "flag": "🇸🇳🇫🇷"},
+    {"date": "25 mars 2026", "route": "Casablanca → Paris", "flag": "🇲🇦🇫🇷"},
+    {
+      "date": "28 avril 2026",
+      "route": "Paris → Casablanca",
+      "flag": "🇫🇷🇲🇦"
+    },
+    {
+      "date": "29 avril 2026",
+      "route": "Casablanca → Dakar",
+      "flag": "🇲🇦🇸🇳"
+    },
+    {
+      "date": "30 avril 2026",
+      "route": "Dakar → Casablanca",
+      "flag": "🇸🇳🇲🇦"
+    },
   ];
 
-  // Scroll keys
-  final GlobalKey _pricingKey = GlobalKey();
-  final GlobalKey _departuresKey = GlobalKey();
-  final GlobalKey _contactKey = GlobalKey();
+  static const List<Map<String, dynamic>> _services = [
+    {
+      "icon": FontAwesomeIcons.truckFast,
+      "title": "Transport GP",
+      "desc": "Groupage, fret aérien & maritime",
+      "color": _teal,
+    },
+    {
+      "icon": FontAwesomeIcons.bagShopping,
+      "title": "Shopping",
+      "desc": "Amazon, Temu, Shein, AliExpress",
+      "color": _amber,
+    },
+    {
+      "icon": FontAwesomeIcons.locationDot,
+      "title": "Suivi GPS",
+      "desc": "Tracking en temps réel 24/7",
+      "color": _teal,
+    },
+    {
+      "icon": FontAwesomeIcons.store,
+      "title": "Achats sur mesure",
+      "desc": "Marchés & boutiques spécialisés",
+      "color": _amber,
+    },
+  ];
 
-  late final AnimationController _anim;
+  // ── Scroll keys ─────────────────────────────────────────────────────────────
+  final _pricingKey = GlobalKey();
+  final _departuresKey = GlobalKey();
+  final _contactKey = GlobalKey();
+
+  // ── Animations ──────────────────────────────────────────────────────────────
+  late final AnimationController _bgAnim;
+  late final AnimationController _tickerAnim;
+  int _tickerIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    _anim =
-        AnimationController(vsync: this, duration: const Duration(seconds: 6))
+    _bgAnim =
+        AnimationController(vsync: this, duration: const Duration(seconds: 8))
           ..repeat(reverse: true);
+
+    _tickerAnim =
+        AnimationController(vsync: this, duration: const Duration(seconds: 4))
+          ..addStatusListener((s) {
+            if (s == AnimationStatus.completed) {
+              setState(
+                  () => _tickerIndex = (_tickerIndex + 1) % _departures.length);
+              _tickerAnim.forward(from: 0);
+            }
+          })
+          ..forward();
   }
 
   @override
   void dispose() {
-    _anim.dispose();
+    _bgAnim.dispose();
+    _tickerAnim.dispose();
     super.dispose();
   }
 
-  // ----------------------------
-  // Navigation helpers
-  // ----------------------------
-  void _safePushNamed(BuildContext context, String route) {
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+  void _push(String route) {
     try {
       Navigator.pushNamed(context, route);
-    } catch (_) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Route « $route » introuvable. Vérifie MaterialApp."),
-        ),
-      );
-    }
+    } catch (_) {}
   }
 
-  Future<void> _scrollTo(GlobalKey key) async {
+  Future<void> _scroll(GlobalKey key) async {
     final ctx = key.currentContext;
     if (ctx == null) return;
-
-    await Scrollable.ensureVisible(
-      ctx,
-      duration: const Duration(milliseconds: 520),
-      curve: Curves.easeOutCubic,
-      alignment: 0.02,
-    );
+    await Scrollable.ensureVisible(ctx,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeOutCubic);
   }
 
-  // ----------------------------
-  // External actions (url_launcher)
-  // ----------------------------
-  Future<void> _openUrl(Uri uri) async {
-    final ok = await canLaunchUrl(uri);
-    if (!ok) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Impossible d’ouvrir: $uri")),
-      );
-      return;
-    }
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
-  }
-
-  Future<void> _openWhatsApp({required String digits, String? message}) async {
-    final msg = (message ?? "Bonjour SAMA, j’aimerais un devis.").trim();
-    final uri =
-        Uri.parse("https://wa.me/$digits?text=${Uri.encodeComponent(msg)}");
-    await _openUrl(uri);
+  Future<void> _wa(String digits) async {
+    final uri = Uri.parse(
+        "https://wa.me/$digits?text=${Uri.encodeComponent("Bonjour SAMA, j'aimerais un devis.")}");
+    if (await canLaunchUrl(uri))
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   Future<void> _openEmail() async {
-    // Note: mailto query uses standard query string, simplest is to hand-build it.
-    final subject = "Demande d'information - SAMA";
-    final body =
-        "Bonjour,\n\nJe souhaite obtenir un devis / des informations.\n\nMerci.";
     final uri = Uri.parse(
-      "mailto:$email?subject=${Uri.encodeComponent(subject)}&body=${Uri.encodeComponent(body)}",
-    );
-    await _openUrl(uri);
+        "mailto:$_email?subject=${Uri.encodeComponent("Demande d'information - SAMA")}");
+    if (await canLaunchUrl(uri)) await launchUrl(uri);
   }
 
-  Future<void> _handleMenuSelection(String v) async {
-    switch (v) {
-      case 'tarifs':
-        await _scrollTo(_pricingKey);
-        return;
-      case 'departs':
-        await _scrollTo(_departuresKey);
-        return;
-      case 'contact':
-        await _scrollTo(_contactKey);
-        return;
-      case 'wa_fr':
-        await _openWhatsApp(digits: whatsappFranceDigits);
-        return;
-      case 'wa_sn':
-        await _openWhatsApp(digits: whatsappDakarDigits);
-        return;
-      case 'email':
-        await _openEmail();
-        return;
-      case 'login':
-        _safePushNamed(context, '/login');
-        return;
-      case 'signup':
-        _safePushNamed(context, '/signup');
-        return;
-      case 'public':
-        _safePushNamed(context, '/public');
-        return;
-    }
-  }
-
-  // ----------------------------
-  // Formatting helpers
-  // ----------------------------
-  String _pricesInline() => "$priceParis • $priceCasablanca • $priceDakar";
-  String _displayE164(String digits) => "+$digits";
-
-  // ----------------------------
-  // UI
-  // ----------------------------
+  // ── Build ────────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final w = MediaQuery.of(context).size.width;
-    final bool isDesktop = w >= 1024;
-    final bool isNarrow = w < 520;
+    final isDesktop = w >= 1024;
 
     return Scaffold(
-      backgroundColor: bg,
+      backgroundColor: _navy,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
-            SliverToBoxAdapter(
-              child: _topBar(isDesktop: isDesktop, isNarrow: isNarrow),
-            ),
-            SliverToBoxAdapter(child: _hero(isDesktop: isDesktop)),
-            const SliverToBoxAdapter(child: SizedBox(height: 16)),
-            SliverToBoxAdapter(child: _primaryInfoCards(isDesktop: isDesktop)),
-            const SliverToBoxAdapter(child: SizedBox(height: 18)),
-            SliverToBoxAdapter(
-              child: _section(
-                title: "Services",
-                subtitle:
-                    "Tout ce qu’il faut pour expédier, acheter et suivre.",
-                child: _services(),
-              ),
-            ),
-            const SliverToBoxAdapter(child: SizedBox(height: 16)),
+            SliverToBoxAdapter(child: _topBar(isDesktop)),
+            SliverToBoxAdapter(child: _hero(isDesktop)),
+            SliverToBoxAdapter(child: _ticker()),
+            SliverToBoxAdapter(child: _servicesSection(isDesktop)),
             SliverToBoxAdapter(
               child: Container(
-                key: _pricingKey,
-                child: _section(
-                  background: const Color(0xFFF1FBFF),
-                  title: "Tarifs & promo",
-                  subtitle:
-                      "Prix au kilo + réduction web. Clair, simple, immédiat.",
-                  child: _pricing(),
-                ),
-              ),
+                  key: _pricingKey, child: _pricingSection(isDesktop)),
             ),
-            const SliverToBoxAdapter(child: SizedBox(height: 16)),
             SliverToBoxAdapter(
               child: Container(
-                key: _departuresKey,
-                child: _section(
-                  title: "Départs à venir",
-                  subtitle: "Les prochaines dates disponibles.",
-                  child: _departures(),
-                ),
-              ),
+                  key: _departuresKey, child: _departuresSection(isDesktop)),
             ),
-            const SliverToBoxAdapter(child: SizedBox(height: 16)),
             SliverToBoxAdapter(
               child: Container(
-                key: _contactKey,
-                child: _section(
-                  background: const Color(0xFFFFFBF1),
-                  title: "Contact & accès",
-                  subtitle: "WhatsApp, e-mail et accès à l’application.",
-                  child: _contactAndAccess(),
-                ),
-              ),
+                  key: _contactKey, child: _contactSection(isDesktop)),
             ),
-            const SliverToBoxAdapter(child: SizedBox(height: 10)),
             SliverToBoxAdapter(child: _footer()),
-            const SliverToBoxAdapter(child: SizedBox(height: 14)),
           ],
         ),
       ),
     );
   }
 
-  // ----------------------------
-  // TOP BAR
-  // ----------------------------
-  Widget _topBar({required bool isDesktop, required bool isNarrow}) {
+  // ── TOP BAR ──────────────────────────────────────────────────────────────────
+  Widget _topBar(bool isDesktop) {
     return Container(
-      color: surface,
-      padding: EdgeInsets.symmetric(
-        horizontal: isDesktop ? 20.0 : 12.0,
-        vertical: 10.0,
+      padding:
+          EdgeInsets.symmetric(horizontal: isDesktop ? 32 : 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: _navy.withValues(alpha: 0.95),
+        border: const Border(bottom: BorderSide(color: _border, width: 1)),
       ),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1180.0),
-          child: Row(
-            children: [
-              _brand(),
-              const Spacer(),
-              if (!isNarrow) ...[
-                _textButton(
-                  label: "Tarifs",
-                  icon: Icons.local_offer_outlined,
-                  onTap: () => _scrollTo(_pricingKey),
-                ),
-                const SizedBox(width: 8),
-                _textButton(
-                  label: "Départs",
-                  icon: Icons.event_available,
-                  onTap: () => _scrollTo(_departuresKey),
-                ),
-                const SizedBox(width: 8),
-                _textButton(
-                  label: "Contact",
-                  icon: Icons.support_agent,
-                  onTap: () => _scrollTo(_contactKey),
-                ),
-                const SizedBox(width: 8),
-              ],
-              if (isNarrow)
-                _moreMenu()
-              else
-                Wrap(
-                  spacing: 10,
-                  children: [
-                    _primaryButton(
-                      label: "Connexion",
-                      icon: Icons.login,
-                      bg: Colors.white,
-                      fg: text,
-                      border: text.withValues(alpha: 0.14),
-                      onTap: () => _safePushNamed(context, '/login'),
-                    ),
-                    _primaryButton(
-                      label: "Créer un compte",
-                      icon: Icons.person_add_alt_1,
-                      bg: turquoise,
-                      fg: Colors.white,
-                      onTap: () => _safePushNamed(context, '/signup'),
-                    ),
-                  ],
-                ),
-            ],
-          ),
-        ),
+      child: Row(
+        children: [
+          _brandLogo(),
+          const Spacer(),
+          if (!isDesktop)
+            _menuButton()
+          else ...[
+            _navLink("Tarifs", () => _scroll(_pricingKey)),
+            _navLink("Départs", () => _scroll(_departuresKey)),
+            _navLink("Contact", () => _scroll(_contactKey)),
+            const SizedBox(width: 16),
+            _outlineBtn("Connexion", () => _push('/login')),
+            const SizedBox(width: 10),
+            _solidBtn("Créer un compte", _teal, () => _push('/signup')),
+          ],
+        ],
       ),
     );
   }
 
-  Widget _brand() {
+  Widget _brandLogo() {
     return Row(
       children: [
         Container(
-          width: 38,
-          height: 38,
+          width: 36,
+          height: 36,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            gradient: LinearGradient(
-              colors: [turquoise, mainBlue],
+            borderRadius: BorderRadius.circular(10),
+            gradient: const LinearGradient(
+              colors: [_teal, Color(0xFF0099CC)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: mainBlue.withValues(alpha: 0.12),
-                blurRadius: 14,
-                offset: const Offset(0, 8),
-              )
-            ],
           ),
           child: const Icon(FontAwesomeIcons.boxOpen,
               color: Colors.white, size: 16),
@@ -345,714 +227,730 @@ class _LandingScreenSamaServicesInternationalState
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              "SAMA",
-              style: TextStyle(
-                color: text,
-                fontWeight: FontWeight.w900,
-                fontSize: 16,
-                letterSpacing: 0.4,
-              ),
-            ),
-            Text(
-              "Services international",
-              style: TextStyle(
-                color: muted,
-                fontWeight: FontWeight.w700,
-                fontSize: 11.5,
-              ),
-            ),
+            const Text("SAMA",
+                style: TextStyle(
+                    color: _textPrimary,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 15,
+                    letterSpacing: 2)),
+            Text("Services International",
+                style: TextStyle(
+                    color: _textMuted,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 10,
+                    letterSpacing: 0.5)),
           ],
         ),
       ],
     );
   }
 
-  Widget _moreMenu() {
+  Widget _navLink(String label, VoidCallback onTap) {
+    return TextButton(
+      onPressed: onTap,
+      style: TextButton.styleFrom(foregroundColor: _textMuted),
+      child: Text(label,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+    );
+  }
+
+  Widget _outlineBtn(String label, VoidCallback onTap) {
+    return OutlinedButton(
+      onPressed: onTap,
+      style: OutlinedButton.styleFrom(
+        foregroundColor: _textPrimary,
+        side: const BorderSide(color: _border, width: 1.5),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+      child: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+    );
+  }
+
+  Widget _solidBtn(String label, Color bg, VoidCallback onTap) {
+    return ElevatedButton(
+      onPressed: onTap,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: bg,
+        foregroundColor: _navy,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        elevation: 0,
+      ),
+      child: Text(label,
+          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+    );
+  }
+
+  Widget _menuButton() {
     return PopupMenuButton<String>(
-      tooltip: "Menu",
-      onSelected: (v) {
-        // onSelected is sync; call async handler without returning Future.
-        _handleMenuSelection(v);
+      color: _navySurface,
+      onSelected: (v) async {
+        switch (v) {
+          case 'tarifs':
+            await _scroll(_pricingKey);
+            break;
+          case 'departs':
+            await _scroll(_departuresKey);
+            break;
+          case 'contact':
+            await _scroll(_contactKey);
+            break;
+          case 'wa_fr':
+            await _wa(_waFrance);
+            break;
+          case 'wa_sn':
+            await _wa(_waDakar);
+            break;
+          case 'email':
+            await _openEmail();
+            break;
+          case 'login':
+            _push('/login');
+            break;
+          case 'signup':
+            _push('/signup');
+            break;
+        }
       },
-      itemBuilder: (context) => const [
-        PopupMenuItem(value: 'tarifs', child: Text("Tarifs")),
-        PopupMenuItem(value: 'departs', child: Text("Départs")),
-        PopupMenuItem(value: 'contact', child: Text("Contact")),
-        PopupMenuDivider(),
-        PopupMenuItem(value: 'wa_fr', child: Text("WhatsApp France")),
-        PopupMenuItem(value: 'wa_sn', child: Text("WhatsApp Dakar")),
-        PopupMenuItem(value: 'email', child: Text("E-mail")),
-        PopupMenuDivider(),
-        PopupMenuItem(value: 'login', child: Text("Connexion")),
-        PopupMenuItem(value: 'signup', child: Text("Créer un compte")),
-        PopupMenuItem(value: 'public', child: Text("Infos publiques")),
+      itemBuilder: (_) => [
+        _menuItem('tarifs', 'Tarifs', Icons.local_offer_outlined),
+        _menuItem('departs', 'Départs', Icons.event_available),
+        _menuItem('contact', 'Contact', Icons.support_agent),
+        const PopupMenuDivider(),
+        _menuItem('wa_fr', 'WhatsApp France', FontAwesomeIcons.whatsapp),
+        _menuItem('wa_sn', 'WhatsApp Dakar', FontAwesomeIcons.whatsapp),
+        _menuItem('email', 'Email', Icons.email_outlined),
+        const PopupMenuDivider(),
+        _menuItem('login', 'Connexion', Icons.login),
+        _menuItem('signup', 'Créer un compte', Icons.person_add_alt_1),
       ],
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: text.withValues(alpha: 0.14)),
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 8),
-            )
-          ],
+          border: Border.all(color: _border),
+          borderRadius: BorderRadius.circular(10),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.menu, color: text, size: 18),
-            const SizedBox(width: 8),
-            Text(
-              "Menu",
-              style: TextStyle(
-                color: text,
-                fontWeight: FontWeight.w900,
-                fontSize: 12.5,
-              ),
-            ),
-          ],
-        ),
+        child: const Icon(Icons.menu, color: _textPrimary, size: 20),
       ),
     );
   }
 
-  Widget _textButton({
-    required String label,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-          child: Row(
+  PopupMenuItem<String> _menuItem(String value, String label, IconData icon) {
+    return PopupMenuItem(
+      value: value,
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: _teal),
+          const SizedBox(width: 10),
+          Text(label,
+              style: const TextStyle(
+                  color: _textPrimary, fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+
+  // ── HERO ─────────────────────────────────────────────────────────────────────
+  Widget _hero(bool isDesktop) {
+    return AnimatedBuilder(
+      animation: _bgAnim,
+      builder: (context, _) {
+        return Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(
+              horizontal: isDesktop ? 64 : 20, vertical: isDesktop ? 80 : 48),
+          child: Stack(
             children: [
-              Icon(icon, size: 18, color: muted),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: TextStyle(
-                  color: text,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 12.5,
+              // Blobs de fond
+              Positioned(
+                top: -40,
+                right: isDesktop ? 60 : -20,
+                child: _blob(
+                    280, _teal.withValues(alpha: 0.06 + 0.04 * _bgAnim.value)),
+              ),
+              Positioned(
+                bottom: -20,
+                left: isDesktop ? 100 : -40,
+                child: _blob(
+                    220, _amber.withValues(alpha: 0.05 + 0.03 * _bgAnim.value)),
+              ),
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1100),
+                  child: isDesktop
+                      ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(flex: 3, child: _heroText(isDesktop)),
+                            const SizedBox(width: 48),
+                            Expanded(flex: 2, child: _heroCard()),
+                          ],
+                        )
+                      : Column(
+                          children: [
+                            _heroText(isDesktop),
+                            const SizedBox(height: 32),
+                            _heroCard(),
+                          ],
+                        ),
                 ),
               ),
             ],
           ),
-        ),
+        );
+      },
+    );
+  }
+
+  Widget _blob(double size, Color color) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color,
+        boxShadow: [BoxShadow(color: color, blurRadius: 80, spreadRadius: 20)],
       ),
     );
   }
 
-  Widget _primaryButton({
-    required String label,
-    required IconData icon,
-    required Color bg,
-    required Color fg,
-    required VoidCallback onTap,
-    Color? border,
-  }) {
-    return Material(
-      color: bg,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+  Widget _heroText(bool isDesktop) {
+    return Column(
+      crossAxisAlignment:
+          isDesktop ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border:
-                border != null ? Border.all(color: border, width: 1.2) : null,
-            boxShadow: [
-              BoxShadow(
-                color: bg == Colors.white
-                    ? Colors.black.withValues(alpha: 0.05)
-                    : bg.withValues(alpha: 0.18),
-                blurRadius: 14,
-                offset: const Offset(0, 10),
-              ),
-            ],
+            color: _teal.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: _teal.withValues(alpha: 0.3)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: fg, size: 18),
-              const SizedBox(width: 10),
-              Text(
-                label,
-                style: TextStyle(
-                  color: fg,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 13,
-                ),
-              ),
+              Container(
+                  width: 6,
+                  height: 6,
+                  decoration: const BoxDecoration(
+                      shape: BoxShape.circle, color: _teal)),
+              const SizedBox(width: 8),
+              const Text("Paris • Casablanca • Dakar",
+                  style: TextStyle(
+                      color: _teal,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                      letterSpacing: 0.5)),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  // ----------------------------
-  // HERO
-  // ----------------------------
-  Widget _hero({required bool isDesktop}) {
-    return AnimatedBuilder(
-      animation: _anim,
-      builder: (context, _) {
-        final t = _anim.value;
-
-        return Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: isDesktop ? 20 : 12,
-            vertical: isDesktop ? 18 : 10,
-          ),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1180),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(28),
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              const Color(0xFF07101F),
-                              mainBlue,
-                              turquoise,
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned.fill(
-                      child: IgnorePointer(
-                        child: CustomPaint(
-                          painter: _BlobsPainter(
-                            t: t,
-                            c1: turquoise,
-                            c2: mainBlue,
-                            c3: orange,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned.fill(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color:
-                              const Color(0xFF07101F).withValues(alpha: 0.42),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.16),
-                            width: 1.4,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: isDesktop ? 34 : 16,
-                        vertical: isDesktop ? 30 : 18,
-                      ),
-                      child: isDesktop
-                          ? Row(
-                              children: [
-                                Expanded(child: _heroCopy(isDesktop: true)),
-                                const SizedBox(width: 16),
-                                SizedBox(width: 420, child: _heroKeyInfoCard()),
-                              ],
-                            )
-                          : Column(
-                              children: [
-                                _heroCopy(isDesktop: false),
-                                const SizedBox(height: 14),
-                                _heroKeyInfoCard(),
-                              ],
-                            ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _heroCopy({required bool isDesktop}) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment:
-          isDesktop ? CrossAxisAlignment.start : CrossAxisAlignment.center,
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _floatingIcon(),
-            const SizedBox(width: 12),
-            Text(
-              "SAMA",
-              style: TextStyle(
-                fontWeight: FontWeight.w900,
-                fontSize: isDesktop ? 56 : 40,
-                color: Colors.white,
-                letterSpacing: -1.0,
-                shadows: [
-                  Shadow(
-                    color: Colors.black.withValues(alpha: 0.35),
-                    blurRadius: 22,
-                  )
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 20),
         Text(
-          "Services international",
+          "SAMA",
           textAlign: isDesktop ? TextAlign.left : TextAlign.center,
           style: TextStyle(
+            color: _textPrimary,
             fontWeight: FontWeight.w900,
-            fontSize: isDesktop ? 18 : 15,
-            color: Colors.white.withValues(alpha: 0.96),
+            fontSize: isDesktop ? 72 : 52,
+            letterSpacing: -2,
+            height: 0.9,
           ),
         ),
-        const SizedBox(height: 10),
         Text(
-          "Transport • Shopping • Convoyage • Suivi GPS • Achats sur demande",
+          "Services International",
           textAlign: isDesktop ? TextAlign.left : TextAlign.center,
           style: TextStyle(
+            color: _teal,
             fontWeight: FontWeight.w700,
-            height: 1.35,
-            fontSize: isDesktop ? 16.5 : 13.8,
-            color: Colors.white.withValues(alpha: 0.92),
+            fontSize: isDesktop ? 22 : 16,
+            letterSpacing: 1,
           ),
-        ),
-        const SizedBox(height: 14),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          alignment: isDesktop ? WrapAlignment.start : WrapAlignment.center,
-          children: [
-            _pill(label: "Paris", icon: Icons.location_on, accent: turquoise),
-            _pill(
-                label: "Casablanca", icon: Icons.location_on, accent: mainBlue),
-            _pill(label: "Dakar", icon: Icons.location_on, accent: orange),
-            _pill(
-                label: "Promo web –50 %", icon: Icons.percent, accent: orange),
-          ],
         ),
         const SizedBox(height: 16),
+        Text(
+          "Transport • Shopping • Convoyage\nSuivi GPS • Achats sur demande",
+          textAlign: isDesktop ? TextAlign.left : TextAlign.center,
+          style: const TextStyle(
+            color: _textMuted,
+            fontWeight: FontWeight.w500,
+            fontSize: 15,
+            height: 1.6,
+          ),
+        ),
+        const SizedBox(height: 28),
         Wrap(
-          spacing: 10,
-          runSpacing: 10,
+          spacing: 12,
+          runSpacing: 12,
           alignment: isDesktop ? WrapAlignment.start : WrapAlignment.center,
           children: [
-            _primaryButton(
-              label: "Tarifs",
-              icon: Icons.local_offer_outlined,
-              bg: Colors.white,
-              fg: text,
-              border: Colors.white.withValues(alpha: 0.0),
-              onTap: () => _scrollTo(_pricingKey),
-            ),
-            _primaryButton(
-              label: "Départs",
-              icon: Icons.event_available,
-              bg: orange,
-              fg: Colors.white,
-              onTap: () => _scrollTo(_departuresKey),
-            ),
-            _primaryButton(
-              label: "WhatsApp",
-              icon: FontAwesomeIcons.whatsapp,
-              bg: turquoise,
-              fg: Colors.white,
-              onTap: () => _openWhatsApp(digits: whatsappFranceDigits),
-            ),
+            _solidBtn("Créer un compte", _teal, () => _push('/signup')),
+            _solidBtn("WhatsApp", _amber, () => _wa(_waFrance)),
+            _outlineBtn("Tarifs", () => _scroll(_pricingKey)),
           ],
         ),
       ],
     );
   }
 
-  Widget _floatingIcon() {
-    return AnimatedBuilder(
-      animation: _anim,
-      builder: (context, child) {
-        final dy = (1.0 - _anim.value) * 6.0;
-        return Transform.translate(
-          offset: Offset(0, dy),
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.16),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.18),
-                width: 1.2,
+  Widget _heroCard() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: _navySurface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _border, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+              color: _teal.withValues(alpha: 0.06),
+              blurRadius: 40,
+              spreadRadius: 5)
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.bolt, color: _amber, size: 16),
+              const SizedBox(width: 6),
+              const Text("Infos essentielles",
+                  style: TextStyle(
+                      color: _textPrimary,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _heroInfoRow(Icons.local_offer_outlined, _amber, "Tarifs",
+              "10€/kg · 100DH/kg · 6500 FCFA/kg"),
+          const SizedBox(height: 12),
+          _heroInfoRow(Icons.percent, _teal, "Promo web", "–50 % via l'app"),
+          const SizedBox(height: 12),
+          _heroInfoRow(Icons.event_available, _teal, "Prochain départ",
+              "${_departures[0]['date']} · ${_departures[0]['route']}"),
+          const SizedBox(height: 20),
+          const Divider(color: _border),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _solidBtn("Connexion", _navyMid, () => _push('/login')),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.22),
-                  blurRadius: 18,
-                  offset: const Offset(0, 12),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _solidBtn("S'inscrire", _teal, () => _push('/signup')),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _heroInfoRow(IconData icon, Color color, String title, String value) {
+    return Row(
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: color, size: 16),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title,
+                  style: const TextStyle(
+                      color: _textMuted,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11)),
+              Text(value,
+                  style: const TextStyle(
+                      color: _textPrimary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── TICKER ───────────────────────────────────────────────────────────────────
+  Widget _ticker() {
+    final dep = _departures[_tickerIndex];
+    return AnimatedBuilder(
+      animation: _tickerAnim,
+      builder: (context, _) {
+        final opacity = _tickerAnim.value < 0.2 ? _tickerAnim.value / 0.2 : 1.0;
+        return Opacity(
+          opacity: opacity.clamp(0.0, 1.0),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            color: _amber.withValues(alpha: 0.10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.flight_takeoff, color: _amber, size: 14),
+                const SizedBox(width: 8),
+                Text(
+                  "Prochain départ · ${dep['flag']} ${dep['date']} · ${dep['route']}",
+                  style: const TextStyle(
+                      color: _amber,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12.5,
+                      letterSpacing: 0.3),
                 ),
+                const SizedBox(width: 16),
+                GestureDetector(
+                  onTap: () => _scroll(_departuresKey),
+                  child: const Text("Voir tous →",
+                      style: TextStyle(
+                          color: _amber,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 12,
+                          decoration: TextDecoration.underline,
+                          decorationColor: _amber)),
+                )
               ],
             ),
-            child: const Icon(FontAwesomeIcons.plane,
-                color: Colors.white, size: 22),
           ),
         );
       },
     );
   }
 
-  Widget _pill({
-    required String label,
-    required IconData icon,
-    required Color accent,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: accent.withValues(alpha: 0.45), width: 1.2),
+  // ── SERVICES ─────────────────────────────────────────────────────────────────
+  Widget _servicesSection(bool isDesktop) {
+    return _sectionWrap(
+      isDesktop: isDesktop,
+      title: "Nos Services",
+      subtitle: "Tout ce qu'il faut pour expédier, acheter et suivre.",
+      child: Wrap(
+        spacing: 14,
+        runSpacing: 14,
+        alignment: WrapAlignment.center,
+        children: _services
+            .map((s) => _serviceCard(
+                  s['icon'] as IconData,
+                  s['title'] as String,
+                  s['desc'] as String,
+                  s['color'] as Color,
+                ))
+            .toList(),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+    );
+  }
+
+  Widget _serviceCard(IconData icon, String title, String desc, Color color) {
+    return Container(
+      width: 220,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: _navySurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 14, color: Colors.white.withValues(alpha: 0.95)),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w900,
-              fontSize: 12.5,
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
             ),
+            child: Icon(icon, color: color, size: 18),
+          ),
+          const SizedBox(height: 12),
+          Text(title,
+              style: const TextStyle(
+                  color: _textPrimary,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14)),
+          const SizedBox(height: 4),
+          Text(desc,
+              style: const TextStyle(
+                  color: _textMuted,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 12,
+                  height: 1.4)),
+        ],
+      ),
+    );
+  }
+
+  // ── PRICING ──────────────────────────────────────────────────────────────────
+  Widget _pricingSection(bool isDesktop) {
+    return _sectionWrap(
+      isDesktop: isDesktop,
+      title: "Tarifs",
+      subtitle: "Prix au kilo. Réduction web disponible.",
+      child: Column(
+        children: [
+          Wrap(
+            spacing: 14,
+            runSpacing: 14,
+            alignment: WrapAlignment.center,
+            children: [
+              _priceCard("🇫🇷 Paris", "10 €", "par kg", _teal),
+              _priceCard("🇲🇦 Casablanca", "100 DH", "par kg", _amber),
+              _priceCard("🇸🇳 Dakar", "6 500 FCFA", "par kg", _teal),
+              _priceCard("🌐 Web", "–50 %", "via l'app", _amber),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _heroKeyInfoCard() {
-    final first = departures.isNotEmpty ? departures.first : null;
-
-    return _GlassCard(
-      radius: 24,
-      border: Colors.white.withValues(alpha: 0.18),
-      background: Colors.white.withValues(alpha: 0.10),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Icon(Icons.bolt, color: orange, size: 18),
-                const SizedBox(width: 8),
-                const Text(
-                  "Infos clés",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 14,
-                  ),
-                )
-              ],
-            ),
-            const SizedBox(height: 12),
-            _keyRow(
-              icon: Icons.local_offer,
-              title: "Tarifs",
-              value: _pricesInline(),
-              accent: orange,
-            ),
-            const SizedBox(height: 10),
-            _keyRow(
-              icon: Icons.percent,
-              title: "Promo web",
-              value: promoWeb,
-              accent: orange,
-            ),
-            if (first != null) ...[
-              const SizedBox(height: 10),
-              _keyRow(
-                icon: Icons.event_available,
-                title: "Prochain départ",
-                value: "${first["date"]} • ${first["route"]}",
-                accent: turquoise,
-              ),
-            ],
-            const SizedBox(height: 12),
-            _keyRow(
-              icon: FontAwesomeIcons.whatsapp,
-              title: "WhatsApp",
-              value:
-                  "${_displayE164(whatsappFranceDigits)} • ${_displayE164(whatsappDakarDigits)}",
-              accent: mainBlue,
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              alignment: WrapAlignment.center,
-              children: [
-                _primaryButton(
-                  label: "Connexion",
-                  icon: Icons.login,
-                  bg: Colors.white,
-                  fg: text,
-                  border: Colors.white.withValues(alpha: 0.0),
-                  onTap: () => _safePushNamed(context, '/login'),
-                ),
-                _primaryButton(
-                  label: "Créer un compte",
-                  icon: Icons.person_add_alt_1,
-                  bg: turquoise,
-                  fg: Colors.white,
-                  onTap: () => _safePushNamed(context, '/signup'),
-                ),
-              ],
-            ),
-          ],
-        ),
+  Widget _priceCard(String location, String price, String unit, Color accent) {
+    return Container(
+      width: 180,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: _navySurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: accent.withValues(alpha: 0.3), width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(location,
+              style: const TextStyle(
+                  color: _textMuted,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12)),
+          const SizedBox(height: 8),
+          Text(price,
+              style: TextStyle(
+                  color: accent,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 26,
+                  letterSpacing: -0.5)),
+          Text(unit,
+              style: const TextStyle(
+                  color: _textMuted,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 12)),
+        ],
       ),
     );
   }
 
-  Widget _keyRow({
-    required IconData icon,
-    required String title,
-    required String value,
-    required Color accent,
-  }) {
+  // ── DEPARTURES ───────────────────────────────────────────────────────────────
+  Widget _departuresSection(bool isDesktop) {
+    return _sectionWrap(
+      isDesktop: isDesktop,
+      title: "Départs à venir",
+      subtitle: "Les prochaines dates de convoyage disponibles.",
+      child: Column(
+        children: _departures
+            .asMap()
+            .entries
+            .map((e) => _departureRow(e.key, e.value))
+            .toList(),
+      ),
+    );
+  }
+
+  Widget _departureRow(int index, Map<String, String> dep) {
+    final isFirst = index == 0;
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF07101F).withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(16),
+        color: isFirst ? _teal.withValues(alpha: 0.08) : _navySurface,
+        borderRadius: BorderRadius.circular(12),
         border:
-            Border.all(color: Colors.white.withValues(alpha: 0.14), width: 1.1),
+            Border.all(color: isFirst ? _teal.withValues(alpha: 0.3) : _border),
       ),
       child: Row(
         children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.22),
-              borderRadius: BorderRadius.circular(14),
-              border:
-                  Border.all(color: accent.withValues(alpha: 0.30), width: 1.0),
-            ),
-            child: Icon(icon, color: Colors.white, size: 18),
-          ),
-          const SizedBox(width: 12),
+          Text(dep['flag']!, style: const TextStyle(fontSize: 20)),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.96),
-                    fontWeight: FontWeight.w900,
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.90),
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12.2,
-                    height: 1.2,
-                  ),
-                ),
+                Text(dep['route']!,
+                    style: TextStyle(
+                        color: isFirst ? _teal : _textPrimary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14)),
+                Text(dep['date']!,
+                    style: const TextStyle(
+                        color: _textMuted,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 12)),
               ],
             ),
-          )
+          ),
+          if (isFirst)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: _teal.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Text("PROCHAIN",
+                  style: TextStyle(
+                      color: _teal,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 10,
+                      letterSpacing: 1)),
+            ),
+          const SizedBox(width: 10),
+          ElevatedButton(
+            onPressed: () => _wa(_waDakar),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _amber,
+              foregroundColor: _navy,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+              elevation: 0,
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: const Text("Réserver",
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+          ),
         ],
       ),
     );
   }
 
-  // ----------------------------
-  // PRIMARY INFO CARDS
-  // ----------------------------
-  Widget _primaryInfoCards({required bool isDesktop}) {
-    final firstDate = departures.isNotEmpty ? departures.first["date"]! : "—";
-
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: isDesktop ? 20 : 12),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1180),
-          child: Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            alignment: WrapAlignment.center,
-            children: [
-              _infoCard(
-                title: "Tarifs",
-                value: _pricesInline(),
-                icon: Icons.local_offer_outlined,
-                accent: orange,
-              ),
-              _infoCard(
-                title: "Promo web",
-                value: promoWeb,
-                icon: Icons.percent,
-                accent: orange,
-              ),
-              _infoCard(
-                title: "Départ le plus proche",
-                value: firstDate,
-                icon: Icons.event_available,
-                accent: turquoise,
-              ),
-            ],
-          ),
-        ),
+  // ── CONTACT ──────────────────────────────────────────────────────────────────
+  Widget _contactSection(bool isDesktop) {
+    return _sectionWrap(
+      isDesktop: isDesktop,
+      title: "Contact",
+      subtitle: "Nous sommes disponibles 7j/7.",
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        alignment: WrapAlignment.center,
+        children: [
+          _contactBtn(FontAwesomeIcons.whatsapp, "WhatsApp France",
+              "+33 76 891 30 74", _teal, () => _wa(_waFrance)),
+          _contactBtn(FontAwesomeIcons.whatsapp, "WhatsApp Dakar",
+              "+221 78 304 28 38", _teal, () => _wa(_waDakar)),
+          _contactBtn(
+              Icons.email_outlined, "Email", _email, _amber, _openEmail),
+        ],
       ),
     );
   }
 
-  Widget _infoCard({
-    required String title,
-    required String value,
-    required IconData icon,
-    required Color accent,
-  }) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 260, maxWidth: 380),
+  Widget _contactBtn(IconData icon, String title, String subtitle, Color color,
+      VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        width: 240,
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: surface,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: accent.withValues(alpha: 0.16), width: 1.2),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 14,
-              offset: const Offset(0, 10),
-            ),
-            BoxShadow(
-              color: accent.withValues(alpha: 0.08),
-              blurRadius: 14,
-              offset: const Offset(0, 10),
-            ),
-          ],
+          color: _navySurface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
         ),
         child: Row(
           children: [
             Container(
-              width: 44,
-              height: 44,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
-                color: accent.withValues(alpha: 0.14),
-                borderRadius: BorderRadius.circular(16),
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: accent, size: 20),
+              child: Icon(icon, color: color, size: 18),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      color: text,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 13.5,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    value,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: muted,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 12.5,
-                      height: 1.2,
-                    ),
-                  ),
+                  Text(title,
+                      style: const TextStyle(
+                          color: _textPrimary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13)),
+                  Text(subtitle,
+                      style: const TextStyle(
+                          color: _textMuted,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 11),
+                      overflow: TextOverflow.ellipsis),
                 ],
               ),
-            )
+            ),
           ],
         ),
       ),
     );
   }
 
-  // ----------------------------
-  // SECTION WRAPPER
-  // ----------------------------
-  Widget _section({
+  // ── FOOTER ───────────────────────────────────────────────────────────────────
+  Widget _footer() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration:
+          const BoxDecoration(border: Border(top: BorderSide(color: _border))),
+      child: Column(
+        children: [
+          _brandLogo(),
+          const SizedBox(height: 12),
+          const Text(
+            "© 2026 SAMA · Services International · Paris · Casablanca · Dakar",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                color: _textMuted, fontWeight: FontWeight.w500, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── SECTION WRAPPER ───────────────────────────────────────────────────────────
+  Widget _sectionWrap({
+    required bool isDesktop,
     required String title,
     required String subtitle,
     required Widget child,
-    Color background = Colors.transparent,
   }) {
-    final w = MediaQuery.of(context).size.width;
-    final bool isDesktop = w >= 1024;
-
     return Container(
       width: double.infinity,
-      color: background,
       padding: EdgeInsets.symmetric(
-        vertical: isDesktop ? 26 : 16,
-        horizontal: isDesktop ? 20 : 12,
-      ),
+          horizontal: isDesktop ? 64 : 20, vertical: isDesktop ? 56 : 36),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1180),
+          constraints: const BoxConstraints(maxWidth: 1100),
           child: Column(
             children: [
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: text,
-                  fontWeight: FontWeight.w900,
-                  fontSize: isDesktop ? 28 : 20,
-                ),
-              ),
+              Text(title,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      color: _textPrimary,
+                      fontWeight: FontWeight.w900,
+                      fontSize: isDesktop ? 32 : 24,
+                      letterSpacing: -0.5)),
               const SizedBox(height: 6),
-              Text(
-                subtitle,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: muted,
-                  fontWeight: FontWeight.w700,
-                  fontSize: isDesktop ? 14 : 12.8,
-                ),
-              ),
-              const SizedBox(height: 16),
+              Text(subtitle,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      color: _textMuted,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14)),
+              const SizedBox(height: 28),
               child,
             ],
           ),
@@ -1060,542 +958,4 @@ class _LandingScreenSamaServicesInternationalState
       ),
     );
   }
-
-  // ----------------------------
-  // SERVICES
-  // ----------------------------
-  Widget _services() {
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      alignment: WrapAlignment.center,
-      children: [
-        _serviceCard(
-          title: "Transport international",
-          subtitle: "GP, fret aérien, bateau…",
-          icon: FontAwesomeIcons.truckFast,
-          accent: turquoise,
-          bullets: const [
-            "Groupage (GP)",
-            "Fret aérien",
-            "Maritime",
-            "Sur mesure"
-          ],
-        ),
-        _serviceCard(
-          title: "Shopping international",
-          subtitle: "Amazon, Temu, Shein, AliExpress…",
-          icon: FontAwesomeIcons.bagShopping,
-          accent: orange,
-          bullets: const [
-            "Commande",
-            "Réception",
-            "Consolidation",
-            "Livraison"
-          ],
-        ),
-        _serviceCard(
-          title: "Convoyage",
-          subtitle: "Véhicules et transferts.",
-          icon: FontAwesomeIcons.car,
-          accent: mainBlue,
-          bullets: const ["Véhicules", "Transferts", "Sécurité", "Traçabilité"],
-        ),
-        _serviceCard(
-          title: "Suivi GPS",
-          subtitle: "Visibilité en temps réel.",
-          icon: FontAwesomeIcons.locationDot,
-          accent: turquoise,
-          bullets: const ["Tracking", "Notifications", "Statut", "Support"],
-        ),
-        _serviceCard(
-          title: "Achats sur demande",
-          subtitle: "Magasins spécialisés, marchés…",
-          icon: FontAwesomeIcons.store,
-          accent: orange,
-          bullets: const ["Achat", "Contrôle", "Emballage", "Livraison"],
-        ),
-      ],
-    );
-  }
-
-  Widget _serviceCard({
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required Color accent,
-    required List<String> bullets,
-  }) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 260, maxWidth: 380),
-      child: _HoverCard(
-        border: accent.withValues(alpha: 0.16),
-        shadow: accent.withValues(alpha: 0.08),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(18),
-                      color: accent.withValues(alpha: 0.12),
-                      border: Border.all(
-                          color: accent.withValues(alpha: 0.18), width: 1.0),
-                    ),
-                    child: Icon(icon, color: accent, size: 20),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: TextStyle(
-                              color: text,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 14.8),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          subtitle,
-                          style: TextStyle(
-                              color: muted,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 12.8),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: bullets
-                    .map(
-                      (b) => Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF1F5F9),
-                          borderRadius: BorderRadius.circular(999),
-                          border:
-                              Border.all(color: text.withValues(alpha: 0.08)),
-                        ),
-                        child: Text(
-                          b,
-                          style: TextStyle(
-                              color: text,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 12.0),
-                        ),
-                      ),
-                    )
-                    .toList(),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ----------------------------
-  // PRICING
-  // ----------------------------
-  Widget _pricing() {
-    return Column(
-      children: [
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          alignment: WrapAlignment.center,
-          children: [
-            _priceCard("Paris", priceParis, mainBlue, note: "FR"),
-            _priceCard("Casablanca", priceCasablanca, turquoise, note: "MA"),
-            _priceCard("Dakar", priceDakar, orange, note: "SN"),
-            _priceCard("Promo web", promoWeb, orange, note: "WEB"),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border:
-                Border.all(color: orange.withValues(alpha: 0.25), width: 1.2),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(FontAwesomeIcons.star, color: orange, size: 14),
-              const SizedBox(width: 8),
-              Text(
-                "Réduction web : –50 % (selon disponibilité)",
-                style: TextStyle(
-                    color: text, fontWeight: FontWeight.w900, fontSize: 12.5),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _priceCard(String title, String value, Color accent,
-      {required String note}) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 260, maxWidth: 380),
-      child: _HoverCard(
-        border: accent.withValues(alpha: 0.16),
-        shadow: accent.withValues(alpha: 0.08),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(
-                      color: accent.withValues(alpha: 0.18), width: 1.1),
-                ),
-                child: Text(
-                  note,
-                  style: TextStyle(
-                      color: accent, fontWeight: FontWeight.w900, fontSize: 12),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title,
-                        style: TextStyle(
-                            color: text,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 13.2)),
-                    const SizedBox(height: 8),
-                    Text(value,
-                        style: TextStyle(
-                            color: accent,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 18)),
-                  ],
-                ),
-              ),
-              Icon(FontAwesomeIcons.tag,
-                  color: accent.withValues(alpha: 0.70), size: 16),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ----------------------------
-  // DEPARTURES
-  // ----------------------------
-  Widget _departures() {
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      alignment: WrapAlignment.center,
-      children: departures.map((d) {
-        final date = d["date"]!;
-        final route = d["route"]!;
-        final accent = _accentForRoute(route);
-        return _departureCard(date, route, accent);
-      }).toList(),
-    );
-  }
-
-  Color _accentForRoute(String route) {
-    if (route.contains("Dakar") && route.contains("Paris")) return mainBlue;
-    if (route.contains("Casablanca") && route.contains("Paris"))
-      return turquoise;
-    if (route.contains("Paris") && route.contains("Casablanca")) return orange;
-    if (route.contains("Casablanca") && route.contains("Dakar"))
-      return turquoise;
-    return orange;
-  }
-
-  Widget _departureCard(String date, String route, Color accent) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 260, maxWidth: 380),
-      child: _HoverCard(
-        border: accent.withValues(alpha: 0.14),
-        shadow: accent.withValues(alpha: 0.08),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Icon(FontAwesomeIcons.calendarDays, size: 16, color: accent),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  "$date • $route",
-                  style: TextStyle(
-                      color: text, fontWeight: FontWeight.w900, fontSize: 13.6),
-                ),
-              ),
-              Icon(FontAwesomeIcons.arrowRight,
-                  size: 14, color: accent.withValues(alpha: 0.70)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ----------------------------
-  // CONTACT + ACCESS
-  // ----------------------------
-  Widget _contactAndAccess() {
-    return Column(
-      children: [
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          alignment: WrapAlignment.center,
-          children: [
-            _primaryButton(
-              label: "WhatsApp France",
-              icon: FontAwesomeIcons.whatsapp,
-              bg: turquoise,
-              fg: Colors.white,
-              onTap: () => _openWhatsApp(digits: whatsappFranceDigits),
-            ),
-            _primaryButton(
-              label: "WhatsApp Dakar",
-              icon: FontAwesomeIcons.whatsapp,
-              bg: mainBlue,
-              fg: Colors.white,
-              onTap: () => _openWhatsApp(digits: whatsappDakarDigits),
-            ),
-            _primaryButton(
-              label: "E-mail",
-              icon: Icons.email,
-              bg: Colors.white,
-              fg: text,
-              border: text.withValues(alpha: 0.14),
-              onTap: _openEmail,
-            ),
-            _primaryButton(
-              label: "Connexion",
-              icon: Icons.login,
-              bg: Colors.white,
-              fg: text,
-              border: text.withValues(alpha: 0.14),
-              onTap: () => _safePushNamed(context, '/login'),
-            ),
-            _primaryButton(
-              label: "Créer un compte",
-              icon: Icons.person_add_alt_1,
-              bg: orange,
-              fg: Colors.white,
-              onTap: () => _safePushNamed(context, '/signup'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 860),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: surface,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: turquoise.withValues(alpha: 0.14)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 14,
-                  offset: const Offset(0, 10),
-                )
-              ],
-            ),
-            child: Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              alignment: WrapAlignment.center,
-              children: [
-                _infoPill(
-                    "🇫🇷 ${_displayE164(whatsappFranceDigits)}", turquoise),
-                _infoPill(
-                    "🇸🇳 ${_displayE164(whatsappDakarDigits)}", mainBlue),
-                _infoPill("✉️ $email", orange),
-                _infoPill("📍 Suivi GPS 24/7", turquoise),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _infoPill(String value, Color accent) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: accent.withValues(alpha: 0.18), width: 1.1),
-      ),
-      child: Text(
-        value,
-        style:
-            TextStyle(color: text, fontWeight: FontWeight.w900, fontSize: 12.0),
-      ),
-    );
-  }
-
-  // ----------------------------
-  // FOOTER
-  // ----------------------------
-  Widget _footer() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-      child: Column(
-        children: [
-          Divider(color: text.withValues(alpha: 0.10)),
-          const SizedBox(height: 14),
-          Text(
-            "© 2026 SAMA • Services international • Paris • Casablanca • Dakar",
-            textAlign: TextAlign.center,
-            style: TextStyle(
-                color: muted, fontWeight: FontWeight.w800, fontSize: 12.5),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _GlassCard extends StatelessWidget {
-  final Widget child;
-  final double radius;
-  final Color border;
-  final Color background;
-
-  const _GlassCard({
-    required this.child,
-    required this.radius,
-    required this.border,
-    required this.background,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(radius),
-        border: Border.all(color: border, width: 1.2),
-      ),
-      child: child,
-    );
-  }
-}
-
-class _HoverCard extends StatefulWidget {
-  final Widget child;
-  final Color border;
-  final Color shadow;
-
-  const _HoverCard({
-    required this.child,
-    required this.border,
-    required this.shadow,
-  });
-
-  @override
-  State<_HoverCard> createState() => _HoverCardState();
-}
-
-class _HoverCardState extends State<_HoverCard> {
-  bool _hover = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hover = true),
-      onExit: (_) => setState(() => _hover = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 170),
-        curve: Curves.easeOut,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: widget.border, width: 1.2),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: _hover ? 0.08 : 0.05),
-              blurRadius: _hover ? 24 : 12,
-              offset: Offset(0, _hover ? 14 : 7),
-            ),
-            BoxShadow(
-              color: widget.shadow.withValues(alpha: _hover ? 0.10 : 0.06),
-              blurRadius: _hover ? 24 : 14,
-              offset: const Offset(0, 12),
-            ),
-          ],
-        ),
-        child: widget.child,
-      ),
-    );
-  }
-}
-
-class _BlobsPainter extends CustomPainter {
-  final double t;
-  final Color c1;
-  final Color c2;
-  final Color c3;
-
-  _BlobsPainter({
-    required this.t,
-    required this.c1,
-    required this.c2,
-    required this.c3,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final p = Paint()..style = PaintingStyle.fill;
-
-    void blob(Offset center, double r, Color color) {
-      p
-        ..color = color
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 70);
-      canvas.drawCircle(center, r, p);
-    }
-
-    final a = (0.26 + 0.20 * t).clamp(0.0, 1.0);
-    final b = (0.22 + 0.18 * (1 - t)).clamp(0.0, 1.0);
-
-    blob(Offset(size.width * 0.18, size.height * 0.24), 220.0,
-        c1.withValues(alpha: a));
-    blob(Offset(size.width * 0.90, size.height * 0.30), 260.0,
-        c2.withValues(alpha: b));
-    blob(
-      Offset(size.width * 0.55, size.height * 0.92),
-      300.0,
-      c3.withValues(alpha: (0.16 + 0.10 * t).clamp(0.0, 1.0)),
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _BlobsPainter oldDelegate) => oldDelegate.t != t;
 }
