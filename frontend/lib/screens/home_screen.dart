@@ -41,7 +41,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   static const String _waFrance = "33768913074";
   static const String _waDakar = "221783042838";
-  // ✅ Email mis à jour
   static const String _email = "tech@ngom-holding.com";
 
   static final DateTime _targetDate = DateTime(2026, 3, 23);
@@ -91,7 +90,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   String _pad(int n) => n.toString().padLeft(2, '0');
 
-  // ✅ Message WhatsApp mis à jour
   Future<void> _wa(String digits) async {
     final uri = Uri.parse(
         "https://wa.me/$digits?text=${Uri.encodeComponent("Bonjour SAMA, j'ai besoin de réserver un service.")}");
@@ -105,9 +103,12 @@ class _HomeScreenState extends State<HomeScreen> {
     if (await canLaunchUrl(uri)) await launchUrl(uri);
   }
 
+  // ✅ Fix logout — navigator capturé avant le dialog
   void _logout(BuildContext context) {
-    showDialog(
+    final navigator = Navigator.of(context);
+    showDialog<bool>(
       context: context,
+      barrierDismissible: true,
       builder: (ctx) => AlertDialog(
         backgroundColor: _bgCard,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -117,18 +118,11 @@ class _HomeScreenState extends State<HomeScreen> {
             style: TextStyle(color: _textMuted)),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
+            onPressed: () => Navigator.of(ctx).pop(false),
             child: const Text("Annuler", style: TextStyle(color: _textMuted)),
           ),
           ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              await AuthService.logout();
-              if (context.mounted) {
-                Navigator.of(context)
-                    .pushNamedAndRemoveUntil('/', (_) => false);
-              }
-            },
+            onPressed: () => Navigator.of(ctx).pop(true),
             style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red.shade700,
                 foregroundColor: Colors.white,
@@ -140,10 +134,14 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-    );
+    ).then((confirmed) async {
+      if (confirmed != true) return;
+      await AuthService.logout();
+      navigator.pushNamedAndRemoveUntil('/', (_) => false);
+    });
   }
 
-  // ✅ Modale réservation pour utilisateur connecté
+  // ✅ Modale réservation — utilisateur connecté
   void _showReservationModal(BuildContext context, String departRoute) {
     showDialog(
       context: context,
@@ -152,105 +150,90 @@ class _HomeScreenState extends State<HomeScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              Row(children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                      color: _amber.withValues(alpha: 0.15),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Row(children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                    color: _amber.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12)),
+                child:
+                    const Icon(Icons.flight_takeoff, color: _amber, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                    const Text("Réserver ce départ",
+                        style: TextStyle(
+                            color: _textPrimary,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16)),
+                    Text(departRoute,
+                        style:
+                            const TextStyle(color: _textMuted, fontSize: 12)),
+                  ])),
+              IconButton(
+                onPressed: () => Navigator.pop(ctx),
+                icon: const Icon(Icons.close, color: _textMuted, size: 20),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            ]),
+            const SizedBox(height: 20),
+            const Divider(color: Color(0xFF1E3A55)),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton.icon(
+                icon: const Icon(FontAwesomeIcons.truckFast, size: 16),
+                label: const Text("Nouveau Transport",
+                    style:
+                        TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _appBlue,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
-                  child:
-                      const Icon(Icons.flight_takeoff, color: _amber, size: 20),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                    child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                      const Text("Réserver ce départ",
-                          style: TextStyle(
-                              color: _textPrimary,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 16)),
-                      Text(departRoute,
-                          style:
-                              const TextStyle(color: _textMuted, fontSize: 12)),
-                    ])),
-                IconButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  icon: const Icon(Icons.close, color: _textMuted, size: 20),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-              ]),
-
-              const SizedBox(height: 20),
-              const Divider(color: Color(0xFF1E3A55)),
-              const SizedBox(height: 16),
-
-              // ✅ Bouton Nouveau Transport
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton.icon(
-                  icon: const Icon(FontAwesomeIcons.truckFast, size: 16),
-                  label: const Text("Nouveau Transport",
-                      style:
-                          TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _appBlue,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => TransportFormScreen()));
-                  },
-                ),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => TransportFormScreen()));
+                },
               ),
-              const SizedBox(height: 10),
-
-              // ✅ Bouton Nouvelle Commande
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton.icon(
-                  icon: const Icon(FontAwesomeIcons.bagShopping, size: 16),
-                  label: const Text("Nouvelle Commande",
-                      style:
-                          TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _amber,
-                    foregroundColor: _bg,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => CommandeFormScreen()));
-                  },
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton.icon(
+                icon: const Icon(FontAwesomeIcons.bagShopping, size: 16),
+                label: const Text("Nouvelle Commande",
+                    style:
+                        TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _amber,
+                  foregroundColor: _bg,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => CommandeFormScreen()));
+                },
               ),
-
-              const SizedBox(height: 16),
-              const Divider(color: Color(0xFF1E3A55)),
-              const SizedBox(height: 12),
-
-              // WhatsApp France
-              _modalBtn(
+            ),
+            const SizedBox(height: 16),
+            const Divider(color: Color(0xFF1E3A55)),
+            const SizedBox(height: 12),
+            _modalBtn(
                 icon: FontAwesomeIcons.whatsapp,
                 color: _green,
                 label: "WhatsApp France",
@@ -258,12 +241,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTap: () {
                   Navigator.pop(ctx);
                   _wa(_waFrance);
-                },
-              ),
-              const SizedBox(height: 10),
-
-              // WhatsApp Dakar
-              _modalBtn(
+                }),
+            const SizedBox(height: 10),
+            _modalBtn(
                 icon: FontAwesomeIcons.whatsapp,
                 color: _green,
                 label: "WhatsApp Dakar",
@@ -271,12 +251,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTap: () {
                   Navigator.pop(ctx);
                   _wa(_waDakar);
-                },
-              ),
-              const SizedBox(height: 10),
-
-              // Email
-              _modalBtn(
+                }),
+            const SizedBox(height: 10),
+            _modalBtn(
                 icon: Icons.email_outlined,
                 color: _appBlue,
                 label: "Email",
@@ -284,22 +261,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTap: () {
                   Navigator.pop(ctx);
                   _openEmail();
-                },
-              ),
-            ],
-          ),
+                }),
+          ]),
         ),
       ),
     );
   }
 
-  Widget _modalBtn({
-    required IconData icon,
-    required Color color,
-    required String label,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
+  Widget _modalBtn(
+      {required IconData icon,
+      required Color color,
+      required String label,
+      required String subtitle,
+      required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -347,49 +321,46 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: _bg,
       body: SafeArea(
-        child: Column(
-          children: [
-            _topBar(context, user, isAdmin),
-            _tickerBanner(),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.symmetric(
-                    horizontal: isDesktop ? 40 : 16, vertical: 20),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1100),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _greeting(user),
-                        const SizedBox(height: 20),
-                        _countdownSection(),
-                        const SizedBox(height: 24),
-                        _quickActions(context, isDesktop),
+        child: Column(children: [
+          _topBar(context, user, isAdmin),
+          _tickerBanner(),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(
+                  horizontal: isDesktop ? 40 : 16, vertical: 20),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1100),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _greeting(user),
+                      const SizedBox(height: 20),
+                      _countdownSection(),
+                      const SizedBox(height: 24),
+                      _quickActions(context, isDesktop),
+                      const SizedBox(height: 28),
+                      _myActivitiesSection(context, isDesktop),
+                      const SizedBox(height: 28),
+                      _samaInfoBand(),
+                      const SizedBox(height: 28),
+                      _nextDeparturesSection(context),
+                      if (isAdmin) ...[
                         const SizedBox(height: 28),
-                        _myActivitiesSection(context, isDesktop),
-                        const SizedBox(height: 28),
-                        _samaInfoBand(),
-                        const SizedBox(height: 28),
-                        _nextDeparturesSection(context),
-                        if (isAdmin) ...[
-                          const SizedBox(height: 28),
-                          _adminSection(context, isDesktop),
-                        ],
-                        const SizedBox(height: 40),
+                        _adminSection(context, isDesktop),
                       ],
-                    ),
+                      const SizedBox(height: 40),
+                    ],
                   ),
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ]),
       ),
     );
   }
 
-  // ── TICKER ────────────────────────────────────────────────────────────────
   Widget _tickerBanner() {
     final dep = _nextDepartures[_tickerIndex];
     return AnimatedSwitcher(
@@ -438,7 +409,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── COMPTE À REBOURS ──────────────────────────────────────────────────────
   Widget _countdownSection() {
     final days = _remaining.inDays;
     final hours = _remaining.inHours % 24;
@@ -567,7 +537,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── TOP BAR ───────────────────────────────────────────────────────────────
   Widget _topBar(BuildContext context, LoggedUser user, bool isAdmin) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -625,7 +594,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── GREETING ──────────────────────────────────────────────────────────────
   Widget _greeting(LoggedUser user) {
     final hour = DateTime.now().hour;
     final salut = hour < 12
@@ -668,7 +636,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return s[0].toUpperCase() + s.substring(1).toLowerCase();
   }
 
-  // ── QUICK ACTIONS ─────────────────────────────────────────────────────────
   Widget _quickActions(BuildContext context, bool isDesktop) {
     final actions = [
       {
@@ -754,7 +721,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── MY ACTIVITIES ─────────────────────────────────────────────────────────
   Widget _myActivitiesSection(BuildContext context, bool isDesktop) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       _sectionLabel("Mes activités"),
@@ -858,7 +824,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── SAMA INFO BAND ────────────────────────────────────────────────────────
   Widget _samaInfoBand() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -932,7 +897,6 @@ class _HomeScreenState extends State<HomeScreen> {
         margin: const EdgeInsets.symmetric(horizontal: 4));
   }
 
-  // ── NEXT DEPARTURES ───────────────────────────────────────────────────────
   Widget _nextDeparturesSection(BuildContext context) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [
@@ -986,7 +950,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         letterSpacing: 0.8)),
               ),
             const SizedBox(width: 8),
-            // ✅ Bouton réserver ouvre la modale
             GestureDetector(
               onTap: () => _showReservationModal(context, dep['route']!),
               child: Container(
@@ -1005,7 +968,6 @@ class _HomeScreenState extends State<HomeScreen> {
     ]);
   }
 
-  // ── ADMIN SECTION ─────────────────────────────────────────────────────────
   Widget _adminSection(BuildContext context, bool isDesktop) {
     final items = [
       {

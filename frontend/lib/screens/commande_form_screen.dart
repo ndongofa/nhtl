@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+
 import '../models/commande.dart';
 import '../services/commande_service.dart';
 import '../widgets/phone_input_field.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 
 class CommandeFormScreen extends StatefulWidget {
   final Commande? commande;
-
   const CommandeFormScreen({Key? key, this.commande}) : super(key: key);
 
   @override
@@ -14,30 +15,39 @@ class CommandeFormScreen extends StatefulWidget {
 }
 
 class _CommandeFormScreenState extends State<CommandeFormScreen> {
+  // ── Palette style signup ──────────────────────────────────────────────────
+  static const Color _appBlue = Color(0xFF2296F3);
+  static const Color _bgLight = Color(0xFFF4F8FF);
+  static const Color _surface = Colors.white;
+  static const Color _textMain = Color(0xFF0F2040);
+  static const Color _textMuted = Color(0xFF6B7A99);
+  static const Color _border = Color(0xFFDDE3EF);
+  static const Color _amber = Color(0xFFFFB300);
+  static const Color _teal = Color(0xFF00BCD4);
+  static const Color _green = Color(0xFF22C55E);
+
   final _formKey = GlobalKey<FormState>();
   final _service = CommandeService();
   bool _isLoading = false;
 
-  final nomController = TextEditingController();
-  final prenomController = TextEditingController();
-  final emailController = TextEditingController();
-  final paysLivraisonController = TextEditingController();
-  final villeLivraisonController = TextEditingController();
-  final adresseLivraisonController = TextEditingController();
-  final lienProduitController = TextEditingController();
-  final descriptionCommandeController = TextEditingController();
-  final quantiteController = TextEditingController();
-  final prixUnitaireController = TextEditingController();
-  final prixTotalController = TextEditingController();
-  final notesSpecialesController = TextEditingController();
+  final _nomController = TextEditingController();
+  final _prenomController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _paysLivraisonController = TextEditingController();
+  final _villeLivraisonController = TextEditingController();
+  final _adresseLivraisonController = TextEditingController();
+  final _lienProduitController = TextEditingController();
+  final _descriptionCommandeController = TextEditingController();
+  final _quantiteController = TextEditingController();
+  final _prixUnitaireController = TextEditingController();
+  final _prixTotalController = TextEditingController();
+  final _notesSpecialesController = TextEditingController();
 
-  // ✅ Numéro E.164 retourné par PhoneInputField
   String? _phoneE164;
+  String _plateforme = 'AMAZON';
+  String _devise = 'EUR';
 
-  String _platformeSelectionnee = 'AMAZON';
-  String _deviseSelectionnee = 'USD';
-
-  final List<String> _plateformes = [
+  static const List<String> _plateformes = [
     'AMAZON',
     'TEMU',
     'SHEIN',
@@ -46,151 +56,115 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
     'ETSY',
     'AUTRE'
   ];
-  final List<String> _devises = ['USD', 'EUR', 'GBP', 'CAD', 'XAF'];
+  static const List<String> _devises = [
+    'EUR',
+    'USD',
+    'GBP',
+    'MAD',
+    'XOF',
+    'CAD'
+  ];
+
+  // Labels user-friendly pour les plateformes
+  static const Map<String, String> _plateformeLabels = {
+    'AMAZON': '📦 Amazon',
+    'TEMU': '🛍️ Temu',
+    'SHEIN': '👗 Shein',
+    'ALIEXPRESS': '🛒 AliExpress',
+    'EBAY': '🏷️ eBay',
+    'ETSY': '🎨 Etsy',
+    'AUTRE': '🌐 Autre site',
+  };
 
   @override
   void initState() {
     super.initState();
     final c = widget.commande;
     if (c != null) {
-      nomController.text = c.nom ?? '';
-      prenomController.text = c.prenom ?? '';
-      // ✅ Le numéro existant est pré-rempli via initialValue de PhoneInputField
+      _nomController.text = c.nom ?? '';
+      _prenomController.text = c.prenom ?? '';
       _phoneE164 = c.numeroTelephone;
-      emailController.text = c.email ?? '';
-      paysLivraisonController.text = c.paysLivraison ?? '';
-      villeLivraisonController.text = c.villeLivraison ?? '';
-      adresseLivraisonController.text = c.adresseLivraison ?? '';
-      lienProduitController.text = c.lienProduit ?? '';
-      descriptionCommandeController.text = c.descriptionCommande ?? '';
-      quantiteController.text = c.quantite?.toString() ?? '';
-      prixUnitaireController.text = c.prixUnitaire?.toString() ?? '';
-      prixTotalController.text = c.prixTotal?.toString() ?? '';
-      notesSpecialesController.text = c.notesSpeciales ?? '';
-      _platformeSelectionnee = c.plateforme ?? 'AMAZON';
-      _deviseSelectionnee = c.devise ?? 'USD';
+      _emailController.text = c.email ?? '';
+      _paysLivraisonController.text = c.paysLivraison ?? '';
+      _villeLivraisonController.text = c.villeLivraison ?? '';
+      _adresseLivraisonController.text = c.adresseLivraison ?? '';
+      _lienProduitController.text = c.lienProduit ?? '';
+      _descriptionCommandeController.text = c.descriptionCommande ?? '';
+      _quantiteController.text = c.quantite?.toString() ?? '';
+      _prixUnitaireController.text = c.prixUnitaire?.toString() ?? '';
+      _prixTotalController.text = c.prixTotal?.toString() ?? '';
+      _notesSpecialesController.text = c.notesSpeciales ?? '';
+      _plateforme = c.plateforme ?? 'AMAZON';
+      _devise = c.devise ?? 'EUR';
     }
   }
 
   @override
   void dispose() {
-    nomController.dispose();
-    prenomController.dispose();
-    emailController.dispose();
-    paysLivraisonController.dispose();
-    villeLivraisonController.dispose();
-    adresseLivraisonController.dispose();
-    lienProduitController.dispose();
-    descriptionCommandeController.dispose();
-    quantiteController.dispose();
-    prixUnitaireController.dispose();
-    prixTotalController.dispose();
-    notesSpecialesController.dispose();
+    _nomController.dispose();
+    _prenomController.dispose();
+    _emailController.dispose();
+    _paysLivraisonController.dispose();
+    _villeLivraisonController.dispose();
+    _adresseLivraisonController.dispose();
+    _lienProduitController.dispose();
+    _descriptionCommandeController.dispose();
+    _quantiteController.dispose();
+    _prixUnitaireController.dispose();
+    _prixTotalController.dispose();
+    _notesSpecialesController.dispose();
     super.dispose();
   }
 
-  String? _validateEmail(String? value) {
-    if (value != null && value.isNotEmpty) {
-      final emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
-      if (!emailRegex.hasMatch(value)) return 'Email invalide';
-    }
-    return null;
-  }
-
-  String? _validateAddress(String? value) {
-    if (value == null || value.isEmpty) return 'Obligatoire';
-    if (value.length < 10) return 'Minimum 10 caractères';
-    if (value.length > 500) return 'Maximum 500 caractères';
-    return null;
-  }
-
-  String? _validateDescription(String? value) {
-    if (value == null || value.isEmpty) return 'Obligatoire';
-    if (value.length < 10) return 'Minimum 10 caractères';
-    if (value.length > 1000) return 'Maximum 1000 caractères';
-    return null;
-  }
-
-  String? _validateQuantite(String? value) {
-    if (value == null || value.isEmpty) return 'Obligatoire';
-    final quantite = int.tryParse(value);
-    if (quantite == null || quantite < 1) return 'Minimum 1';
-    return null;
-  }
-
-  String? _validatePrice(String? value) {
-    if (value == null || value.isEmpty) return 'Obligatoire';
-    final price = double.tryParse(value);
-    if (price == null || price <= 0) return 'Doit être supérieur à 0';
-    return null;
-  }
-
-  Future<void> _submitForm() async {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-
     if (_phoneE164 == null || _phoneE164!.isEmpty) {
       Fluttertoast.showToast(
-        msg: 'Veuillez entrer un numéro de téléphone valide.',
-        gravity: ToastGravity.BOTTOM,
-        backgroundColor: Colors.red,
-      );
+          msg: 'Veuillez entrer un numéro de téléphone valide.',
+          backgroundColor: Colors.red,
+          toastLength: Toast.LENGTH_LONG);
       return;
     }
-
     setState(() => _isLoading = true);
-
     try {
-      final commandeData = Commande(
+      final data = Commande(
         id: widget.commande?.id,
-        nom: nomController.text.trim(),
-        prenom: prenomController.text.trim(),
-        // ✅ Toujours E.164
+        nom: _nomController.text.trim(),
+        prenom: _prenomController.text.trim(),
         numeroTelephone: _phoneE164!,
-        email: emailController.text.trim().isEmpty
+        email: _emailController.text.trim().isEmpty
             ? null
-            : emailController.text.trim(),
-        paysLivraison: paysLivraisonController.text.trim(),
-        villeLivraison: villeLivraisonController.text.trim(),
-        adresseLivraison: adresseLivraisonController.text.trim(),
-        plateforme: _platformeSelectionnee,
-        lienProduit: lienProduitController.text.trim(),
-        descriptionCommande: descriptionCommandeController.text.trim(),
-        quantite: int.parse(quantiteController.text),
-        prixUnitaire: double.parse(prixUnitaireController.text),
-        prixTotal: double.parse(prixTotalController.text),
-        devise: _deviseSelectionnee,
-        notesSpeciales: notesSpecialesController.text.trim().isEmpty
+            : _emailController.text.trim(),
+        paysLivraison: _paysLivraisonController.text.trim(),
+        villeLivraison: _villeLivraisonController.text.trim(),
+        adresseLivraison: _adresseLivraisonController.text.trim(),
+        plateforme: _plateforme,
+        lienProduit: _lienProduitController.text.trim(),
+        descriptionCommande: _descriptionCommandeController.text.trim(),
+        quantite: int.parse(_quantiteController.text.trim()),
+        prixUnitaire: double.parse(_prixUnitaireController.text.trim()),
+        prixTotal: double.parse(_prixTotalController.text.trim()),
+        devise: _devise,
+        notesSpeciales: _notesSpecialesController.text.trim().isEmpty
             ? null
-            : notesSpecialesController.text.trim(),
+            : _notesSpecialesController.text.trim(),
       );
-
       final result = widget.commande == null
-          ? await _service.createCommande(commandeData)
-          : await _service.updateCommande(commandeData);
-
+          ? await _service.createCommande(data)
+          : await _service.updateCommande(data);
       if (result != null) {
         Fluttertoast.showToast(
-          msg: widget.commande == null
-              ? '✅ Commande créée!'
-              : '✅ Commande modifiée!',
-          gravity: ToastGravity.BOTTOM,
-          backgroundColor: Colors.green,
-        );
+            msg: widget.commande == null
+                ? '✅ Commande créée !'
+                : '✅ Commande modifiée !',
+            backgroundColor: Colors.green);
         Navigator.pop(context, true);
       } else {
         Fluttertoast.showToast(
-          msg:
-              '❌ Erreur lors de la ${widget.commande == null ? "création" : "modification"}',
-          gravity: ToastGravity.BOTTOM,
-          backgroundColor: Colors.red,
-        );
+            msg: '❌ Une erreur est survenue.', backgroundColor: Colors.red);
       }
     } catch (e) {
-      Fluttertoast.showToast(
-        msg: '❌ Erreur: $e',
-        gravity: ToastGravity.BOTTOM,
-        backgroundColor: Colors.red,
-      );
+      Fluttertoast.showToast(msg: '❌ Erreur : $e', backgroundColor: Colors.red);
     } finally {
       setState(() => _isLoading = false);
     }
@@ -198,154 +172,370 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isEdit = widget.commande != null;
     return Scaffold(
+      backgroundColor: _bgLight,
       appBar: AppBar(
-        title: Text(widget.commande == null
-            ? 'Nouvelle Commande'
-            : 'Modifier Commande'),
+        backgroundColor: _appBlue,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: Text(isEdit ? 'Modifier la commande' : 'Nouvelle commande',
+            style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.3)),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              _buildSectionTitle('Informations Personnelles'),
-              _buildTextField(nomController, 'Nom',
-                  validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null),
-              _buildTextField(prenomController, 'Prénom',
-                  validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 640),
+            child: Form(
+              key: _formKey,
+              child: Column(children: [
+                // ── Section 1 : Destinataire ──────────────────────────────
+                _card(children: [
+                  _sectionHeader(Icons.person_outline, _appBlue, "Destinataire",
+                      "Qui va recevoir la commande ?"),
+                  const SizedBox(height: 20),
+                  Row(children: [
+                    Expanded(
+                        child: _field(
+                            _nomController, "Nom", Icons.badge_outlined,
+                            hint: "Ex : Diallo", required: true)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                        child: _field(
+                            _prenomController, "Prénom", Icons.person_outline,
+                            hint: "Ex : Fatou", required: true)),
+                  ]),
+                  const SizedBox(height: 14),
+                  PhoneInputField(
+                    label: 'Téléphone',
+                    initialCountryCode: 'SN',
+                    onChanged: (e164) => setState(() => _phoneE164 = e164),
+                  ),
+                  const SizedBox(height: 14),
+                  _field(_emailController, "Email (optionnel)",
+                      Icons.alternate_email,
+                      hint: "votre@email.com",
+                      required: false,
+                      keyboardType: TextInputType.emailAddress, validator: (v) {
+                    if (v == null || v.trim().isEmpty) return null;
+                    final regex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+                    return regex.hasMatch(v.trim()) ? null : 'Email invalide';
+                  }),
+                ]),
 
-              // ✅ PhoneInputField — format E.164 garanti
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: PhoneInputField(
-                  label: 'Numéro Téléphone',
-                  initialCountryCode: 'SN',
-                  onChanged: (e164) => setState(() => _phoneE164 = e164),
+                const SizedBox(height: 16),
+
+                // ── Section 2 : Adresse de livraison ─────────────────────
+                _card(children: [
+                  _sectionHeader(Icons.local_shipping_outlined, _teal,
+                      "Livraison", "Où livrer la commande ?"),
+                  const SizedBox(height: 20),
+                  _field(_paysLivraisonController, "Pays de livraison",
+                      Icons.flag_outlined,
+                      hint: "Ex : Sénégal, France, Maroc", required: true),
+                  const SizedBox(height: 14),
+                  Row(children: [
+                    Expanded(
+                        child: _field(_villeLivraisonController, "Ville",
+                            Icons.location_city_outlined,
+                            hint: "Ex : Dakar", required: true)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                        child: _field(_adresseLivraisonController,
+                            "Adresse complète", Icons.home_outlined,
+                            hint: "N°, rue, quartier, code postal...",
+                            required: true,
+                            maxLines: 2, validator: (v) {
+                      if (v == null || v.trim().isEmpty) return 'Requis';
+                      if (v.trim().length < 10) return 'Minimum 10 caractères';
+                      return null;
+                    })),
+                  ]),
+                ]),
+
+                const SizedBox(height: 16),
+
+                // ── Section 3 : Produit ───────────────────────────────────
+                _card(children: [
+                  _sectionHeader(Icons.shopping_bag_outlined, _amber, "Produit",
+                      "Détails de l'article à commander"),
+                  const SizedBox(height: 20),
+                  _dropdown(
+                      "Site d'achat",
+                      _plateforme,
+                      _plateformes.map((p) => p).toList(),
+                      Icons.store_outlined,
+                      (v) => setState(() => _plateforme = v!),
+                      displayLabels: _plateformeLabels),
+                  const SizedBox(height: 14),
+                  _field(_lienProduitController, "Lien du produit", Icons.link,
+                      hint: "https://www.amazon.fr/produit/...",
+                      required: true,
+                      keyboardType: TextInputType.url),
+                  const SizedBox(height: 14),
+                  _field(_descriptionCommandeController,
+                      "Description du produit", Icons.description_outlined,
+                      hint:
+                          "Taille, couleur, modèle, référence... soyez précis !",
+                      required: true,
+                      maxLines: 3, validator: (v) {
+                    if (v == null || v.trim().isEmpty) return 'Requis';
+                    if (v.trim().length < 10) return 'Minimum 10 caractères';
+                    return null;
+                  }),
+                ]),
+
+                const SizedBox(height: 16),
+
+                // ── Section 4 : Prix & quantité ───────────────────────────
+                _card(children: [
+                  _sectionHeader(Icons.payments_outlined, _green,
+                      "Prix & Quantité", "Combien et à quel prix ?"),
+                  const SizedBox(height: 20),
+                  Row(children: [
+                    Expanded(
+                        child: _field(_quantiteController, "Quantité",
+                            Icons.add_box_outlined,
+                            hint: "Ex : 2",
+                            keyboardType: TextInputType.number, validator: (v) {
+                      if (v == null || v.trim().isEmpty) return 'Requis';
+                      final q = int.tryParse(v.trim());
+                      return (q == null || q < 1) ? 'Min. 1' : null;
+                    })),
+                    const SizedBox(width: 12),
+                    Expanded(
+                        child: _dropdown(
+                            "Devise",
+                            _devise,
+                            _devises,
+                            Icons.currency_exchange,
+                            (v) => setState(() => _devise = v!))),
+                  ]),
+                  const SizedBox(height: 14),
+                  Row(children: [
+                    Expanded(
+                        child: _field(_prixUnitaireController, "Prix unitaire",
+                            Icons.sell_outlined,
+                            hint: "Ex : 29.99",
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true), validator: (v) {
+                      if (v == null || v.trim().isEmpty) return 'Requis';
+                      final p = double.tryParse(v.trim());
+                      return (p == null || p <= 0) ? 'Invalide' : null;
+                    })),
+                    const SizedBox(width: 12),
+                    Expanded(
+                        child: _field(_prixTotalController, "Prix total",
+                            Icons.calculate_outlined,
+                            hint: "Ex : 59.98",
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true), validator: (v) {
+                      if (v == null || v.trim().isEmpty) return 'Requis';
+                      final p = double.tryParse(v.trim());
+                      return (p == null || p <= 0) ? 'Invalide' : null;
+                    })),
+                  ]),
+                ]),
+
+                const SizedBox(height: 16),
+
+                // ── Section 5 : Notes ─────────────────────────────────────
+                _card(children: [
+                  _sectionHeader(Icons.sticky_note_2_outlined, _textMuted,
+                      "Notes", "Informations supplémentaires (optionnel)"),
+                  const SizedBox(height: 16),
+                  _field(_notesSpecialesController, "Notes spéciales",
+                      Icons.notes_outlined,
+                      hint:
+                          "Ex : Emballage cadeau, livraison urgente, variante spécifique...",
+                      required: false,
+                      maxLines: 3),
+                ]),
+
+                const SizedBox(height: 20),
+
+                // ── Bouton soumettre ──────────────────────────────────────
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton.icon(
+                    icon: _isLoading
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                                color: Colors.white, strokeWidth: 2))
+                        : Icon(
+                            isEdit
+                                ? Icons.save_outlined
+                                : Icons.shopping_cart_checkout,
+                            size: 18),
+                    label: Text(
+                      _isLoading
+                          ? "Envoi en cours..."
+                          : isEdit
+                              ? "Enregistrer les modifications"
+                              : "Passer la commande",
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w800, fontSize: 15),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _appBlue,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                    ),
+                    onPressed: _isLoading ? null : _submit,
+                  ),
                 ),
-              ),
-
-              _buildTextField(emailController, 'Email (optionnel)',
-                  validator: _validateEmail,
-                  hintText: 'example@email.com',
-                  keyboardType: TextInputType.emailAddress),
-
-              const SizedBox(height: 20),
-              _buildSectionTitle('Livraison'),
-              _buildTextField(paysLivraisonController, 'Pays',
-                  validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null),
-              _buildTextField(villeLivraisonController, 'Ville',
-                  validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null),
-              _buildTextField(adresseLivraisonController, 'Adresse',
-                  validator: _validateAddress,
-                  maxLines: 2,
-                  hintText: 'Minimum 10 caractères'),
-
-              const SizedBox(height: 20),
-              _buildSectionTitle('Produit'),
-              _buildDropdown('Plateforme', _platformeSelectionnee, _plateformes,
-                  (value) => setState(() => _platformeSelectionnee = value!)),
-              _buildTextField(lienProduitController, 'Lien du produit',
-                  validator: (v) => v?.isEmpty ?? true ? 'Obligatoire' : null,
-                  hintText: 'https://...'),
-              _buildTextField(descriptionCommandeController, 'Description',
-                  validator: _validateDescription,
-                  maxLines: 3,
-                  hintText: 'Minimum 10 caractères'),
-
-              const SizedBox(height: 20),
-              _buildSectionTitle('Détails Financiers'),
-              _buildTextField(quantiteController, 'Quantité',
-                  validator: _validateQuantite,
-                  keyboardType: TextInputType.number),
-              _buildTextField(prixUnitaireController, 'Prix unitaire',
-                  validator: _validatePrice,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true)),
-              _buildTextField(prixTotalController, 'Prix total',
-                  validator: _validatePrice,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true)),
-              _buildDropdown('Devise', _deviseSelectionnee, _devises,
-                  (value) => setState(() => _deviseSelectionnee = value!)),
-
-              const SizedBox(height: 20),
-              _buildSectionTitle('Notes'),
-              _buildTextField(
-                  notesSpecialesController, 'Notes spéciales (optionnel)',
-                  maxLines: 2, validator: null),
-
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _submitForm,
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2))
-                      : Text(widget.commande == null
-                          ? 'Créer la commande'
-                          : 'Modifier la commande'),
-                ),
-              ),
-            ],
+                const SizedBox(height: 32),
+              ]),
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Text(title,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+  // ── Helpers UI ────────────────────────────────────────────────────────────
+
+  Widget _card({required List<Widget> children}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _border),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 12,
+              offset: const Offset(0, 4))
+        ],
+      ),
+      child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start, children: children),
     );
   }
 
-  Widget _buildTextField(
+  Widget _sectionHeader(
+      IconData icon, Color color, String title, String subtitle) {
+    return Row(children: [
+      Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(12)),
+          child: Icon(icon, color: color, size: 20)),
+      const SizedBox(width: 12),
+      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(title,
+            style: const TextStyle(
+                color: _textMain, fontWeight: FontWeight.w800, fontSize: 15)),
+        Text(subtitle,
+            style: const TextStyle(
+                color: _textMuted, fontWeight: FontWeight.w400, fontSize: 12)),
+      ]),
+    ]);
+  }
+
+  Widget _field(
     TextEditingController controller,
-    String label, {
-    TextInputType keyboardType = TextInputType.text,
+    String label,
+    IconData icon, {
+    String? hint,
+    bool required = true,
     int maxLines = 1,
-    String? hintText,
+    TextInputType keyboardType = TextInputType.text,
     String? Function(String?)? validator,
   }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: TextFormField(
-        controller: controller,
-        decoration: InputDecoration(
-          labelText: label,
-          hintText: hintText,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-        keyboardType: keyboardType,
-        maxLines: maxLines,
-        validator:
-            validator ?? (v) => v?.isEmpty ?? true ? 'Obligatoire' : null,
+    return TextFormField(
+      controller: controller,
+      maxLines: maxLines,
+      keyboardType: keyboardType,
+      style: const TextStyle(
+          color: _textMain, fontWeight: FontWeight.w500, fontSize: 14),
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        labelStyle: const TextStyle(
+            color: _textMuted, fontWeight: FontWeight.w500, fontSize: 14),
+        hintStyle: const TextStyle(color: Color(0xFFB0BBCC), fontSize: 13),
+        prefixIcon: Icon(icon, color: _appBlue, size: 18),
+        filled: true,
+        fillColor: _bgLight,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _border)),
+        enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _border)),
+        focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _appBlue, width: 1.8)),
+        errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.red)),
       ),
+      validator: validator ??
+          (required
+              ? (v) =>
+                  (v == null || v.trim().isEmpty) ? 'Ce champ est requis' : null
+              : null),
     );
   }
 
-  Widget _buildDropdown(String label, String value, List<String> items,
-      Function(String?) onChanged) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: DropdownButtonFormField<String>(
-        value: value,
-        decoration: InputDecoration(
-          labelText: label,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-        items: items
-            .map((item) => DropdownMenuItem(value: item, child: Text(item)))
-            .toList(),
-        onChanged: onChanged,
+  Widget _dropdown(
+    String label,
+    String value,
+    List<String> items,
+    IconData icon,
+    Function(String?) onChanged, {
+    Map<String, String>? displayLabels,
+  }) {
+    final safeValue = items.contains(value) ? value : items.first;
+    return DropdownButtonFormField<String>(
+      value: safeValue,
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(
+            color: _textMuted, fontWeight: FontWeight.w500, fontSize: 14),
+        prefixIcon: Icon(icon, color: _appBlue, size: 18),
+        filled: true,
+        fillColor: _bgLight,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _border)),
+        enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _border)),
+        focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _appBlue, width: 1.8)),
       ),
+      style: const TextStyle(
+          color: _textMain, fontWeight: FontWeight.w500, fontSize: 14),
+      dropdownColor: _surface,
+      borderRadius: BorderRadius.circular(12),
+      items: items
+          .map((item) => DropdownMenuItem(
+                value: item,
+                child: Text(displayLabels?[item] ?? item,
+                    style: const TextStyle(color: _textMain)),
+              ))
+          .toList(),
+      onChanged: onChanged,
     );
   }
 }

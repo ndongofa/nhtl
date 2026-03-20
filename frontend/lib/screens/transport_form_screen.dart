@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+
 import '../models/transport.dart';
 import '../services/transport_service.dart';
 import '../widgets/phone_input_field.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 
 class TransportFormScreen extends StatefulWidget {
   final Transport? transport;
-
   const TransportFormScreen({Key? key, this.transport}) : super(key: key);
 
   @override
@@ -14,144 +15,151 @@ class TransportFormScreen extends StatefulWidget {
 }
 
 class _TransportFormScreenState extends State<TransportFormScreen> {
+  // ── Palette style signup ──────────────────────────────────────────────────
+  static const Color _appBlue = Color(0xFF2296F3);
+  static const Color _bgLight = Color(0xFFF4F8FF);
+  static const Color _surface = Colors.white;
+  static const Color _textMain = Color(0xFF0F2040);
+  static const Color _textMuted = Color(0xFF6B7A99);
+  static const Color _border = Color(0xFFDDE3EF);
+  static const Color _amber = Color(0xFFFFB300);
+  static const Color _teal = Color(0xFF00BCD4);
+  static const Color _green = Color(0xFF22C55E);
+
   final _formKey = GlobalKey<FormState>();
   final _service = TransportService();
   bool _isLoading = false;
 
-  final nomController = TextEditingController();
-  final prenomController = TextEditingController();
-  final emailController = TextEditingController();
-  final paysExpediteurController = TextEditingController();
-  final villeExpediteurController = TextEditingController();
-  final adresseExpediteurController = TextEditingController();
-  final paysDestinataireController = TextEditingController();
-  final villeDestinataireController = TextEditingController();
-  final adresseDestinataireController = TextEditingController();
-  final typesMarchandiseController = TextEditingController();
-  final descriptionController = TextEditingController();
-  final poidsController = TextEditingController();
-  final valeurEstimeeController = TextEditingController();
-  final deviseController = TextEditingController();
+  final _nomController = TextEditingController();
+  final _prenomController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _paysExpediteurController = TextEditingController();
+  final _villeExpediteurController = TextEditingController();
+  final _adresseExpediteurController = TextEditingController();
+  final _paysDestController = TextEditingController();
+  final _villeDestController = TextEditingController();
+  final _adresseDestController = TextEditingController();
+  final _typesMarchandiseController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _poidsController = TextEditingController();
+  final _valeurEstimeeController = TextEditingController();
+  final _deviseController = TextEditingController();
 
-  // ✅ Numéro E.164 retourné par PhoneInputField
   String? _phoneE164;
+  String _statut = "EN_ATTENTE";
 
-  String _statutSelectionne = "EN_ATTENTE";
-  final List<String> _statuts = ["EN_ATTENTE", "EN_COURS", "LIVRE", "ANNULE"];
+  static const List<String> _statuts = [
+    "EN_ATTENTE",
+    "EN_COURS",
+    "LIVRE",
+    "ANNULE"
+  ];
+  static const List<String> _devises = [
+    "EUR",
+    "USD",
+    "GBP",
+    "MAD",
+    "XOF",
+    "CAD"
+  ];
 
   @override
   void initState() {
     super.initState();
     final t = widget.transport;
     if (t != null) {
-      nomController.text = t.nom;
-      prenomController.text = t.prenom;
-      // ✅ Le numéro existant est conservé dans _phoneE164
+      _nomController.text = t.nom;
+      _prenomController.text = t.prenom;
       _phoneE164 = t.numeroTelephone;
-      emailController.text = t.email ?? '';
-      paysExpediteurController.text = t.paysExpediteur;
-      villeExpediteurController.text = t.villeExpediteur;
-      adresseExpediteurController.text = t.adresseExpediteur;
-      paysDestinataireController.text = t.paysDestinataire;
-      villeDestinataireController.text = t.villeDestinataire;
-      adresseDestinataireController.text = t.adresseDestinataire;
-      typesMarchandiseController.text = t.typesMarchandise;
-      descriptionController.text = t.description;
-      poidsController.text = t.poids?.toString() ?? '';
-      valeurEstimeeController.text = t.valeurEstimee.toString();
-      deviseController.text = t.devise;
-      _statutSelectionne = t.statut;
+      _emailController.text = t.email ?? '';
+      _paysExpediteurController.text = t.paysExpediteur;
+      _villeExpediteurController.text = t.villeExpediteur;
+      _adresseExpediteurController.text = t.adresseExpediteur;
+      _paysDestController.text = t.paysDestinataire;
+      _villeDestController.text = t.villeDestinataire;
+      _adresseDestController.text = t.adresseDestinataire;
+      _typesMarchandiseController.text = t.typesMarchandise;
+      _descriptionController.text = t.description;
+      _poidsController.text = t.poids?.toString() ?? '';
+      _valeurEstimeeController.text = t.valeurEstimee.toString();
+      _deviseController.text = t.devise;
+      _statut = t.statut;
+    } else {
+      _deviseController.text = 'EUR';
     }
   }
 
   @override
   void dispose() {
-    nomController.dispose();
-    prenomController.dispose();
-    emailController.dispose();
-    paysExpediteurController.dispose();
-    villeExpediteurController.dispose();
-    adresseExpediteurController.dispose();
-    paysDestinataireController.dispose();
-    villeDestinataireController.dispose();
-    adresseDestinataireController.dispose();
-    typesMarchandiseController.dispose();
-    descriptionController.dispose();
-    poidsController.dispose();
-    valeurEstimeeController.dispose();
-    deviseController.dispose();
+    _nomController.dispose();
+    _prenomController.dispose();
+    _emailController.dispose();
+    _paysExpediteurController.dispose();
+    _villeExpediteurController.dispose();
+    _adresseExpediteurController.dispose();
+    _paysDestController.dispose();
+    _villeDestController.dispose();
+    _adresseDestController.dispose();
+    _typesMarchandiseController.dispose();
+    _descriptionController.dispose();
+    _poidsController.dispose();
+    _valeurEstimeeController.dispose();
+    _deviseController.dispose();
     super.dispose();
   }
 
-  Future<void> _submitForm() async {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-
     if (_phoneE164 == null || _phoneE164!.isEmpty) {
       Fluttertoast.showToast(
-        msg: 'Veuillez entrer un numéro de téléphone valide.',
-        gravity: ToastGravity.BOTTOM,
-        backgroundColor: Colors.red,
-      );
+          msg: 'Veuillez entrer un numéro de téléphone valide.',
+          backgroundColor: Colors.red,
+          toastLength: Toast.LENGTH_LONG);
       return;
     }
-
     setState(() => _isLoading = true);
-
     try {
-      final transportData = Transport(
+      final data = Transport(
         id: widget.transport?.id,
-        nom: nomController.text.trim(),
-        prenom: prenomController.text.trim(),
-        // ✅ Toujours E.164
+        nom: _nomController.text.trim(),
+        prenom: _prenomController.text.trim(),
         numeroTelephone: _phoneE164!,
-        email: emailController.text.trim().isEmpty
+        email: _emailController.text.trim().isEmpty
             ? null
-            : emailController.text.trim(),
-        paysExpediteur: paysExpediteurController.text.trim(),
-        villeExpediteur: villeExpediteurController.text.trim(),
-        adresseExpediteur: adresseExpediteurController.text.trim(),
-        paysDestinataire: paysDestinataireController.text.trim(),
-        villeDestinataire: villeDestinataireController.text.trim(),
-        adresseDestinataire: adresseDestinataireController.text.trim(),
-        typesMarchandise: typesMarchandiseController.text.trim(),
-        description: descriptionController.text.trim(),
-        poids: poidsController.text.trim().isEmpty
+            : _emailController.text.trim(),
+        paysExpediteur: _paysExpediteurController.text.trim(),
+        villeExpediteur: _villeExpediteurController.text.trim(),
+        adresseExpediteur: _adresseExpediteurController.text.trim(),
+        paysDestinataire: _paysDestController.text.trim(),
+        villeDestinataire: _villeDestController.text.trim(),
+        adresseDestinataire: _adresseDestController.text.trim(),
+        typesMarchandise: _typesMarchandiseController.text.trim(),
+        description: _descriptionController.text.trim(),
+        poids: _poidsController.text.trim().isEmpty
             ? null
-            : double.tryParse(poidsController.text.trim()),
-        valeurEstimee: double.parse(valeurEstimeeController.text.trim()),
-        devise: deviseController.text.trim().isEmpty
-            ? 'USD'
-            : deviseController.text.trim(),
-        statut: _statutSelectionne,
+            : double.tryParse(_poidsController.text.trim()),
+        valeurEstimee: double.parse(_valeurEstimeeController.text.trim()),
+        devise: _deviseController.text.trim().isEmpty
+            ? 'EUR'
+            : _deviseController.text.trim(),
+        statut: _statut,
       );
-
       final result = widget.transport == null
-          ? await _service.createTransport(transportData)
-          : await _service.updateTransport(transportData.id!, transportData);
-
+          ? await _service.createTransport(data)
+          : await _service.updateTransport(data.id!, data);
       if (result != null) {
         Fluttertoast.showToast(
-          msg: widget.transport == null
-              ? '✅ Transport créé!'
-              : '✅ Transport modifié!',
-          gravity: ToastGravity.BOTTOM,
-          backgroundColor: Colors.green,
-        );
+            msg: widget.transport == null
+                ? '✅ Transport créé !'
+                : '✅ Transport modifié !',
+            backgroundColor: Colors.green);
         Navigator.pop(context, true);
       } else {
         Fluttertoast.showToast(
-          msg:
-              '❌ Erreur lors de la ${widget.transport == null ? "création" : "modification"}',
-          gravity: ToastGravity.BOTTOM,
-          backgroundColor: Colors.red,
-        );
+            msg: '❌ Une erreur est survenue.', backgroundColor: Colors.red);
       }
     } catch (e) {
-      Fluttertoast.showToast(
-        msg: '❌ Erreur: $e',
-        gravity: ToastGravity.BOTTOM,
-        backgroundColor: Colors.red,
-      );
+      Fluttertoast.showToast(msg: '❌ Erreur : $e', backgroundColor: Colors.red);
     } finally {
       setState(() => _isLoading = false);
     }
@@ -159,109 +167,349 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isEdit = widget.transport != null;
     return Scaffold(
+      backgroundColor: _bgLight,
       appBar: AppBar(
-        title: Text(widget.transport == null
-            ? 'Nouveau Transport'
-            : 'Modifier Transport'),
+        backgroundColor: _appBlue,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: Text(isEdit ? 'Modifier le transport' : 'Nouveau transport',
+            style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.3)),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              _buildSectionTitle('Expéditeur'),
-              _buildTextField(nomController, 'Nom', true),
-              _buildTextField(prenomController, 'Prénom', true),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 640),
+            child: Form(
+              key: _formKey,
+              child: Column(children: [
+                // ── Section 1 : Expéditeur ────────────────────────────────
+                _card(children: [
+                  _sectionHeader(Icons.person_outline, _appBlue, "Expéditeur",
+                      "Informations de la personne qui envoie"),
+                  const SizedBox(height: 20),
+                  Row(children: [
+                    Expanded(
+                        child: _field(
+                            _nomController, "Nom", Icons.badge_outlined,
+                            hint: "Ex : Diallo", required: true)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                        child: _field(
+                            _prenomController, "Prénom", Icons.person_outline,
+                            hint: "Ex : Mamadou", required: true)),
+                  ]),
+                  const SizedBox(height: 14),
+                  PhoneInputField(
+                    label: 'Téléphone',
+                    initialCountryCode: 'SN',
+                    onChanged: (e164) => setState(() => _phoneE164 = e164),
+                  ),
+                  const SizedBox(height: 14),
+                  _field(_emailController, "Email (optionnel)",
+                      Icons.alternate_email,
+                      hint: "votre@email.com",
+                      keyboardType: TextInputType.emailAddress,
+                      required: false, validator: (v) {
+                    if (v == null || v.trim().isEmpty) return null;
+                    final regex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+                    return regex.hasMatch(v.trim()) ? null : 'Email invalide';
+                  }),
+                  const SizedBox(height: 14),
+                  _field(_paysExpediteurController, "Pays d'expédition",
+                      Icons.flag_outlined,
+                      hint: "Ex : France, Sénégal, Maroc", required: true),
+                  const SizedBox(height: 14),
+                  Row(children: [
+                    Expanded(
+                        child: _field(_villeExpediteurController, "Ville",
+                            Icons.location_city_outlined,
+                            hint: "Ex : Paris", required: true)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                        child: _field(_adresseExpediteurController,
+                            "Adresse complète", Icons.home_outlined,
+                            hint: "N°, rue, quartier...",
+                            required: true,
+                            maxLines: 2)),
+                  ]),
+                ]),
 
-              // ✅ PhoneInputField — format E.164 garanti
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: PhoneInputField(
-                  label: 'N° Téléphone',
-                  initialCountryCode: 'SN',
-                  onChanged: (e164) => setState(() => _phoneE164 = e164),
+                const SizedBox(height: 16),
+
+                // ── Section 2 : Destinataire ──────────────────────────────
+                _card(children: [
+                  _sectionHeader(Icons.place_outlined, _teal, "Destinataire",
+                      "Informations de livraison"),
+                  const SizedBox(height: 20),
+                  _field(_paysDestController, "Pays de destination",
+                      Icons.flag_outlined,
+                      hint: "Ex : Sénégal, France, Maroc", required: true),
+                  const SizedBox(height: 14),
+                  Row(children: [
+                    Expanded(
+                        child: _field(_villeDestController, "Ville",
+                            Icons.location_city_outlined,
+                            hint: "Ex : Dakar", required: true)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                        child: _field(_adresseDestController,
+                            "Adresse complète", Icons.home_outlined,
+                            hint: "N°, rue, quartier...",
+                            required: true,
+                            maxLines: 2)),
+                  ]),
+                ]),
+
+                const SizedBox(height: 16),
+
+                // ── Section 3 : Marchandise ───────────────────────────────
+                _card(children: [
+                  _sectionHeader(
+                      Icons.inventory_2_outlined,
+                      _amber,
+                      "Marchandise",
+                      "Détails du colis ou produit à transporter"),
+                  const SizedBox(height: 20),
+                  _field(_typesMarchandiseController, "Type de marchandise",
+                      Icons.category_outlined,
+                      hint: "Ex : Vêtements, électronique, alimentaire...",
+                      required: true),
+                  const SizedBox(height: 14),
+                  _field(_descriptionController, "Description détaillée",
+                      Icons.description_outlined,
+                      hint: "Décrivez précisément le contenu du colis",
+                      required: true,
+                      maxLines: 3, validator: (v) {
+                    if (v == null || v.trim().isEmpty) return 'Requis';
+                    if (v.trim().length < 10) return 'Minimum 10 caractères';
+                    return null;
+                  }),
+                  const SizedBox(height: 14),
+                  Row(children: [
+                    Expanded(
+                        child: _field(_poidsController, "Poids estimé (kg)",
+                            Icons.scale_outlined,
+                            hint: "Ex : 5.5",
+                            required: false,
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true))),
+                    const SizedBox(width: 12),
+                    Expanded(
+                        child: _field(_valeurEstimeeController,
+                            "Valeur estimée", Icons.payments_outlined,
+                            hint: "Ex : 150",
+                            required: true,
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true), validator: (v) {
+                      if (v == null || v.trim().isEmpty) return 'Requis';
+                      final val = double.tryParse(v.trim());
+                      return (val == null || val <= 0)
+                          ? 'Valeur invalide'
+                          : null;
+                    })),
+                  ]),
+                  const SizedBox(height: 14),
+                  _dropdown(
+                      "Devise",
+                      _deviseController.text.isEmpty
+                          ? 'EUR'
+                          : _deviseController.text,
+                      _devises,
+                      Icons.currency_exchange, (v) {
+                    setState(() => _deviseController.text = v!);
+                  }),
+                ]),
+
+                const SizedBox(height: 16),
+
+                // ── Section 4 : Statut (édition uniquement) ───────────────
+                if (isEdit)
+                  _card(children: [
+                    _sectionHeader(Icons.track_changes_outlined, _green,
+                        "Statut", "État actuel du transport"),
+                    const SizedBox(height: 16),
+                    _dropdown("Statut du transport", _statut, _statuts,
+                        Icons.local_shipping_outlined, (v) {
+                      setState(() => _statut = v!);
+                    }),
+                  ]),
+
+                if (isEdit) const SizedBox(height: 16),
+
+                // ── Bouton soumettre ──────────────────────────────────────
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton.icon(
+                    icon: _isLoading
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                                color: Colors.white, strokeWidth: 2))
+                        : Icon(
+                            isEdit ? Icons.save_outlined : Icons.send_outlined,
+                            size: 18),
+                    label: Text(
+                      _isLoading
+                          ? "Envoi en cours..."
+                          : isEdit
+                              ? "Enregistrer les modifications"
+                              : "Envoyer la demande de transport",
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w800, fontSize: 15),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _appBlue,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                    ),
+                    onPressed: _isLoading ? null : _submit,
+                  ),
                 ),
-              ),
-
-              _buildTextField(emailController, 'Email (optionnel)', false),
-              _buildTextField(paysExpediteurController, 'Pays', true),
-              _buildTextField(villeExpediteurController, 'Ville', true),
-              _buildTextField(adresseExpediteurController, 'Adresse', true),
-
-              _buildSectionTitle('Destinataire'),
-              _buildTextField(paysDestinataireController, 'Pays', true),
-              _buildTextField(villeDestinataireController, 'Ville', true),
-              _buildTextField(adresseDestinataireController, 'Adresse', true),
-
-              _buildSectionTitle('Marchandise'),
-              _buildTextField(typesMarchandiseController, 'Type', true),
-              _buildTextField(descriptionController, 'Description', true),
-              _buildTextField(poidsController, 'Poids (kg)', false),
-              _buildTextField(valeurEstimeeController, 'Valeur estimée', true,
-                  keyboardType: TextInputType.number),
-              _buildTextField(deviseController, 'Devise', true),
-
-              DropdownButtonFormField<String>(
-                value: _statutSelectionne,
-                items: _statuts
-                    .map((s) => DropdownMenuItem(value: s, child: Text(s)))
-                    .toList(),
-                decoration: const InputDecoration(
-                    labelText: 'Statut', border: OutlineInputBorder()),
-                onChanged: (val) => setState(() => _statutSelectionne = val!),
-              ),
-
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _submitForm,
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2))
-                      : Text(widget.transport == null
-                          ? 'Créer le transport'
-                          : 'Modifier le transport'),
-                ),
-              ),
-            ],
+                const SizedBox(height: 32),
+              ]),
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Text(title,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+  // ── Helpers UI ────────────────────────────────────────────────────────────
+
+  Widget _card({required List<Widget> children}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _border),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 12,
+              offset: const Offset(0, 4))
+        ],
+      ),
+      child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start, children: children),
     );
   }
 
-  Widget _buildTextField(
+  Widget _sectionHeader(
+      IconData icon, Color color, String title, String subtitle) {
+    return Row(children: [
+      Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(12)),
+          child: Icon(icon, color: color, size: 20)),
+      const SizedBox(width: 12),
+      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(title,
+            style: const TextStyle(
+                color: _textMain, fontWeight: FontWeight.w800, fontSize: 15)),
+        Text(subtitle,
+            style: const TextStyle(
+                color: _textMuted, fontWeight: FontWeight.w400, fontSize: 12)),
+      ]),
+    ]);
+  }
+
+  Widget _field(
     TextEditingController controller,
     String label,
-    bool required, {
+    IconData icon, {
+    String? hint,
+    bool required = true,
+    int maxLines = 1,
     TextInputType keyboardType = TextInputType.text,
+    String? Function(String?)? validator,
   }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: TextFormField(
-        controller: controller,
-        decoration: InputDecoration(
-          labelText: label,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-        keyboardType: keyboardType,
-        validator: required
-            ? (v) => v == null || v.isEmpty ? 'Obligatoire' : null
-            : null,
+    return TextFormField(
+      controller: controller,
+      maxLines: maxLines,
+      keyboardType: keyboardType,
+      style: const TextStyle(
+          color: _textMain, fontWeight: FontWeight.w500, fontSize: 14),
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        labelStyle: const TextStyle(
+            color: _textMuted, fontWeight: FontWeight.w500, fontSize: 14),
+        hintStyle: const TextStyle(color: Color(0xFFB0BBCC), fontSize: 13),
+        prefixIcon: Icon(icon, color: _appBlue, size: 18),
+        filled: true,
+        fillColor: _bgLight,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _border)),
+        enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _border)),
+        focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _appBlue, width: 1.8)),
+        errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.red)),
       ),
+      validator: validator ??
+          (required
+              ? (v) =>
+                  (v == null || v.trim().isEmpty) ? 'Ce champ est requis' : null
+              : null),
+    );
+  }
+
+  Widget _dropdown(String label, String value, List<String> items,
+      IconData icon, Function(String?) onChanged) {
+    return DropdownButtonFormField<String>(
+      value: items.contains(value) ? value : items.first,
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(
+            color: _textMuted, fontWeight: FontWeight.w500, fontSize: 14),
+        prefixIcon: Icon(icon, color: _appBlue, size: 18),
+        filled: true,
+        fillColor: _bgLight,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _border)),
+        enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _border)),
+        focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _appBlue, width: 1.8)),
+      ),
+      style: const TextStyle(
+          color: _textMain, fontWeight: FontWeight.w500, fontSize: 14),
+      dropdownColor: _surface,
+      borderRadius: BorderRadius.circular(12),
+      items: items
+          .map((item) => DropdownMenuItem(
+                value: item,
+                child: Text(item, style: const TextStyle(color: _textMain)),
+              ))
+          .toList(),
+      onChanged: onChanged,
     );
   }
 }
