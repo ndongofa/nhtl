@@ -22,23 +22,27 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // ── Palette style signup — fond clair ─────────────────────────────────────
+  static const Color _bg = Color(0xFF0D1B2E);
+  static const Color _bgSection = Color(0xFF112236);
+  static const Color _bgCard = Color(0xFF1A2E45);
   static const Color _appBlue = Color(0xFF2296F3);
-  static const Color _blueDark = Color(0xFF0D5EBF);
-  static const Color _blueLight = Color(0xFFE8F4FE);
+  static const Color _blueBright = Color(0xFF42AAFE);
   static const Color _amber = Color(0xFFFFB300);
-  static const Color _amberLight = Color(0xFFFFF3D0);
-  static const Color _teal = Color(0xFF00BCD4);
+  static const Color _teal = Color(0xFF00D4C8);
   static const Color _green = Color(0xFF22C55E);
-  static const Color _bg = Color(0xFFF4F8FF);
-  static const Color _surface = Colors.white;
-  static const Color _textMain = Color(0xFF0F2040);
-  static const Color _textMuted = Color(0xFF6B7A99);
-  static const Color _border = Color(0xFFDDE3EF);
-  static const Color _sectionAlt = Color(0xFFEEF5FF);
+  static const Color _textPrimary = Color(0xFFF0F6FF);
+  static const Color _textSecond = Color(0xFFB0C4DE);
+  static const Color _textMuted = Color(0xFF7A94B0);
+  static const Color _border = Color(0xFF1E3A55);
+  static const Color _borderBright = Color(0xFF2A5070);
+  static const Color _lightBg = Color(0xFFF0F6FF);
+  static const Color _textDark = Color(0xFF0F2040);
+  static const Color _textDarkMuted = Color(0xFF4A6A8A);
 
   static const String _waFrance = "33768913074";
   static const String _waDakar = "221783042838";
+  // ✅ Email mis à jour
+  static const String _email = "tech@ngom-holding.com";
 
   static final DateTime _targetDate = DateTime(2026, 3, 23);
 
@@ -87,20 +91,28 @@ class _HomeScreenState extends State<HomeScreen> {
 
   String _pad(int n) => n.toString().padLeft(2, '0');
 
+  // ✅ Message WhatsApp mis à jour
   Future<void> _wa(String digits) async {
     final uri = Uri.parse(
-        "https://wa.me/$digits?text=${Uri.encodeComponent("Bonjour SAMA, j'aimerais un devis.")}");
+        "https://wa.me/$digits?text=${Uri.encodeComponent("Bonjour SAMA, j'ai besoin de réserver un service.")}");
     if (await canLaunchUrl(uri))
       await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  Future<void> _openEmail() async {
+    final uri = Uri.parse(
+        "mailto:$_email?subject=${Uri.encodeComponent("Demande de réservation - SAMA")}");
+    if (await canLaunchUrl(uri)) await launchUrl(uri);
   }
 
   void _logout(BuildContext context) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: _bgCard,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text("Déconnexion",
-            style: TextStyle(color: _textMain, fontWeight: FontWeight.w800)),
+            style: TextStyle(color: _textPrimary, fontWeight: FontWeight.w800)),
         content: const Text("Êtes-vous sûr de vouloir vous déconnecter ?",
             style: TextStyle(color: _textMuted)),
         actions: [
@@ -118,7 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
               }
             },
             style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade600,
+                backgroundColor: Colors.red.shade700,
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
@@ -127,6 +139,200 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: TextStyle(fontWeight: FontWeight.w700)),
           ),
         ],
+      ),
+    );
+  }
+
+  // ✅ Modale réservation pour utilisateur connecté
+  void _showReservationModal(BuildContext context, String departRoute) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: _bgCard,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Row(children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                      color: _amber.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12)),
+                  child:
+                      const Icon(Icons.flight_takeoff, color: _amber, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                      const Text("Réserver ce départ",
+                          style: TextStyle(
+                              color: _textPrimary,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16)),
+                      Text(departRoute,
+                          style:
+                              const TextStyle(color: _textMuted, fontSize: 12)),
+                    ])),
+                IconButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  icon: const Icon(Icons.close, color: _textMuted, size: 20),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ]),
+
+              const SizedBox(height: 20),
+              const Divider(color: Color(0xFF1E3A55)),
+              const SizedBox(height: 16),
+
+              // ✅ Bouton Nouveau Transport
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  icon: const Icon(FontAwesomeIcons.truckFast, size: 16),
+                  label: const Text("Nouveau Transport",
+                      style:
+                          TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _appBlue,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => TransportFormScreen()));
+                  },
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // ✅ Bouton Nouvelle Commande
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  icon: const Icon(FontAwesomeIcons.bagShopping, size: 16),
+                  label: const Text("Nouvelle Commande",
+                      style:
+                          TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _amber,
+                    foregroundColor: _bg,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => CommandeFormScreen()));
+                  },
+                ),
+              ),
+
+              const SizedBox(height: 16),
+              const Divider(color: Color(0xFF1E3A55)),
+              const SizedBox(height: 12),
+
+              // WhatsApp France
+              _modalBtn(
+                icon: FontAwesomeIcons.whatsapp,
+                color: _green,
+                label: "WhatsApp France",
+                subtitle: "+33 76 891 30 74",
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _wa(_waFrance);
+                },
+              ),
+              const SizedBox(height: 10),
+
+              // WhatsApp Dakar
+              _modalBtn(
+                icon: FontAwesomeIcons.whatsapp,
+                color: _green,
+                label: "WhatsApp Dakar",
+                subtitle: "+221 78 304 28 38",
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _wa(_waDakar);
+                },
+              ),
+              const SizedBox(height: 10),
+
+              // Email
+              _modalBtn(
+                icon: Icons.email_outlined,
+                color: _appBlue,
+                label: "Email",
+                subtitle: _email,
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _openEmail();
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _modalBtn({
+    required IconData icon,
+    required Color color,
+    required String label,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
+        ),
+        child: Row(children: [
+          Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10)),
+              child: Icon(icon, color: color, size: 18)),
+          const SizedBox(width: 12),
+          Expanded(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                Text(label,
+                    style: const TextStyle(
+                        color: _textPrimary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13)),
+                Text(subtitle,
+                    style: const TextStyle(color: _textMuted, fontSize: 11),
+                    overflow: TextOverflow.ellipsis),
+              ])),
+          Icon(Icons.arrow_forward_ios, color: color, size: 14),
+        ]),
       ),
     );
   }
@@ -165,7 +371,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(height: 28),
                         _samaInfoBand(),
                         const SizedBox(height: 28),
-                        _nextDeparturesSection(),
+                        _nextDeparturesSection(context),
                         if (isAdmin) ...[
                           const SizedBox(height: 28),
                           _adminSection(context, isDesktop),
@@ -183,6 +389,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // ── TICKER ────────────────────────────────────────────────────────────────
   Widget _tickerBanner() {
     final dep = _nextDepartures[_tickerIndex];
     return AnimatedSwitcher(
@@ -196,7 +403,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-                color: _textMain, borderRadius: BorderRadius.circular(5)),
+                color: _bg, borderRadius: BorderRadius.circular(5)),
             child: const Text("DÉPARTS",
                 style: TextStyle(
                     color: _amber,
@@ -210,17 +417,15 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
               child: Text("23 mars 2026  ·  ${dep['route']}",
                   style: const TextStyle(
-                      color: _textMain,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 13),
+                      color: _bg, fontWeight: FontWeight.w800, fontSize: 13),
                   overflow: TextOverflow.ellipsis)),
           const SizedBox(width: 8),
           GestureDetector(
-            onTap: () => _wa(_waDakar),
+            onTap: () => _showReservationModal(context, dep['route']!),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                  color: _textMain, borderRadius: BorderRadius.circular(7)),
+                  color: _bg, borderRadius: BorderRadius.circular(7)),
               child: const Text("Réserver →",
                   style: TextStyle(
                       color: _amber,
@@ -233,6 +438,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // ── COMPTE À REBOURS ──────────────────────────────────────────────────────
   Widget _countdownSection() {
     final days = _remaining.inDays;
     final hours = _remaining.inHours % 24;
@@ -240,11 +446,11 @@ class _HomeScreenState extends State<HomeScreen> {
     final seconds = _remaining.inSeconds % 60;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: _surface,
+        color: _bgCard,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _amber.withValues(alpha: 0.30)),
+        border: Border.all(color: _amber.withValues(alpha: 0.35)),
         boxShadow: [
           BoxShadow(
               color: _amber.withValues(alpha: 0.08),
@@ -299,9 +505,9 @@ class _HomeScreenState extends State<HomeScreen> {
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.10),
+          color: color.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color.withValues(alpha: 0.25)),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
         child: Text(value,
             style: TextStyle(
@@ -333,9 +539,9 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: _blueLight,
+        color: _appBlue.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: _appBlue.withValues(alpha: 0.25)),
+        border: Border.all(color: _appBlue.withValues(alpha: 0.30)),
       ),
       child: Row(children: [
         Text(dep['flag']!, style: const TextStyle(fontSize: 18)),
@@ -343,35 +549,31 @@ class _HomeScreenState extends State<HomeScreen> {
         Expanded(
             child: Text(dep['route']!,
                 style: const TextStyle(
-                    color: _appBlue,
+                    color: _blueBright,
                     fontWeight: FontWeight.w700,
                     fontSize: 12))),
         GestureDetector(
-          onTap: () => _wa(_waDakar),
+          onTap: () => _showReservationModal(context, dep['route']!),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
                 color: _amber, borderRadius: BorderRadius.circular(7)),
             child: const Text("Réserver",
                 style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 11)),
+                    color: _bg, fontWeight: FontWeight.w800, fontSize: 11)),
           ),
         ),
       ]),
     );
   }
 
+  // ── TOP BAR ───────────────────────────────────────────────────────────────
   Widget _topBar(BuildContext context, LoggedUser user, bool isAdmin) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: const BoxDecoration(
-        color: _appBlue,
-        boxShadow: [
-          BoxShadow(
-              color: Color(0x202296F3), blurRadius: 16, offset: Offset(0, 4))
-        ],
+        color: _bgSection,
+        border: Border(bottom: BorderSide(color: _border, width: 1)),
       ),
       child: Row(children: [
         Row(children: [
@@ -379,8 +581,11 @@ class _HomeScreenState extends State<HomeScreen> {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.20),
               borderRadius: BorderRadius.circular(9),
+              gradient: const LinearGradient(
+                  colors: [_appBlue, _teal],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight),
             ),
             child: const Icon(FontAwesomeIcons.boxOpen,
                 color: Colors.white, size: 14),
@@ -388,7 +593,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(width: 8),
           const Text("SAMA",
               style: TextStyle(
-                  color: Colors.white,
+                  color: _textPrimary,
                   fontWeight: FontWeight.w900,
                   fontSize: 14,
                   letterSpacing: 2)),
@@ -403,24 +608,24 @@ class _HomeScreenState extends State<HomeScreen> {
             printSupabaseTokens();
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                 content: Text("Token imprimé dans la console.")));
-          }, color: Colors.white.withValues(alpha: 0.55)),
+          }, color: _textMuted),
         _topBarIcon(Icons.person_outline,
             () => Navigator.of(context).pushNamed('/profile')),
         _topBarIcon(Icons.logout, () => _logout(context),
-            color: Colors.white.withValues(alpha: 0.75)),
+            color: Colors.red.shade300),
       ]),
     );
   }
 
   Widget _topBarIcon(IconData icon, VoidCallback onTap, {Color? color}) {
     return IconButton(
-      icon: Icon(icon,
-          color: color ?? Colors.white.withValues(alpha: 0.90), size: 20),
+      icon: Icon(icon, color: color ?? _textSecond, size: 20),
       onPressed: onTap,
       splashRadius: 20,
     );
   }
 
+  // ── GREETING ──────────────────────────────────────────────────────────────
   Widget _greeting(LoggedUser user) {
     final hour = DateTime.now().hour;
     final salut = hour < 12
@@ -433,7 +638,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text("$salut, $displayName 👋",
           style: const TextStyle(
-              color: _textMain,
+              color: _textPrimary,
               fontWeight: FontWeight.w900,
               fontSize: 22,
               letterSpacing: -0.3)),
@@ -463,6 +668,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return s[0].toUpperCase() + s.substring(1).toLowerCase();
   }
 
+  // ── QUICK ACTIONS ─────────────────────────────────────────────────────────
   Widget _quickActions(BuildContext context, bool isDesktop) {
     final actions = [
       {
@@ -517,13 +723,13 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
         decoration: BoxDecoration(
-          color: _surface,
+          color: _bgCard,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withValues(alpha: 0.20)),
+          border: Border.all(color: color.withValues(alpha: 0.30)),
           boxShadow: [
             BoxShadow(
-                color: color.withValues(alpha: 0.08),
-                blurRadius: 12,
+                color: color.withValues(alpha: 0.10),
+                blurRadius: 14,
                 offset: const Offset(0, 4))
           ],
         ),
@@ -532,14 +738,14 @@ class _HomeScreenState extends State<HomeScreen> {
               width: 42,
               height: 42,
               decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.10),
+                  color: color.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12)),
               child: Icon(icon, color: color, size: 18)),
           const SizedBox(height: 8),
           Text(label,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                  color: _textMain,
+                  color: _textPrimary,
                   fontWeight: FontWeight.w700,
                   fontSize: 11,
                   height: 1.3)),
@@ -548,6 +754,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // ── MY ACTIVITIES ─────────────────────────────────────────────────────────
   Widget _myActivitiesSection(BuildContext context, bool isDesktop) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       _sectionLabel("Mes activités"),
@@ -611,13 +818,13 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: _surface,
+          color: _bgCard,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _border),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 10,
+                color: color.withValues(alpha: 0.08),
+                blurRadius: 12,
                 offset: const Offset(0, 4))
           ],
         ),
@@ -626,7 +833,7 @@ class _HomeScreenState extends State<HomeScreen> {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.10),
+                  color: color.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(14)),
               child: Icon(icon, color: color, size: 22)),
           const SizedBox(width: 14),
@@ -636,7 +843,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                 Text(title,
                     style: const TextStyle(
-                        color: _textMain,
+                        color: _textPrimary,
                         fontWeight: FontWeight.w800,
                         fontSize: 15)),
                 Text(subtitle,
@@ -651,18 +858,17 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // ── SAMA INFO BAND ────────────────────────────────────────────────────────
   Widget _samaInfoBand() {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-            colors: [_appBlue, _blueDark],
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight),
+        color: _lightBg,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _appBlue.withValues(alpha: 0.20)),
         boxShadow: [
           BoxShadow(
-              color: _appBlue.withValues(alpha: 0.25),
+              color: _appBlue.withValues(alpha: 0.12),
               blurRadius: 20,
               offset: const Offset(0, 6))
         ],
@@ -673,17 +879,14 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(width: 8),
           const Text("Tarifs SAMA",
               style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 14)),
+                  color: _textDark, fontWeight: FontWeight.w800, fontSize: 14)),
           const Spacer(),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: _amberLight,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: _amber.withValues(alpha: 0.4)),
-            ),
+                color: const Color(0xFFFFF3D0),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: _amber.withValues(alpha: 0.4))),
             child: const Text("–50% WEB",
                 style: TextStyle(
                     color: Color(0xFF7A4F00),
@@ -709,15 +912,15 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(children: [
       Text("$flag $city",
           textAlign: TextAlign.center,
-          style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.75),
+          style: const TextStyle(
+              color: _textDarkMuted,
               fontWeight: FontWeight.w600,
               fontSize: 11)),
       const SizedBox(height: 4),
       Text(price,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-              color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14)),
+          style: TextStyle(
+              color: color, fontWeight: FontWeight.w800, fontSize: 14)),
     ]));
   }
 
@@ -725,24 +928,25 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
         width: 1,
         height: 32,
-        color: Colors.white.withValues(alpha: 0.20),
+        color: const Color(0xFFDDE3EF),
         margin: const EdgeInsets.symmetric(horizontal: 4));
   }
 
-  Widget _nextDeparturesSection() {
+  // ── NEXT DEPARTURES ───────────────────────────────────────────────────────
+  Widget _nextDeparturesSection(BuildContext context) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [
         _sectionLabel("Tous les départs"),
         const Spacer(),
         GestureDetector(
-          onTap: () => _wa(_waDakar),
+          onTap: () => _showReservationModal(context, "Prochain départ"),
           child: const Text("Réserver →",
               style: TextStyle(
-                  color: _appBlue,
+                  color: _blueBright,
                   fontWeight: FontWeight.w700,
                   fontSize: 12,
                   decoration: TextDecoration.underline,
-                  decorationColor: _appBlue)),
+                  decorationColor: _blueBright)),
         ),
       ]),
       const SizedBox(height: 12),
@@ -753,10 +957,10 @@ class _HomeScreenState extends State<HomeScreen> {
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: highlight ? _blueLight : _surface,
+            color: highlight ? _appBlue.withValues(alpha: 0.12) : _bgCard,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-                color: highlight ? _appBlue.withValues(alpha: 0.25) : _border),
+                color: highlight ? _appBlue.withValues(alpha: 0.35) : _border),
           ),
           child: Row(children: [
             Text(dep['flag']!, style: const TextStyle(fontSize: 18)),
@@ -764,29 +968,44 @@ class _HomeScreenState extends State<HomeScreen> {
             Expanded(
                 child: Text("${dep['route']} · ${dep['date']}",
                     style: TextStyle(
-                        color: highlight ? _appBlue : _textMain,
+                        color: highlight ? _blueBright : _textPrimary,
                         fontWeight: FontWeight.w700,
                         fontSize: 13))),
             if (highlight)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                    color: _amberLight,
+                    color: _amber.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: _amber.withValues(alpha: 0.4))),
                 child: const Text("BIENTÔT",
                     style: TextStyle(
-                        color: Color(0xFF7A4F00),
+                        color: _amber,
                         fontWeight: FontWeight.w800,
                         fontSize: 9,
                         letterSpacing: 0.8)),
               ),
+            const SizedBox(width: 8),
+            // ✅ Bouton réserver ouvre la modale
+            GestureDetector(
+              onTap: () => _showReservationModal(context, dep['route']!),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                    color: _amber, borderRadius: BorderRadius.circular(7)),
+                child: const Text("Réserver",
+                    style: TextStyle(
+                        color: _bg, fontWeight: FontWeight.w800, fontSize: 11)),
+              ),
+            ),
           ]),
         );
       }),
     ]);
   }
 
+  // ── ADMIN SECTION ─────────────────────────────────────────────────────────
   Widget _adminSection(BuildContext context, bool isDesktop) {
     final items = [
       {
@@ -808,7 +1027,7 @@ class _HomeScreenState extends State<HomeScreen> {
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-            color: _amber.withValues(alpha: 0.10),
+            color: _amber.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: _amber.withValues(alpha: 0.3))),
         child: const Row(mainAxisSize: MainAxisSize.min, children: [
@@ -834,14 +1053,14 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: _surface,
+                  color: _bgCard,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                      color: (item['color'] as Color).withValues(alpha: 0.20)),
+                      color: (item['color'] as Color).withValues(alpha: 0.25)),
                   boxShadow: [
                     BoxShadow(
-                        color: (item['color'] as Color).withValues(alpha: 0.07),
-                        blurRadius: 10,
+                        color: (item['color'] as Color).withValues(alpha: 0.08),
+                        blurRadius: 12,
                         offset: const Offset(0, 4))
                   ],
                 ),
@@ -851,7 +1070,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(width: 10),
                   Text(item['label'] as String,
                       style: const TextStyle(
-                          color: _textMain,
+                          color: _textPrimary,
                           fontWeight: FontWeight.w700,
                           fontSize: 13)),
                 ]),
