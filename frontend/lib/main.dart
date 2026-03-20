@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:sama/screens/auth/profile_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'providers/app_theme_provider.dart';
 import 'screens/admin/admin_user_screen.dart';
 import 'screens/auth/auth_callback_screen.dart';
 import 'screens/auth/forgot_password_screen.dart';
@@ -24,7 +26,13 @@ void main() async {
 
   final isLoggedIn = AuthService.isLoggedIn();
 
-  runApp(MyApp(isLoggedIn: isLoggedIn));
+  runApp(
+    // ✅ ChangeNotifierProvider enveloppe toute l'app
+    ChangeNotifierProvider(
+      create: (_) => AppThemeProvider(),
+      child: MyApp(isLoggedIn: isLoggedIn),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
