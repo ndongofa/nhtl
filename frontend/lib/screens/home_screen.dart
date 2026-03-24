@@ -1,12 +1,15 @@
-import 'dart:async';
+// lib/screens/home_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:sama/services/departure_countdown_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../providers/app_theme_provider.dart';
 import '../services/auth_service.dart';
 import '../models/logged_user.dart';
+import '../widgets/sama_globe_logo.dart';
 import '../debug/debug_token.dart';
 import 'admin/admin_user_screen.dart';
 import 'commande_form_screen.dart';
@@ -31,58 +34,39 @@ class _HomeScreenState extends State<HomeScreen> {
   static const Color _teal = AppThemeProvider.teal;
   static const Color _green = AppThemeProvider.green;
   static const Color _textDark = AppThemeProvider.textDark;
-  static const Color _textDarkMuted = AppThemeProvider.textDarkMuted;
 
   static const String _waFrance = "33768913074";
   static const String _waDakar = "221783042838";
   static const String _email = "tech@ngom-holding.com";
 
-  static final DateTime _targetDate = DateTime(2026, 3, 23);
+  // ✅ Compte à rebours automatique partagé avec landing
+  final DepartureCountdownService _countdown = DepartureCountdownService();
 
-  static const List<Map<String, String>> _nextDepartures = [
-    {"route": "Dakar → Paris", "flag": "🇸🇳🇫🇷"},
-    {"route": "Dakar → Casablanca", "flag": "🇸🇳🇲🇦"},
-  ];
-
-  static const List<Map<String, String>> _allDepartures = [
-    {"date": "23 mars 2026", "route": "Dakar → Paris", "flag": "🇸🇳🇫🇷"},
-    {"date": "23 mars 2026", "route": "Dakar → Casablanca", "flag": "🇸🇳🇲🇦"},
-    {"date": "25 mars 2026", "route": "Casablanca → Paris", "flag": "🇲🇦🇫🇷"},
-  ];
-
-  Timer? _countdownTimer;
-  Duration _remaining = Duration.zero;
+  // Ticker tourne sur tous les départs
   int _tickerIndex = 0;
-  Timer? _tickerTimer;
 
   @override
   void initState() {
     super.initState();
-    _updateCountdown();
-    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) _updateCountdown();
+    _countdown.start(() {
+      if (mounted) setState(() {});
     });
-    _tickerTimer = Timer.periodic(const Duration(seconds: 3), (_) {
-      if (mounted)
-        setState(
-            () => _tickerIndex = (_tickerIndex + 1) % _nextDepartures.length);
-    });
-  }
 
-  void _updateCountdown() {
-    final now = DateTime.now();
-    final diff = _targetDate.difference(now);
-    setState(() => _remaining = diff.isNegative ? Duration.zero : diff);
+    Future.delayed(Duration.zero, () {
+      if (!mounted) return;
+      Stream.periodic(const Duration(seconds: 3)).listen((_) {
+        if (mounted)
+          setState(() => _tickerIndex = (_tickerIndex + 1) %
+              DepartureCountdownService.allDepartures.length);
+      });
+    });
   }
 
   @override
   void dispose() {
-    _countdownTimer?.cancel();
-    _tickerTimer?.cancel();
+    _countdown.dispose();
     super.dispose();
   }
-
-  String _pad(int n) => n.toString().padLeft(2, '0');
 
   Future<void> _wa(String digits) async {
     final uri = Uri.parse(
@@ -114,9 +98,8 @@ class _HomeScreenState extends State<HomeScreen> {
             style: TextStyle(color: t.textMuted)),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text("Annuler", style: TextStyle(color: t.textMuted)),
-          ),
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text("Annuler", style: TextStyle(color: t.textMuted))),
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             style: ElevatedButton.styleFrom(
@@ -137,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // ✅ Modale réservation — utilisateur connecté
+  // ── MODALE RÉSERVATION (utilisateur connecté) ─────────────────────────────
   void _showReservationModal(BuildContext context, String departRoute) {
     final t = context.read<AppThemeProvider>();
     showDialog(
@@ -299,6 +282,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // ── BUILD ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final t = context.watch<AppThemeProvider>();
@@ -354,12 +338,12 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── TOP BAR ───────────────────────────────────────────────────────────────
+  // ── TOP BAR avec logo globe ───────────────────────────────────────────────
   Widget _topBar(
       BuildContext context, AppThemeProvider t, LoggedUser user, bool isAdmin) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 350),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       decoration: BoxDecoration(
         color: t.topBarBg,
         border: Border(
@@ -367,43 +351,37 @@ class _HomeScreenState extends State<HomeScreen> {
                 BorderSide(color: t.border.withValues(alpha: 0.5), width: 1)),
       ),
       child: Row(children: [
-        // Brand
-        Row(children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.20),
-              borderRadius: BorderRadius.circular(9),
-            ),
-            child: const Icon(FontAwesomeIcons.boxOpen,
-                color: Colors.white, size: 14),
-          ),
-          const SizedBox(width: 8),
-          const Text("SAMA",
-              style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 14,
-                  letterSpacing: 2)),
-        ]),
+        // ✅ Logo globe SVG
+        const SamaGlobeLogo(height: 36, showText: true),
         const Spacer(),
         // Notifications
-        _topBarIcon(Icons.notifications_outlined, () {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const NotificationsScreen()));
-        }),
+        IconButton(
+          icon: Icon(Icons.notifications_outlined,
+              color: Colors.white.withValues(alpha: 0.90), size: 20),
+          onPressed: () => Navigator.push(context,
+              MaterialPageRoute(builder: (_) => const NotificationsScreen())),
+          splashRadius: 20,
+        ),
         // Debug — admins uniquement
         if (isAdmin)
-          _topBarIcon(Icons.bug_report_outlined, () {
-            printSupabaseTokens();
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                content: Text("Token imprimé dans la console.")));
-          }, color: Colors.white.withValues(alpha: 0.50)),
+          IconButton(
+            icon: Icon(Icons.bug_report_outlined,
+                color: Colors.white.withValues(alpha: 0.45), size: 20),
+            onPressed: () {
+              printSupabaseTokens();
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  content: Text("Token imprimé dans la console.")));
+            },
+            splashRadius: 20,
+          ),
         // Profil
-        _topBarIcon(Icons.person_outline,
-            () => Navigator.of(context).pushNamed('/profile')),
-        // ✅ Bouton soleil/lune
+        IconButton(
+          icon: Icon(Icons.person_outline,
+              color: Colors.white.withValues(alpha: 0.90), size: 20),
+          onPressed: () => Navigator.of(context).pushNamed('/profile'),
+          splashRadius: 20,
+        ),
+        // ✅ Toggle thème
         Tooltip(
           message: t.isDark ? "Thème clair" : "Thème sombre",
           child: GestureDetector(
@@ -434,24 +412,20 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(width: 4),
         // Logout
-        _topBarIcon(Icons.logout, () => _logout(context),
-            color: Colors.white.withValues(alpha: 0.75)),
+        IconButton(
+          icon: Icon(Icons.logout,
+              color: Colors.white.withValues(alpha: 0.75), size: 20),
+          onPressed: () => _logout(context),
+          splashRadius: 20,
+        ),
       ]),
-    );
-  }
-
-  Widget _topBarIcon(IconData icon, VoidCallback onTap, {Color? color}) {
-    return IconButton(
-      icon: Icon(icon,
-          color: color ?? Colors.white.withValues(alpha: 0.90), size: 20),
-      onPressed: onTap,
-      splashRadius: 20,
     );
   }
 
   // ── TICKER ────────────────────────────────────────────────────────────────
   Widget _tickerBanner(AppThemeProvider t) {
-    final dep = _nextDepartures[_tickerIndex];
+    final dep = DepartureCountdownService.allDepartures[
+        _tickerIndex % DepartureCountdownService.allDepartures.length];
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 400),
       child: Container(
@@ -472,16 +446,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     letterSpacing: 1.5)),
           ),
           const SizedBox(width: 12),
-          Text(dep['flag']!, style: const TextStyle(fontSize: 16)),
+          Text(dep.flag, style: const TextStyle(fontSize: 16)),
           const SizedBox(width: 6),
           Expanded(
-              child: Text("23 mars 2026  ·  ${dep['route']}",
+              child: Text("${dep.date}  ·  ${dep.route}",
                   style: TextStyle(
                       color: t.bg, fontWeight: FontWeight.w800, fontSize: 13),
                   overflow: TextOverflow.ellipsis)),
           const SizedBox(width: 8),
           GestureDetector(
-            onTap: () => _showReservationModal(context, dep['route']!),
+            onTap: () => _showReservationModal(context, dep.route),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
@@ -498,66 +472,90 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── COMPTE À REBOURS ──────────────────────────────────────────────────────
+  // ── COMPTE À REBOURS AUTOMATIQUE ──────────────────────────────────────────
   Widget _countdownSection(AppThemeProvider t) {
-    final days = _remaining.inDays;
-    final hours = _remaining.inHours % 24;
-    final minutes = _remaining.inMinutes % 60;
-    final seconds = _remaining.inSeconds % 60;
-
+    final dep = _countdown.currentDeparture;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 350),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: t.bgCard,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _amber.withValues(alpha: 0.30)),
+        border: Border.all(color: _amber.withValues(alpha: 0.35)),
         boxShadow: [
           BoxShadow(
-              color: _amber.withValues(alpha: 0.07),
-              blurRadius: 14,
+              color: _amber.withValues(alpha: 0.08),
+              blurRadius: 16,
               offset: const Offset(0, 4))
         ],
       ),
       child: Column(children: [
+        // ✅ Label dynamique
         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           Container(
               width: 7,
               height: 7,
-              decoration:
-                  const BoxDecoration(shape: BoxShape.circle, color: _green)),
+              decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _countdown.isExpired ? t.textMuted : _green)),
           const SizedBox(width: 8),
-          const Text("PROCHAINS DÉPARTS — 23 MARS 2026",
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 400),
+            child: Text(
+              key: ValueKey(_countdown.currentIndex),
+              _countdown.isExpired
+                  ? "TOUS LES DÉPARTS SONT PASSÉS"
+                  : "PROCHAIN DÉPART — ${dep.date.toUpperCase()}",
               style: TextStyle(
-                  color: _green,
+                  color: _countdown.isExpired ? t.textMuted : _green,
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
-                  letterSpacing: 1.2)),
+                  letterSpacing: 1.2),
+            ),
+          ),
+        ]),
+        const SizedBox(height: 6),
+        // ✅ Route du départ actif — change automatiquement
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 400),
+          child: Text(
+            key: ValueKey("r_${_countdown.currentIndex}"),
+            "${dep.flag}  ${dep.route}",
+            style: TextStyle(
+                color: t.isDark ? _blueBright : _appBlue,
+                fontWeight: FontWeight.w700,
+                fontSize: 14),
+          ),
+        ),
+        const SizedBox(height: 14),
+        // Compte à rebours
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          _countUnit(t, _countdown.days, "JOURS", _amber),
+          _sep(t),
+          _countUnit(t, _countdown.hours, "HEURES", _appBlue),
+          _sep(t),
+          _countUnit(t, _countdown.minutes, "MIN", _appBlue),
+          _sep(t),
+          _countUnit(t, _countdown.seconds, "SEC", t.textMuted),
         ]),
         const SizedBox(height: 14),
-        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          _countUnit(t, _pad(days), "JOURS", _amber),
-          _sep(t),
-          _countUnit(t, _pad(hours), "HEURES", _appBlue),
-          _sep(t),
-          _countUnit(t, _pad(minutes), "MIN", _appBlue),
-          _sep(t),
-          _countUnit(t, _pad(seconds), "SEC", t.textMuted),
-        ]),
-        const SizedBox(height: 16),
-        LayoutBuilder(builder: (context, constraints) {
-          final isWide = constraints.maxWidth > 420;
-          final cards =
-              _nextDepartures.map((dep) => _departCard(t, dep)).toList();
-          return isWide
-              ? Row(children: [
-                  Expanded(child: cards[0]),
-                  const SizedBox(width: 10),
-                  Expanded(child: cards[1]),
-                ])
-              : Column(
-                  children: [cards[0], const SizedBox(height: 8), cards[1]]);
-        }),
+        // Bouton réserver ce départ spécifique
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            icon: const Icon(Icons.flight_takeoff, size: 16),
+            label: Text("Réserver ${dep.route}",
+                style: const TextStyle(fontWeight: FontWeight.w800)),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: _amber,
+                foregroundColor: _textDark,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(vertical: 12)),
+            onPressed: () => _showReservationModal(context, dep.route),
+          ),
+        ),
       ]),
     );
   }
@@ -599,41 +597,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _departCard(AppThemeProvider t, Map<String, String> dep) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 350),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: _appBlue.withValues(alpha: t.isDark ? 0.10 : 0.07),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: _appBlue.withValues(alpha: 0.28)),
-      ),
-      child: Row(children: [
-        Text(dep['flag']!, style: const TextStyle(fontSize: 18)),
-        const SizedBox(width: 8),
-        Expanded(
-            child: Text(dep['route']!,
-                style: TextStyle(
-                    color: t.isDark ? _blueBright : _appBlue,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12))),
-        GestureDetector(
-          onTap: () => _showReservationModal(context, dep['route']!),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-                color: _amber, borderRadius: BorderRadius.circular(7)),
-            child: Text("Réserver",
-                style: TextStyle(
-                    color: t.isDark ? AppThemeProvider.darkBg : _textDark,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 11)),
-          ),
-        ),
-      ]),
-    );
-  }
-
   // ── GREETING ──────────────────────────────────────────────────────────────
   Widget _greeting(AppThemeProvider t, LoggedUser user) {
     final hour = DateTime.now().hour;
@@ -672,10 +635,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return '';
   }
 
-  String _capitalize(String s) {
-    if (s.isEmpty) return s;
-    return s[0].toUpperCase() + s.substring(1).toLowerCase();
-  }
+  String _capitalize(String s) =>
+      s.isEmpty ? s : s[0].toUpperCase() + s.substring(1).toLowerCase();
 
   // ── QUICK ACTIONS ─────────────────────────────────────────────────────────
   Widget _quickActions(
@@ -715,17 +676,15 @@ class _HomeScreenState extends State<HomeScreen> {
           children: actions.asMap().entries.map((e) {
         final a = e.value;
         return Expanded(
-          child: Padding(
-            padding:
-                EdgeInsets.only(right: e.key < actions.length - 1 ? 10 : 0),
-            child: _quickActionCard(
-                t,
-                a['icon'] as IconData,
-                a['label'] as String,
-                a['color'] as Color,
-                a['onTap'] as VoidCallback),
-          ),
-        );
+            child: Padding(
+          padding: EdgeInsets.only(right: e.key < actions.length - 1 ? 10 : 0),
+          child: _quickActionCard(
+              t,
+              a['icon'] as IconData,
+              a['label'] as String,
+              a['color'] as Color,
+              a['onTap'] as VoidCallback),
+        ));
       }).toList()),
     ]);
   }
@@ -952,22 +911,22 @@ class _HomeScreenState extends State<HomeScreen> {
     ]));
   }
 
-  Widget _tarifDivider() {
-    return Container(
-        width: 1,
-        height: 32,
-        color: Colors.white.withValues(alpha: 0.20),
-        margin: const EdgeInsets.symmetric(horizontal: 4));
-  }
+  Widget _tarifDivider() => Container(
+      width: 1,
+      height: 32,
+      color: Colors.white.withValues(alpha: 0.20),
+      margin: const EdgeInsets.symmetric(horizontal: 4));
 
-  // ── NEXT DEPARTURES ───────────────────────────────────────────────────────
+  // ── TOUS LES DÉPARTS ──────────────────────────────────────────────────────
   Widget _nextDeparturesSection(BuildContext context, AppThemeProvider t) {
+    final deps = DepartureCountdownService.allDepartures;
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [
         _sectionLabel(t, "Tous les départs"),
         const Spacer(),
         GestureDetector(
-          onTap: () => _showReservationModal(context, "Prochain départ"),
+          onTap: () =>
+              _showReservationModal(context, _countdown.currentDeparture.route),
           child: Text("Réserver →",
               style: TextStyle(
                   color: t.isDark ? _blueBright : _appBlue,
@@ -978,68 +937,85 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ]),
       const SizedBox(height: 12),
-      ..._allDepartures.asMap().entries.map((e) {
+      ...deps.asMap().entries.map((e) {
         final dep = e.value;
-        final highlight = e.key <= 1;
+        final isCurrent = e.key == _countdown.currentIndex;
+        final isPast = dep.dateTime.isBefore(DateTime.now());
         return AnimatedContainer(
           duration: const Duration(milliseconds: 350),
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: highlight
-                ? _appBlue.withValues(alpha: t.isDark ? 0.12 : 0.07)
-                : t.bgCard,
+            color: isCurrent
+                ? _amber.withValues(alpha: t.isDark ? 0.12 : 0.07)
+                : isPast
+                    ? t.bgCard.withValues(alpha: 0.5)
+                    : t.bgCard,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-                color: highlight ? _appBlue.withValues(alpha: 0.30) : t.border),
+                color: isCurrent
+                    ? _amber.withValues(alpha: 0.35)
+                    : isPast
+                        ? t.border.withValues(alpha: 0.4)
+                        : t.border),
           ),
           child: Row(children: [
-            Text(dep['flag']!, style: const TextStyle(fontSize: 18)),
+            Text(dep.flag, style: const TextStyle(fontSize: 18)),
             const SizedBox(width: 12),
             Expanded(
-                child: Text("${dep['route']} · ${dep['date']}",
-                    style: TextStyle(
-                        color: highlight
-                            ? (t.isDark ? _blueBright : _appBlue)
-                            : t.textPrimary,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13))),
-            if (highlight)
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                  Text("${dep.route} · ${dep.date}",
+                      style: TextStyle(
+                          color: isPast
+                              ? t.textMuted
+                              : isCurrent
+                                  ? _amber
+                                  : t.textPrimary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13)),
+                  if (isCurrent)
+                    Text("En cours de compte à rebours",
+                        style: const TextStyle(
+                            color: _amber,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600)),
+                ])),
+            if (isPast)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                    color: _amberLight,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: _amber.withValues(alpha: 0.4))),
-                child: const Text("BIENTÔT",
+                    color: t.border, borderRadius: BorderRadius.circular(20)),
+                child: Text("PASSÉ",
                     style: TextStyle(
-                        color: Color(0xFF7A4F00),
-                        fontWeight: FontWeight.w800,
+                        color: t.textMuted,
+                        fontWeight: FontWeight.w700,
                         fontSize: 9,
                         letterSpacing: 0.8)),
+              )
+            else
+              GestureDetector(
+                onTap: () => _showReservationModal(context, dep.route),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                      color: _amber, borderRadius: BorderRadius.circular(7)),
+                  child: const Text("Réserver",
+                      style: TextStyle(
+                          color: AppThemeProvider.textDark,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 11)),
+                ),
               ),
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: () => _showReservationModal(context, dep['route']!),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                    color: _amber, borderRadius: BorderRadius.circular(7)),
-                child: const Text("Réserver",
-                    style: TextStyle(
-                        color: _textDark,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 11)),
-              ),
-            ),
           ]),
         );
       }),
     ]);
   }
 
-  // ── ADMIN SECTION ─────────────────────────────────────────────────────────
+  // ── ADMIN ─────────────────────────────────────────────────────────────────
   Widget _adminSection(
       BuildContext context, AppThemeProvider t, bool isDesktop) {
     final items = [
@@ -1081,39 +1057,38 @@ class _HomeScreenState extends State<HomeScreen> {
           children: items.asMap().entries.map((e) {
         final item = e.value;
         return Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(right: e.key < items.length - 1 ? 12 : 0),
-            child: GestureDetector(
-              onTap: item['onTap'] as VoidCallback,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 350),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: t.bgCard,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                      color: (item['color'] as Color).withValues(alpha: 0.20)),
-                  boxShadow: [
-                    BoxShadow(
-                        color: (item['color'] as Color).withValues(alpha: 0.07),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4))
-                  ],
-                ),
-                child: Row(children: [
-                  Icon(item['icon'] as IconData,
-                      color: item['color'] as Color, size: 20),
-                  const SizedBox(width: 10),
-                  Text(item['label'] as String,
-                      style: TextStyle(
-                          color: t.textPrimary,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13)),
-                ]),
+            child: Padding(
+          padding: EdgeInsets.only(right: e.key < items.length - 1 ? 12 : 0),
+          child: GestureDetector(
+            onTap: item['onTap'] as VoidCallback,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 350),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: t.bgCard,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                    color: (item['color'] as Color).withValues(alpha: 0.20)),
+                boxShadow: [
+                  BoxShadow(
+                      color: (item['color'] as Color).withValues(alpha: 0.07),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4))
+                ],
               ),
+              child: Row(children: [
+                Icon(item['icon'] as IconData,
+                    color: item['color'] as Color, size: 20),
+                const SizedBox(width: 10),
+                Text(item['label'] as String,
+                    style: TextStyle(
+                        color: t.textPrimary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13)),
+              ]),
             ),
           ),
-        );
+        ));
       }).toList()),
     ]);
   }

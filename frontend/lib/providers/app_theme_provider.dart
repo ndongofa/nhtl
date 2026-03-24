@@ -1,10 +1,11 @@
+// lib/providers/app_theme_provider.dart
+// ChangeNotifierProvider à envelopper dans main.dart :
+//   ChangeNotifierProvider(create: (_) => AppThemeProvider(), child: MyApp(...))
+
 import 'package:flutter/material.dart';
 
-/// Provider de thème global — sombre par défaut, reset à chaque ouverture.
-/// À placer dans lib/providers/app_theme_provider.dart
-/// Envelopper le MaterialApp avec ChangeNotifierProvider<AppThemeProvider>
 class AppThemeProvider extends ChangeNotifier {
-  // ✅ Clair par défaut
+  // ✅ Clair par défaut, reset à chaque ouverture
   bool _isDark = false;
 
   bool get isDark => _isDark;
@@ -35,7 +36,7 @@ class AppThemeProvider extends ChangeNotifier {
   static const Color lightTextSecond = Color(0xFF3A5A8A);
   static const Color lightTextMuted = Color(0xFF6B7A99);
 
-  // ── Couleurs communes ─────────────────────────────────────────────────────
+  // ── Couleurs communes (indépendantes du thème) ────────────────────────────
   static const Color appBlue = Color(0xFF2296F3);
   static const Color blueBright = Color(0xFF42AAFE);
   static const Color blueMid = Color(0xFF1A7ED4);
@@ -46,7 +47,7 @@ class AppThemeProvider extends ChangeNotifier {
   static const Color textDark = Color(0xFF0F2040);
   static const Color textDarkMuted = Color(0xFF4A6A8A);
 
-  // ── Getters dynamiques (utilisent isDark) ─────────────────────────────────
+  // ── Getters dynamiques ────────────────────────────────────────────────────
   Color get bg => _isDark ? darkBg : lightBg;
   Color get bgSection => _isDark ? darkBgSection : lightBgSection;
   Color get bgCard => _isDark ? darkBgCard : lightBgCard;
@@ -69,11 +70,9 @@ class AppThemeProvider extends ChangeNotifier {
         ]
       : [appBlue, blueMid, const Color(0xFF0A3070)];
 
-  // Top bar bg
+  // Top bar
   Color get topBarBg => _isDark ? darkBg : appBlue;
-  // Top bar text/icons
   Color get topBarText => Colors.white;
-  // Outline button border
   Color get outlineBorder =>
-      _isDark ? darkBorderBright : Colors.white.withValues(alpha: 0.5);
+      _isDark ? darkBorderBright : Colors.white.withValues(alpha: 0.50);
 }

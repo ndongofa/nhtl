@@ -44,6 +44,12 @@ dependencies:
   # Supabase
   supabase_flutter: ^2.12.0
 
+  # ✅ SVG — logo globe SAMA (sama_globe_logo.dart)
+  flutter_svg: ^2.0.10
+
+  # ✅ URL Launcher — WhatsApp, email, liens externes
+  url_launcher: ^6.3.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
