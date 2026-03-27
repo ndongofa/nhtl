@@ -1,15 +1,16 @@
 // lib/screens/home_screen.dart
+// Top bar icône sac + countdown alternant auto+swipe + ticker filtré passés
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:sama/services/departure_countdown_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../providers/app_theme_provider.dart';
 import '../services/auth_service.dart';
+import '../services/departure_countdown_service.dart';
 import '../models/logged_user.dart';
-import '../widgets/sama_globe_logo.dart';
 import '../debug/debug_token.dart';
 import 'admin/admin_user_screen.dart';
 import 'commande_form_screen.dart';
@@ -21,7 +22,6 @@ import 'transports_list_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
-
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -39,11 +39,9 @@ class _HomeScreenState extends State<HomeScreen> {
   static const String _waDakar = "221783042838";
   static const String _email = "tech@ngom-holding.com";
 
-  // ✅ Compte à rebours automatique partagé avec landing
   final DepartureCountdownService _countdown = DepartureCountdownService();
-
-  // Ticker tourne sur tous les départs
   int _tickerIndex = 0;
+  Timer? _tickerTimer;
 
   @override
   void initState() {
@@ -51,20 +49,18 @@ class _HomeScreenState extends State<HomeScreen> {
     _countdown.start(() {
       if (mounted) setState(() {});
     });
-
-    Future.delayed(Duration.zero, () {
+    _tickerTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       if (!mounted) return;
-      Stream.periodic(const Duration(seconds: 3)).listen((_) {
-        if (mounted)
-          setState(() => _tickerIndex = (_tickerIndex + 1) %
-              DepartureCountdownService.allDepartures.length);
-      });
+      final upcoming = DepartureCountdownService.upcomingDepartures;
+      if (upcoming.isEmpty) return;
+      setState(() => _tickerIndex = (_tickerIndex + 1) % upcoming.length);
     });
   }
 
   @override
   void dispose() {
     _countdown.dispose();
+    _tickerTimer?.cancel();
     super.dispose();
   }
 
@@ -81,7 +77,6 @@ class _HomeScreenState extends State<HomeScreen> {
     if (await canLaunchUrl(uri)) await launchUrl(uri);
   }
 
-  // ✅ Fix logout — navigator capturé avant le dialog
   void _logout(BuildContext context) {
     final t = context.read<AppThemeProvider>();
     final navigator = Navigator.of(context);
@@ -120,7 +115,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // ── MODALE RÉSERVATION (utilisateur connecté) ─────────────────────────────
   void _showReservationModal(BuildContext context, String departRoute) {
     final t = context.read<AppThemeProvider>();
     showDialog(
@@ -208,29 +202,19 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 16),
             Divider(color: t.border),
             const SizedBox(height: 12),
-            _modalBtn(t,
-                icon: FontAwesomeIcons.whatsapp,
-                color: _green,
-                label: "WhatsApp France",
-                subtitle: "+33 76 891 30 74", onTap: () {
+            _mBtn(t, FontAwesomeIcons.whatsapp, _green, "WhatsApp France",
+                "+33 76 891 30 74", () {
               Navigator.pop(ctx);
               _wa(_waFrance);
             }),
             const SizedBox(height: 8),
-            _modalBtn(t,
-                icon: FontAwesomeIcons.whatsapp,
-                color: _green,
-                label: "WhatsApp Dakar",
-                subtitle: "+221 78 304 28 38", onTap: () {
+            _mBtn(t, FontAwesomeIcons.whatsapp, _green, "WhatsApp Dakar",
+                "+221 78 304 28 38", () {
               Navigator.pop(ctx);
               _wa(_waDakar);
             }),
             const SizedBox(height: 8),
-            _modalBtn(t,
-                icon: Icons.email_outlined,
-                color: _appBlue,
-                label: "Email",
-                subtitle: _email, onTap: () {
+            _mBtn(t, Icons.email_outlined, _appBlue, "Email", _email, () {
               Navigator.pop(ctx);
               _openEmail();
             }),
@@ -240,49 +224,43 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _modalBtn(AppThemeProvider t,
-      {required IconData icon,
-      required Color color,
-      required String label,
-      required String subtitle,
-      required VoidCallback onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: color.withValues(alpha: 0.25))),
-        child: Row(children: [
-          Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(10)),
-              child: Icon(icon, color: color, size: 18)),
-          const SizedBox(width: 12),
-          Expanded(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                Text(label,
-                    style: TextStyle(
-                        color: t.textPrimary,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13)),
-                Text(subtitle,
-                    style: TextStyle(color: t.textMuted, fontSize: 11),
-                    overflow: TextOverflow.ellipsis),
-              ])),
-          Icon(Icons.arrow_forward_ios, color: color, size: 14),
-        ]),
-      ),
-    );
-  }
+  Widget _mBtn(AppThemeProvider t, IconData icon, Color color, String label,
+          String sub, VoidCallback onTap) =>
+      GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: color.withValues(alpha: 0.25))),
+          child: Row(children: [
+            Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10)),
+                child: Icon(icon, color: color, size: 18)),
+            const SizedBox(width: 12),
+            Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                  Text(label,
+                      style: TextStyle(
+                          color: t.textPrimary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13)),
+                  Text(sub,
+                      style: TextStyle(color: t.textMuted, fontSize: 11),
+                      overflow: TextOverflow.ellipsis),
+                ])),
+            Icon(Icons.arrow_forward_ios, color: color, size: 14),
+          ]),
+        ),
+      );
 
-  // ── BUILD ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final t = context.watch<AppThemeProvider>();
@@ -297,135 +275,161 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: SafeArea(
-          child: Column(children: [
-            _topBar(context, t, user, isAdmin),
-            _tickerBanner(t),
-            Expanded(
+            child: Column(children: [
+          _topBar(context, t, user, isAdmin),
+          _ticker(t),
+          Expanded(
               child: SingleChildScrollView(
-                padding: EdgeInsets.symmetric(
-                    horizontal: isDesktop ? 40 : 16, vertical: 20),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1100),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _greeting(t, user),
-                        const SizedBox(height: 20),
-                        _countdownSection(t),
-                        const SizedBox(height: 24),
-                        _quickActions(context, t, isDesktop),
-                        const SizedBox(height: 28),
-                        _myActivitiesSection(context, t, isDesktop),
-                        const SizedBox(height: 28),
-                        _samaInfoBand(t),
-                        const SizedBox(height: 28),
-                        _nextDeparturesSection(context, t),
-                        if (isAdmin) ...[
-                          const SizedBox(height: 28),
-                          _adminSection(context, t, isDesktop),
-                        ],
-                        const SizedBox(height: 40),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ]),
-        ),
+            padding: EdgeInsets.symmetric(
+                horizontal: isDesktop ? 40 : 16, vertical: 20),
+            child: Center(
+                child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1100),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _greeting(t, user),
+                    const SizedBox(height: 20),
+                    _countdown_section(context, t),
+                    const SizedBox(height: 24),
+                    _quickActions(context, t),
+                    const SizedBox(height: 28),
+                    _activities(context, t, isDesktop),
+                    const SizedBox(height: 28),
+                    _infoBand(t),
+                    const SizedBox(height: 28),
+                    _departures(context, t),
+                    if (isAdmin) ...[
+                      const SizedBox(height: 28),
+                      _admin(context, t)
+                    ],
+                    const SizedBox(height: 40),
+                  ]),
+            )),
+          )),
+        ])),
       ),
     );
   }
 
-  // ── TOP BAR avec logo globe ───────────────────────────────────────────────
-  Widget _topBar(
-      BuildContext context, AppThemeProvider t, LoggedUser user, bool isAdmin) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 350),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      decoration: BoxDecoration(
-        color: t.topBarBg,
-        border: Border(
-            bottom:
-                BorderSide(color: t.border.withValues(alpha: 0.5), width: 1)),
-      ),
-      child: Row(children: [
-        // ✅ Logo globe SVG
-        const SamaGlobeLogo(height: 36, showText: true),
-        const Spacer(),
-        // Notifications
-        IconButton(
-          icon: Icon(Icons.notifications_outlined,
-              color: Colors.white.withValues(alpha: 0.90), size: 20),
-          onPressed: () => Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const NotificationsScreen())),
-          splashRadius: 20,
+  // ── TOP BAR ───────────────────────────────────────────────────────────────
+  Widget _topBar(BuildContext context, AppThemeProvider t, LoggedUser user,
+          bool isAdmin) =>
+      AnimatedContainer(
+        duration: const Duration(milliseconds: 350),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        decoration: BoxDecoration(
+          color: t.topBarBg,
+          border: Border(
+              bottom:
+                  BorderSide(color: t.border.withValues(alpha: 0.4), width: 1)),
         ),
-        // Debug — admins uniquement
-        if (isAdmin)
+        child: Row(children: [
+          _logo(),
+          const Spacer(),
           IconButton(
-            icon: Icon(Icons.bug_report_outlined,
-                color: Colors.white.withValues(alpha: 0.45), size: 20),
-            onPressed: () {
-              printSupabaseTokens();
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                  content: Text("Token imprimé dans la console.")));
-            },
-            splashRadius: 20,
-          ),
-        // Profil
-        IconButton(
-          icon: Icon(Icons.person_outline,
-              color: Colors.white.withValues(alpha: 0.90), size: 20),
-          onPressed: () => Navigator.of(context).pushNamed('/profile'),
-          splashRadius: 20,
-        ),
-        // ✅ Toggle thème
-        Tooltip(
-          message: t.isDark ? "Thème clair" : "Thème sombre",
-          child: GestureDetector(
-            onTap: () => context.read<AppThemeProvider>().toggleTheme(),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(9),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.30)),
-              ),
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 250),
-                transitionBuilder: (child, anim) => RotationTransition(
-                    turns: anim,
-                    child: FadeTransition(opacity: anim, child: child)),
-                child: Icon(
-                  t.isDark ? Icons.wb_sunny_outlined : Icons.nightlight_round,
-                  key: ValueKey(t.isDark),
-                  color: t.isDark ? _amber : Colors.white,
-                  size: 17,
+              icon: Icon(Icons.notifications_outlined,
+                  color: Colors.white.withValues(alpha: 0.90), size: 20),
+              onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const NotificationsScreen())),
+              splashRadius: 20),
+          if (isAdmin)
+            IconButton(
+                icon: Icon(Icons.bug_report_outlined,
+                    color: Colors.white.withValues(alpha: 0.45), size: 20),
+                onPressed: () {
+                  printSupabaseTokens();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Token imprimé.")));
+                },
+                splashRadius: 20),
+          IconButton(
+              icon: Icon(Icons.person_outline,
+                  color: Colors.white.withValues(alpha: 0.90), size: 20),
+              onPressed: () => Navigator.of(context).pushNamed('/profile'),
+              splashRadius: 20),
+          Tooltip(
+            message: t.isDark ? "Thème clair" : "Thème sombre",
+            child: GestureDetector(
+              onTap: () => context.read<AppThemeProvider>().toggleTheme(),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(9),
+                  border:
+                      Border.all(color: Colors.white.withValues(alpha: 0.28)),
+                ),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 250),
+                  transitionBuilder: (child, anim) => RotationTransition(
+                      turns: anim,
+                      child: FadeTransition(opacity: anim, child: child)),
+                  child: Icon(
+                      t.isDark
+                          ? Icons.wb_sunny_outlined
+                          : Icons.nightlight_round,
+                      key: ValueKey(t.isDark),
+                      color: t.isDark ? _amber : Colors.white,
+                      size: 16),
                 ),
               ),
             ),
           ),
+          const SizedBox(width: 4),
+          IconButton(
+              icon: Icon(Icons.logout,
+                  color: Colors.white.withValues(alpha: 0.75), size: 20),
+              onPressed: () => _logout(context),
+              splashRadius: 20),
+        ]),
+      );
+
+  Widget _logo() => Row(children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            gradient: const LinearGradient(
+                colors: [AppThemeProvider.appBlue, AppThemeProvider.teal],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight),
+          ),
+          child: const Icon(FontAwesomeIcons.bagShopping,
+              color: Colors.white, size: 15),
         ),
-        const SizedBox(width: 4),
-        // Logout
-        IconButton(
-          icon: Icon(Icons.logout,
-              color: Colors.white.withValues(alpha: 0.75), size: 20),
-          onPressed: () => _logout(context),
-          splashRadius: 20,
-        ),
-      ]),
-    );
-  }
+        const SizedBox(width: 10),
+        Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              Text("SAMA",
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 15,
+                      letterSpacing: 2.2,
+                      height: 1.0)),
+              Text("SERVICES INTERNATIONAL",
+                  style: TextStyle(
+                      color: Colors.white54,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 8.5,
+                      letterSpacing: 1.0,
+                      height: 1.0)),
+            ]),
+      ]);
 
   // ── TICKER ────────────────────────────────────────────────────────────────
-  Widget _tickerBanner(AppThemeProvider t) {
-    final dep = DepartureCountdownService.allDepartures[
-        _tickerIndex % DepartureCountdownService.allDepartures.length];
+  Widget _ticker(AppThemeProvider t) {
+    final upcoming = DepartureCountdownService.upcomingDepartures;
+    if (upcoming.isEmpty) return const SizedBox.shrink();
+    final dep = upcoming[_tickerIndex % upcoming.length];
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 400),
       child: Container(
@@ -435,16 +439,15 @@ class _HomeScreenState extends State<HomeScreen> {
         color: _amber,
         child: Row(children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-                color: t.bg, borderRadius: BorderRadius.circular(5)),
-            child: Text("DÉPARTS",
-                style: TextStyle(
-                    color: _amber,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.5)),
-          ),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                  color: t.bg, borderRadius: BorderRadius.circular(5)),
+              child: Text("DÉPARTS",
+                  style: TextStyle(
+                      color: _amber,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.5))),
           const SizedBox(width: 12),
           Text(dep.flag, style: const TextStyle(fontSize: 16)),
           const SizedBox(width: 6),
@@ -457,24 +460,27 @@ class _HomeScreenState extends State<HomeScreen> {
           GestureDetector(
             onTap: () => _showReservationModal(context, dep.route),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                  color: t.bg, borderRadius: BorderRadius.circular(7)),
-              child: Text("Réserver →",
-                  style: TextStyle(
-                      color: _amber,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 11)),
-            ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                    color: t.bg, borderRadius: BorderRadius.circular(7)),
+                child: Text("Réserver →",
+                    style: TextStyle(
+                        color: _amber,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 11))),
           ),
         ]),
       ),
     );
   }
 
-  // ── COMPTE À REBOURS AUTOMATIQUE ──────────────────────────────────────────
-  Widget _countdownSection(AppThemeProvider t) {
+  // ── COMPTE À REBOURS ──────────────────────────────────────────────────────
+  Widget _countdown_section(BuildContext context, AppThemeProvider t) {
     final dep = _countdown.currentDeparture;
+    final sameDayCount = _countdown.sameDayCount;
+    final inGroupIndex = _countdown.inGroupIndex;
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 350),
       padding: const EdgeInsets.all(18),
@@ -490,7 +496,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       child: Column(children: [
-        // ✅ Label dynamique
         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           Container(
               width: 7,
@@ -500,46 +505,85 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: _countdown.isExpired ? t.textMuted : _green)),
           const SizedBox(width: 8),
           AnimatedSwitcher(
-            duration: const Duration(milliseconds: 400),
-            child: Text(
-              key: ValueKey(_countdown.currentIndex),
-              _countdown.isExpired
-                  ? "TOUS LES DÉPARTS SONT PASSÉS"
-                  : "PROCHAIN DÉPART — ${dep.date.toUpperCase()}",
-              style: TextStyle(
-                  color: _countdown.isExpired ? t.textMuted : _green,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.2),
-            ),
-          ),
+              duration: const Duration(milliseconds: 300),
+              child: Text(
+                  key: ValueKey("${dep.date}_$inGroupIndex"),
+                  _countdown.isExpired
+                      ? "TOUS LES DÉPARTS SONT PASSÉS"
+                      : "PROCHAIN DÉPART — ${dep.date.toUpperCase()}",
+                  style: TextStyle(
+                      color: _countdown.isExpired ? t.textMuted : _green,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.2))),
         ]),
         const SizedBox(height: 6),
-        // ✅ Route du départ actif — change automatiquement
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 400),
-          child: Text(
-            key: ValueKey("r_${_countdown.currentIndex}"),
-            "${dep.flag}  ${dep.route}",
-            style: TextStyle(
-                color: t.isDark ? _blueBright : _appBlue,
-                fontWeight: FontWeight.w700,
-                fontSize: 14),
-          ),
+        GestureDetector(
+          onHorizontalDragEnd: (d) {
+            if (d.primaryVelocity == null) return;
+            if (d.primaryVelocity! < -200)
+              _countdown.nextSameDay(() {
+                if (mounted) setState(() {});
+              });
+            else if (d.primaryVelocity! > 200)
+              _countdown.prevSameDay(() {
+                if (mounted) setState(() {});
+              });
+          },
+          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            if (sameDayCount > 1)
+              GestureDetector(
+                  onTap: () => _countdown.prevSameDay(() {
+                        if (mounted) setState(() {});
+                      }),
+                  child: Icon(Icons.chevron_left,
+                      color: t.isDark ? _blueBright : _appBlue, size: 22)),
+            AnimatedSwitcher(
+                duration: const Duration(milliseconds: 350),
+                child: Text(
+                    key: ValueKey("r_${dep.route}"),
+                    "${dep.flag}  ${dep.route}",
+                    style: TextStyle(
+                        color: t.isDark ? _blueBright : _appBlue,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14))),
+            if (sameDayCount > 1)
+              GestureDetector(
+                  onTap: () => _countdown.nextSameDay(() {
+                        if (mounted) setState(() {});
+                      }),
+                  child: Icon(Icons.chevron_right,
+                      color: t.isDark ? _blueBright : _appBlue, size: 22)),
+          ]),
         ),
+        if (sameDayCount > 1) ...[
+          const SizedBox(height: 8),
+          Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                  sameDayCount,
+                  (i) => AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      width: i == inGroupIndex ? 18 : 7,
+                      height: 6,
+                      decoration: BoxDecoration(
+                          color: i == inGroupIndex
+                              ? _amber
+                              : t.textMuted.withValues(alpha: 0.30),
+                          borderRadius: BorderRadius.circular(3))))),
+        ],
         const SizedBox(height: 14),
-        // Compte à rebours
         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          _countUnit(t, _countdown.days, "JOURS", _amber),
-          _sep(t),
-          _countUnit(t, _countdown.hours, "HEURES", _appBlue),
-          _sep(t),
-          _countUnit(t, _countdown.minutes, "MIN", _appBlue),
-          _sep(t),
-          _countUnit(t, _countdown.seconds, "SEC", t.textMuted),
+          _cu(t, _countdown.days, "JOURS", _amber),
+          _sp(t),
+          _cu(t, _countdown.hours, "HEURES", _appBlue),
+          _sp(t),
+          _cu(t, _countdown.minutes, "MIN", _appBlue),
+          _sp(t),
+          _cu(t, _countdown.seconds, "SEC", t.textMuted),
         ]),
         const SizedBox(height: 14),
-        // Bouton réserver ce départ spécifique
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
@@ -560,42 +604,36 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _countUnit(
-      AppThemeProvider t, String value, String label, Color color) {
-    return Column(children: [
-      AnimatedContainer(
-        duration: const Duration(milliseconds: 350),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color.withValues(alpha: 0.28)),
-        ),
-        child: Text(value,
+  Widget _cu(AppThemeProvider t, String v, String label, Color color) =>
+      Column(children: [
+        AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.11),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: color.withValues(alpha: 0.28))),
+            child: Text(v,
+                style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 20,
+                    letterSpacing: 1))),
+        const SizedBox(height: 4),
+        Text(label,
             style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.w900,
-                fontSize: 20,
-                letterSpacing: 1)),
-      ),
-      const SizedBox(height: 4),
-      Text(label,
-          style: TextStyle(
-              color: t.textMuted,
-              fontSize: 9,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.8)),
-    ]);
-  }
+                color: t.textMuted,
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.8)),
+      ]);
 
-  Widget _sep(AppThemeProvider t) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16, left: 5, right: 5),
-      child: Text(":",
-          style: TextStyle(
-              color: t.textMuted, fontSize: 18, fontWeight: FontWeight.w700)),
-    );
-  }
+  Widget _sp(AppThemeProvider t) => Padding(
+        padding: const EdgeInsets.only(bottom: 16, left: 5, right: 5),
+        child: Text(":",
+            style: TextStyle(
+                color: t.textMuted, fontSize: 18, fontWeight: FontWeight.w700)),
+      );
 
   // ── GREETING ──────────────────────────────────────────────────────────────
   Widget _greeting(AppThemeProvider t, LoggedUser user) {
@@ -605,10 +643,21 @@ class _HomeScreenState extends State<HomeScreen> {
         : hour < 18
             ? "Bon après-midi"
             : "Bonsoir";
-    final prenom = _extractPrenom(user);
-    final displayName = prenom.isNotEmpty ? prenom : "vous";
+    final meta = AuthService.userMetadata;
+    String prenom = '';
+    if (meta != null) prenom = meta['prenom']?.toString().trim() ?? '';
+    if (prenom.isEmpty) {
+      final full = user.fullName?.trim() ?? '';
+      if (full.isNotEmpty) {
+        final p = full.split(' ');
+        if (p.isNotEmpty && p[0].isNotEmpty)
+          prenom = p[0][0].toUpperCase() + p[0].substring(1).toLowerCase();
+      }
+    } else {
+      prenom = prenom[0].toUpperCase() + prenom.substring(1).toLowerCase();
+    }
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text("$salut, $displayName 👋",
+      Text("$salut, ${prenom.isNotEmpty ? prenom : 'vous'} 👋",
           style: TextStyle(
               color: t.textPrimary,
               fontWeight: FontWeight.w900,
@@ -616,31 +665,12 @@ class _HomeScreenState extends State<HomeScreen> {
               letterSpacing: -0.3)),
       const SizedBox(height: 4),
       Text("Que souhaitez-vous faire aujourd'hui ?",
-          style: TextStyle(
-              color: t.textMuted, fontWeight: FontWeight.w400, fontSize: 14)),
+          style: TextStyle(color: t.textMuted, fontSize: 14)),
     ]);
   }
 
-  String _extractPrenom(LoggedUser user) {
-    final metadata = AuthService.userMetadata;
-    if (metadata != null) {
-      final prenom = metadata['prenom']?.toString().trim() ?? '';
-      if (prenom.isNotEmpty) return _capitalize(prenom);
-    }
-    final fullName = user.fullName?.trim() ?? '';
-    if (fullName.isNotEmpty) {
-      final parts = fullName.split(' ');
-      if (parts.isNotEmpty && parts[0].isNotEmpty) return _capitalize(parts[0]);
-    }
-    return '';
-  }
-
-  String _capitalize(String s) =>
-      s.isEmpty ? s : s[0].toUpperCase() + s.substring(1).toLowerCase();
-
   // ── QUICK ACTIONS ─────────────────────────────────────────────────────────
-  Widget _quickActions(
-      BuildContext context, AppThemeProvider t, bool isDesktop) {
+  Widget _quickActions(BuildContext context, AppThemeProvider t) {
     final actions = [
       {
         "icon": FontAwesomeIcons.truckFast,
@@ -670,7 +700,7 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     ];
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      _sectionLabel(t, "Actions rapides"),
+      _lbl(t, "Actions rapides"),
       const SizedBox(height: 12),
       Row(
           children: actions.asMap().entries.map((e) {
@@ -678,68 +708,102 @@ class _HomeScreenState extends State<HomeScreen> {
         return Expanded(
             child: Padding(
           padding: EdgeInsets.only(right: e.key < actions.length - 1 ? 10 : 0),
-          child: _quickActionCard(
-              t,
-              a['icon'] as IconData,
-              a['label'] as String,
-              a['color'] as Color,
-              a['onTap'] as VoidCallback),
+          child: GestureDetector(
+            onTap: a['onTap'] as VoidCallback,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 350),
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+              decoration: BoxDecoration(
+                  color: t.bgCard,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                      color: (a['color'] as Color).withValues(alpha: 0.22)),
+                  boxShadow: [
+                    BoxShadow(
+                        color: (a['color'] as Color).withValues(alpha: 0.08),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4))
+                  ]),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                        color: (a['color'] as Color).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12)),
+                    child: Icon(a['icon'] as IconData,
+                        color: a['color'] as Color, size: 18)),
+                const SizedBox(height: 8),
+                Text(a['label'] as String,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        color: t.textPrimary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11,
+                        height: 1.3)),
+              ]),
+            ),
+          ),
         ));
       }).toList()),
     ]);
   }
 
-  Widget _quickActionCard(AppThemeProvider t, IconData icon, String label,
-      Color color, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 350),
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-        decoration: BoxDecoration(
-          color: t.bgCard,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withValues(alpha: 0.22)),
-          boxShadow: [
-            BoxShadow(
-                color: color.withValues(alpha: 0.08),
-                blurRadius: 12,
-                offset: const Offset(0, 4))
-          ],
-        ),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12)),
-              child: Icon(icon, color: color, size: 18)),
-          const SizedBox(height: 8),
-          Text(label,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                  color: t.textPrimary,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 11,
-                  height: 1.3)),
-        ]),
-      ),
-    );
-  }
+  // ── ACTIVITIES ────────────────────────────────────────────────────────────
+  Widget _activities(BuildContext context, AppThemeProvider t, bool isDesktop) {
+    Widget card(IconData icon, Color color, String title, String sub,
+            VoidCallback onTap) =>
+        GestureDetector(
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 350),
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+                color: t.bgCard,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: color.withValues(alpha: 0.20)),
+                boxShadow: [
+                  BoxShadow(
+                      color: color.withValues(alpha: 0.07),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4))
+                ]),
+            child: Row(children: [
+              Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(14)),
+                  child: Icon(icon, color: color, size: 22)),
+              const SizedBox(width: 14),
+              Expanded(
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                    Text(title,
+                        style: TextStyle(
+                            color: t.textPrimary,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15)),
+                    Text(sub,
+                        style: TextStyle(
+                            color: t.textMuted,
+                            fontWeight: FontWeight.w400,
+                            fontSize: 12)),
+                  ])),
+              Icon(Icons.chevron_right, color: t.textMuted, size: 20),
+            ]),
+          ),
+        );
 
-  // ── MY ACTIVITIES ─────────────────────────────────────────────────────────
-  Widget _myActivitiesSection(
-      BuildContext context, AppThemeProvider t, bool isDesktop) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      _sectionLabel(t, "Mes activités"),
+      _lbl(t, "Mes activités"),
       const SizedBox(height: 12),
       isDesktop
           ? Row(children: [
               Expanded(
-                  child: _activityCard(
-                      context,
-                      t,
+                  child: card(
                       Icons.local_shipping_outlined,
                       _appBlue,
                       "Mes Transports",
@@ -750,9 +814,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               builder: (_) => TransportListScreen())))),
               const SizedBox(width: 12),
               Expanded(
-                  child: _activityCard(
-                      context,
-                      t,
+                  child: card(
                       Icons.receipt_long_outlined,
                       _amber,
                       "Mes Commandes",
@@ -763,9 +825,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               builder: (_) => CommandesListScreen())))),
             ])
           : Column(children: [
-              _activityCard(
-                  context,
-                  t,
+              card(
                   Icons.local_shipping_outlined,
                   _appBlue,
                   "Mes Transports",
@@ -775,9 +835,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       MaterialPageRoute(
                           builder: (_) => TransportListScreen()))),
               const SizedBox(height: 12),
-              _activityCard(
-                  context,
-                  t,
+              card(
                   Icons.receipt_long_outlined,
                   _amber,
                   "Mes Commandes",
@@ -790,139 +848,88 @@ class _HomeScreenState extends State<HomeScreen> {
     ]);
   }
 
-  Widget _activityCard(BuildContext context, AppThemeProvider t, IconData icon,
-      Color color, String title, String subtitle, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
+  // ── INFO BAND ─────────────────────────────────────────────────────────────
+  Widget _infoBand(AppThemeProvider t) => AnimatedContainer(
         duration: const Duration(milliseconds: 350),
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: t.bgCard,
+          gradient: LinearGradient(
+              colors: t.isDark
+                  ? [const Color(0xFF0D3060), const Color(0xFF0A1628)]
+                  : [_appBlue, AppThemeProvider.blueMid],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withValues(alpha: 0.20)),
           boxShadow: [
             BoxShadow(
-                color: color.withValues(alpha: 0.07),
-                blurRadius: 10,
-                offset: const Offset(0, 4))
+                color: _appBlue.withValues(alpha: 0.20),
+                blurRadius: 16,
+                offset: const Offset(0, 6))
           ],
         ),
-        child: Row(children: [
-          Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14)),
-              child: Icon(icon, color: color, size: 22)),
-          const SizedBox(width: 14),
-          Expanded(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                Text(title,
-                    style: TextStyle(
-                        color: t.textPrimary,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 15)),
-                Text(subtitle,
-                    style: TextStyle(
-                        color: t.textMuted,
-                        fontWeight: FontWeight.w400,
-                        fontSize: 12)),
-              ])),
-          Icon(Icons.chevron_right, color: t.textMuted, size: 20),
-        ]),
-      ),
-    );
-  }
-
-  // ── SAMA INFO BAND ────────────────────────────────────────────────────────
-  Widget _samaInfoBand(AppThemeProvider t) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 350),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-            colors: t.isDark
-                ? [const Color(0xFF0D3060), const Color(0xFF0A1628)]
-                : [_appBlue, AppThemeProvider.blueMid],
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-              color: _appBlue.withValues(alpha: 0.20),
-              blurRadius: 16,
-              offset: const Offset(0, 6))
-        ],
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          const Icon(Icons.local_offer_outlined, color: _amber, size: 16),
-          const SizedBox(width: 8),
-          const Text("Tarifs SAMA",
-              style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 14)),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-                color: _amberLight,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: _amber.withValues(alpha: 0.4))),
-            child: const Text("–50% WEB",
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            const Icon(Icons.local_offer_outlined, color: _amber, size: 16),
+            const SizedBox(width: 8),
+            const Text("Tarifs SAMA",
                 style: TextStyle(
-                    color: Color(0xFF7A4F00),
+                    color: Colors.white,
                     fontWeight: FontWeight.w800,
-                    fontSize: 10,
-                    letterSpacing: 0.5)),
-          ),
+                    fontSize: 14)),
+            const Spacer(),
+            Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                    color: _amberLight,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: _amber.withValues(alpha: 0.4))),
+                child: const Text("–50% WEB",
+                    style: TextStyle(
+                        color: Color(0xFF7A4F00),
+                        fontWeight: FontWeight.w800,
+                        fontSize: 10,
+                        letterSpacing: 0.5))),
+          ]),
+          const SizedBox(height: 16),
+          Row(children: [
+            _tf("🇫🇷", "Paris", "10€/kg"),
+            _td(),
+            _tf("🇲🇦", "Casablanca", "65DH/kg"),
+            _td(),
+            _tf("🇸🇳", "Dakar", "6500 FCFA"),
+          ]),
         ]),
-        const SizedBox(height: 16),
-        Row(children: [
-          _tarif("🇫🇷", "Paris", "10€/kg", _appBlue),
-          _tarifDivider(),
-          _tarif("🇲🇦", "Casablanca", "65DH/kg", AppThemeProvider.blueMid),
-          _tarifDivider(),
-          _tarif("🇸🇳", "Dakar", "6500 FCFA", _teal),
-        ]),
-      ]),
-    );
-  }
+      );
 
-  Widget _tarif(String flag, String city, String price, Color color) {
-    return Expanded(
-        child: Column(children: [
-      Text("$flag $city",
-          textAlign: TextAlign.center,
-          style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.75),
-              fontWeight: FontWeight.w600,
-              fontSize: 11)),
-      const SizedBox(height: 4),
-      Text(price,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-              color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14)),
-    ]));
-  }
+  Widget _tf(String flag, String city, String price) => Expanded(
+          child: Column(children: [
+        Text("$flag $city",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.75),
+                fontWeight: FontWeight.w600,
+                fontSize: 11)),
+        const SizedBox(height: 4),
+        Text(price,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                fontSize: 14)),
+      ]));
 
-  Widget _tarifDivider() => Container(
+  Widget _td() => Container(
       width: 1,
       height: 32,
       color: Colors.white.withValues(alpha: 0.20),
       margin: const EdgeInsets.symmetric(horizontal: 4));
 
   // ── TOUS LES DÉPARTS ──────────────────────────────────────────────────────
-  Widget _nextDeparturesSection(BuildContext context, AppThemeProvider t) {
-    final deps = DepartureCountdownService.allDepartures;
+  Widget _departures(BuildContext context, AppThemeProvider t) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [
-        _sectionLabel(t, "Tous les départs"),
+        _lbl(t, "Tous les départs"),
         const Spacer(),
         GestureDetector(
           onTap: () =>
@@ -937,9 +944,9 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ]),
       const SizedBox(height: 12),
-      ...deps.asMap().entries.map((e) {
-        final dep = e.value;
-        final isCurrent = e.key == _countdown.currentIndex;
+      ...DepartureCountdownService.allDepartures.map((dep) {
+        final isCurrent = dep.route == _countdown.currentDeparture.route &&
+            dep.date == _countdown.currentDeparture.date;
         final isPast = dep.dateTime.isBefore(DateTime.now());
         return AnimatedContainer(
           duration: const Duration(milliseconds: 350),
@@ -976,38 +983,37 @@ class _HomeScreenState extends State<HomeScreen> {
                           fontWeight: FontWeight.w700,
                           fontSize: 13)),
                   if (isCurrent)
-                    Text("En cours de compte à rebours",
-                        style: const TextStyle(
+                    const Text("En cours de compte à rebours",
+                        style: TextStyle(
                             color: _amber,
                             fontSize: 10,
                             fontWeight: FontWeight.w600)),
                 ])),
             if (isPast)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                    color: t.border, borderRadius: BorderRadius.circular(20)),
-                child: Text("PASSÉ",
-                    style: TextStyle(
-                        color: t.textMuted,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 9,
-                        letterSpacing: 0.8)),
-              )
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                      color: t.border, borderRadius: BorderRadius.circular(20)),
+                  child: Text("PASSÉ",
+                      style: TextStyle(
+                          color: t.textMuted,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 9,
+                          letterSpacing: 0.8)))
             else
               GestureDetector(
                 onTap: () => _showReservationModal(context, dep.route),
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                      color: _amber, borderRadius: BorderRadius.circular(7)),
-                  child: const Text("Réserver",
-                      style: TextStyle(
-                          color: AppThemeProvider.textDark,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 11)),
-                ),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                        color: _amber, borderRadius: BorderRadius.circular(7)),
+                    child: const Text("Réserver",
+                        style: TextStyle(
+                            color: AppThemeProvider.textDark,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 11))),
               ),
           ]),
         );
@@ -1016,8 +1022,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ── ADMIN ─────────────────────────────────────────────────────────────────
-  Widget _adminSection(
-      BuildContext context, AppThemeProvider t, bool isDesktop) {
+  Widget _admin(BuildContext context, AppThemeProvider t) {
     final items = [
       {
         "icon": Icons.badge_outlined,
@@ -1036,22 +1041,21 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-            color: _amber.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: _amber.withValues(alpha: 0.3))),
-        child: const Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(Icons.shield_outlined, color: _amber, size: 12),
-          SizedBox(width: 5),
-          Text("Administration",
-              style: TextStyle(
-                  color: _amber,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 11,
-                  letterSpacing: 0.5)),
-        ]),
-      ),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+              color: _amber.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: _amber.withValues(alpha: 0.3))),
+          child: const Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(Icons.shield_outlined, color: _amber, size: 12),
+            SizedBox(width: 5),
+            Text("Administration",
+                style: TextStyle(
+                    color: _amber,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 11,
+                    letterSpacing: 0.5)),
+          ])),
       const SizedBox(height: 12),
       Row(
           children: items.asMap().entries.map((e) {
@@ -1065,17 +1069,16 @@ class _HomeScreenState extends State<HomeScreen> {
               duration: const Duration(milliseconds: 350),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: t.bgCard,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                    color: (item['color'] as Color).withValues(alpha: 0.20)),
-                boxShadow: [
-                  BoxShadow(
-                      color: (item['color'] as Color).withValues(alpha: 0.07),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4))
-                ],
-              ),
+                  color: t.bgCard,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                      color: (item['color'] as Color).withValues(alpha: 0.20)),
+                  boxShadow: [
+                    BoxShadow(
+                        color: (item['color'] as Color).withValues(alpha: 0.07),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4))
+                  ]),
               child: Row(children: [
                 Icon(item['icon'] as IconData,
                     color: item['color'] as Color, size: 20),
@@ -1093,12 +1096,12 @@ class _HomeScreenState extends State<HomeScreen> {
     ]);
   }
 
-  Widget _sectionLabel(AppThemeProvider t, String label) {
-    return Text(label.toUpperCase(),
+  Widget _lbl(AppThemeProvider t, String label) => Text(
+        label.toUpperCase(),
         style: TextStyle(
             color: t.textMuted,
             fontWeight: FontWeight.w700,
             fontSize: 11,
-            letterSpacing: 1.2));
-  }
+            letterSpacing: 1.2),
+      );
 }

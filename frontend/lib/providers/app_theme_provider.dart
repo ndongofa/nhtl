@@ -1,78 +1,86 @@
 // lib/providers/app_theme_provider.dart
-// ChangeNotifierProvider à envelopper dans main.dart :
-//   ChangeNotifierProvider(create: (_) => AppThemeProvider(), child: MyApp(...))
+//
+// ✅ Provider thème clair/sombre — clair par défaut
+// ✅ Toggle animé (soleil/lune) dans top bar
+// ✅ Tous les getters utilisés dans landing, home, transport_tracking
+// ✅ Constantes statiques accessibles sans instance
 
 import 'package:flutter/material.dart';
 
 class AppThemeProvider extends ChangeNotifier {
-  // ✅ Clair par défaut, reset à chaque ouverture
+  // ── Thème clair par défaut (reset à chaque ouverture) ───────────────────
   bool _isDark = false;
-
   bool get isDark => _isDark;
-  bool get isLight => !_isDark;
 
   void toggleTheme() {
     _isDark = !_isDark;
     notifyListeners();
   }
 
-  // ── Palette sombre ────────────────────────────────────────────────────────
-  static const Color darkBg = Color(0xFF0D1B2E);
-  static const Color darkBgSection = Color(0xFF112236);
-  static const Color darkBgCard = Color(0xFF1A2E45);
-  static const Color darkBorder = Color(0xFF1E3A55);
-  static const Color darkBorderBright = Color(0xFF2A5070);
-  static const Color darkTextPrimary = Color(0xFFF0F6FF);
-  static const Color darkTextSecond = Color(0xFFB0C4DE);
-  static const Color darkTextMuted = Color(0xFF7A94B0);
-
-  // ── Palette claire ────────────────────────────────────────────────────────
-  static const Color lightBg = Color(0xFFF4F8FF);
-  static const Color lightBgSection = Color(0xFFEEF5FF);
-  static const Color lightBgCard = Colors.white;
-  static const Color lightBorder = Color(0xFFDDE3EF);
-  static const Color lightBorderBright = Color(0xFFBDD4EE);
-  static const Color lightTextPrimary = Color(0xFF0F2040);
-  static const Color lightTextSecond = Color(0xFF3A5A8A);
-  static const Color lightTextMuted = Color(0xFF6B7A99);
-
-  // ── Couleurs communes (indépendantes du thème) ────────────────────────────
+  // ── Couleurs statiques (accessibles sans instance) ───────────────────────
   static const Color appBlue = Color(0xFF2296F3);
   static const Color blueBright = Color(0xFF42AAFE);
   static const Color blueMid = Color(0xFF1A7ED4);
   static const Color amber = Color(0xFFFFB300);
-  static const Color amberLight = Color(0xFFFFF3D0);
+  static const Color amberLight = Color(0xFFFFF3CD);
   static const Color teal = Color(0xFF00D4C8);
   static const Color green = Color(0xFF22C55E);
   static const Color textDark = Color(0xFF0F2040);
-  static const Color textDarkMuted = Color(0xFF4A6A8A);
 
-  // ── Getters dynamiques ────────────────────────────────────────────────────
-  Color get bg => _isDark ? darkBg : lightBg;
-  Color get bgSection => _isDark ? darkBgSection : lightBgSection;
-  Color get bgCard => _isDark ? darkBgCard : lightBgCard;
-  Color get border => _isDark ? darkBorder : lightBorder;
-  Color get borderBright => _isDark ? darkBorderBright : lightBorderBright;
-  Color get textPrimary => _isDark ? darkTextPrimary : lightTextPrimary;
-  Color get textSecond => _isDark ? darkTextSecond : lightTextSecond;
-  Color get textMuted => _isDark ? darkTextMuted : lightTextMuted;
+  // ── Backgrounds ───────────────────────────────────────────────────────────
 
-  // Sections alternées
-  Color get sectionLight => _isDark ? darkBgSection : const Color(0xFFF0F6FF);
-  Color get sectionLightAlt => _isDark ? darkBg : const Color(0xFFE8F4FE);
+  /// Fond principal de la page
+  Color get bg => _isDark ? const Color(0xFF0D1117) : const Color(0xFFF4F8FF);
 
-  // Hero gradient
+  /// Fond des cartes / containers
+  Color get bgCard => _isDark ? const Color(0xFF161B22) : Colors.white;
+
+  /// Fond des sections alternées (légèrement différent de bg)
+  Color get bgSection =>
+      _isDark ? const Color(0xFF13191F) : const Color(0xFFEEF4FF);
+
+  /// Section claire (tarifs, pricing)
+  Color get sectionLight =>
+      _isDark ? const Color(0xFF0F1419) : const Color(0xFFF0F7FF);
+
+  /// Section claire alternative (contact)
+  Color get sectionLightAlt =>
+      _isDark ? const Color(0xFF111620) : const Color(0xFFF5F0FF);
+
+  // ── Top bar ───────────────────────────────────────────────────────────────
+
+  /// Fond de la top bar — toujours coloré (bleu nuit sombre / bleu app clair)
+  Color get topBarBg => _isDark ? const Color(0xFF0A1628) : appBlue;
+
+  // ── Texte ─────────────────────────────────────────────────────────────────
+
+  Color get textPrimary =>
+      _isDark ? const Color(0xFFE6EDF3) : const Color(0xFF0F2040);
+
+  Color get textMuted =>
+      _isDark ? const Color(0xFF8B949E) : const Color(0xFF6B7A99);
+
+  // ── Bordures ──────────────────────────────────────────────────────────────
+
+  Color get border =>
+      _isDark ? const Color(0xFF30363D) : const Color(0xFFDDE3EF);
+
+  /// Bordure plus visible (focus, cartes actives)
+  Color get borderBright =>
+      _isDark ? const Color(0xFF3D4752) : const Color(0xFFC5D0E8);
+
+  // ── Hero gradient (landing) ───────────────────────────────────────────────
+
+  /// 3 couleurs pour le gradient animé du hero
   List<Color> get heroGradient => _isDark
       ? [
           const Color(0xFF0A1628),
           const Color(0xFF0D3060),
-          const Color(0xFF1565C0)
+          const Color(0xFF0A2040),
         ]
-      : [appBlue, blueMid, const Color(0xFF0A3070)];
-
-  // Top bar
-  Color get topBarBg => _isDark ? darkBg : appBlue;
-  Color get topBarText => Colors.white;
-  Color get outlineBorder =>
-      _isDark ? darkBorderBright : Colors.white.withValues(alpha: 0.50);
+      : [
+          appBlue,
+          blueMid,
+          const Color(0xFF0E5DA8),
+        ];
 }

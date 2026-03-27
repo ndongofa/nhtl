@@ -1,3 +1,10 @@
+// lib/models/transport.dart
+//
+// ✅ Ajout du champ optionnel `statutSuivi` (String?) — aligné sur TransportStatus.java
+// ✅ Zéro régression : tous les champs existants conservés, même signature
+// ✅ fromJson/toJson mis à jour
+// ✅ copyWith mis à jour
+
 class Transport {
   final int? id;
   final String nom;
@@ -16,12 +23,18 @@ class Transport {
   final double valeurEstimee;
   final String devise;
   final String statut;
+
+  // ✅ NOUVEAU — suivi structuré (miroir de TransportStatus.java côté backend)
+  // Valeurs possibles : EN_ATTENTE · DEPART_CONFIRME · EN_TRANSIT ·
+  //                    EN_DOUANE · ARRIVE · PRET_RECUPERATION · LIVRE
+  final String? statutSuivi;
+
   final bool archived;
   final String? userId;
   final DateTime? dateCreation;
   final DateTime? dateModification;
 
-  // --- GP assignment (nouveau) ---
+  // GP assignment
   final int? gpId;
   final String? gpPrenom;
   final String? gpNom;
@@ -45,6 +58,7 @@ class Transport {
     required this.valeurEstimee,
     required this.devise,
     required this.statut,
+    this.statutSuivi, // ✅ optionnel — null si backend pas encore mis à jour
     this.archived = false,
     this.userId,
     this.dateCreation,
@@ -73,6 +87,7 @@ class Transport {
     double? valeurEstimee,
     String? devise,
     String? statut,
+    String? statutSuivi,
     bool? archived,
     String? userId,
     DateTime? dateCreation,
@@ -100,6 +115,7 @@ class Transport {
       valeurEstimee: valeurEstimee ?? this.valeurEstimee,
       devise: devise ?? this.devise,
       statut: statut ?? this.statut,
+      statutSuivi: statutSuivi ?? this.statutSuivi,
       archived: archived ?? this.archived,
       userId: userId ?? this.userId,
       dateCreation: dateCreation ?? this.dateCreation,
@@ -132,20 +148,20 @@ class Transport {
       valeurEstimee: (json['valeurEstimee'] is int)
           ? (json['valeurEstimee'] as int).toDouble()
           : (json['valeurEstimee'] as double? ?? 0.0),
-      devise: json['devise'] as String? ?? 'USD',
+      devise: json['devise'] as String? ?? 'EUR',
       statut: json['statut'] as String? ?? 'EN_ATTENTE',
+      // ✅ NOUVEAU — null-safe : absent des anciennes réponses backend
+      statutSuivi: json['statutSuivi'] as String?,
       archived: json['archived'] is int
           ? (json['archived'] == 1)
-          : (json['archived'] ?? false),
+          : (json['archived'] as bool? ?? false),
       userId: json['userId'] as String?,
       dateCreation: json['dateCreation'] != null
-          ? DateTime.parse(json['dateCreation'])
+          ? DateTime.tryParse(json['dateCreation'].toString())
           : null,
       dateModification: json['dateModification'] != null
-          ? DateTime.parse(json['dateModification'])
+          ? DateTime.tryParse(json['dateModification'].toString())
           : null,
-
-      // --- GP mapping (nouveau) ---
       gpId: (json['gpId'] as num?)?.toInt(),
       gpPrenom: json['gpPrenom'] as String?,
       gpNom: json['gpNom'] as String?,
@@ -172,16 +188,12 @@ class Transport {
       'valeurEstimee': valeurEstimee,
       'devise': devise,
       'statut': statut,
-      'archived': archived,
-      'userId': userId,
-
-      // --- GP (optionnel) ---
+      // statutSuivi géré par le backend via PATCH /status — exclu du POST/PUT
       'gpId': gpId,
       'gpPrenom': gpPrenom,
       'gpNom': gpNom,
       'gpPhoneNumber': gpPhoneNumber,
-
-      // dateCreation, dateModification sont manipulées côté backend
+      // archived, userId, dates : gérés côté backend
     };
   }
 }

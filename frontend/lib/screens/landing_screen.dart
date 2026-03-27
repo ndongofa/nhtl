@@ -1,12 +1,13 @@
 // lib/screens/landing_screen.dart
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:sama/services/departure_countdown_service.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import '../providers/app_theme_provider.dart';
-import '../widgets/sama_globe_logo.dart';
+import '../services/departure_countdown_service.dart';
 
 class LandingScreenSamaServicesInternational extends StatefulWidget {
   const LandingScreenSamaServicesInternational({Key? key}) : super(key: key);
@@ -26,7 +27,6 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
   static const Color _teal = AppThemeProvider.teal;
   static const Color _green = AppThemeProvider.green;
   static const Color _textDark = AppThemeProvider.textDark;
-  static const Color _textDarkMuted = AppThemeProvider.textDarkMuted;
 
   static const String _waFrance = "33768913074";
   static const String _waDakar = "221783042838";
@@ -64,12 +64,11 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
   final _contactKey = GlobalKey();
 
   late final AnimationController _bgAnim;
-
-  // ✅ Compte à rebours automatique partagé
   final DepartureCountdownService _countdown = DepartureCountdownService();
 
-  // Ticker — tourne sur tous les départs
+  // ✅ Ticker uniquement sur les départs à venir
   int _tickerIndex = 0;
+  Timer? _tickerTimer;
 
   @override
   void initState() {
@@ -82,14 +81,11 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
       if (mounted) setState(() {});
     });
 
-    // Ticker toutes les 3s
-    Future.delayed(Duration.zero, () {
+    _tickerTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       if (!mounted) return;
-      Stream.periodic(const Duration(seconds: 3)).listen((_) {
-        if (mounted)
-          setState(() => _tickerIndex = (_tickerIndex + 1) %
-              DepartureCountdownService.allDepartures.length);
-      });
+      final upcoming = DepartureCountdownService.upcomingDepartures;
+      if (upcoming.isEmpty) return;
+      setState(() => _tickerIndex = (_tickerIndex + 1) % upcoming.length);
     });
   }
 
@@ -97,6 +93,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
   void dispose() {
     _bgAnim.dispose();
     _countdown.dispose();
+    _tickerTimer?.cancel();
     super.dispose();
   }
 
@@ -127,8 +124,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
     if (await canLaunchUrl(uri)) await launchUrl(uri);
   }
 
-  // ── MODALE RÉSERVATION ────────────────────────────────────────────────────
-  void _showReservationModal(BuildContext context, String departRoute) {
+  void _showReservationModal(String departRoute) {
     final t = context.read<AppThemeProvider>();
     showDialog(
       context: context,
@@ -152,7 +148,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
                   child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                    Text("Réserver ce départ",
+                    Text("Réserver",
                         style: TextStyle(
                             color: t.textPrimary,
                             fontWeight: FontWeight.w800,
@@ -166,106 +162,87 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints()),
             ]),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             Divider(color: t.border),
             const SizedBox(height: 12),
-            _modalBtn(t,
-                icon: FontAwesomeIcons.whatsapp,
-                color: _green,
-                label: "WhatsApp France",
-                subtitle: "+33 76 891 30 74", onTap: () {
+            _modalContact(t, FontAwesomeIcons.whatsapp, _green,
+                "WhatsApp France", "+33 76 891 30 74", () {
               Navigator.pop(ctx);
               _wa(_waFrance);
             }),
             const SizedBox(height: 8),
-            _modalBtn(t,
-                icon: FontAwesomeIcons.whatsapp,
-                color: _green,
-                label: "WhatsApp Dakar",
-                subtitle: "+221 78 304 28 38", onTap: () {
+            _modalContact(t, FontAwesomeIcons.whatsapp, _green,
+                "WhatsApp Dakar", "+221 78 304 28 38", () {
               Navigator.pop(ctx);
               _wa(_waDakar);
             }),
             const SizedBox(height: 8),
-            _modalBtn(t,
-                icon: Icons.email_outlined,
-                color: _appBlue,
-                label: "Email",
-                subtitle: _email, onTap: () {
+            _modalContact(t, Icons.email_outlined, _appBlue, "Email", _email,
+                () {
               Navigator.pop(ctx);
               _openEmail();
             }),
             const SizedBox(height: 16),
             Divider(color: t.border),
             const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              height: 46,
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.person_add_alt_1, size: 18),
-                label: const Text("Créer un compte",
-                    style:
-                        TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+            Row(children: [
+              Expanded(
+                  child: OutlinedButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _push('/login');
+                },
+                style: OutlinedButton.styleFrom(
+                    foregroundColor: t.textPrimary,
+                    side: BorderSide(color: t.borderBright),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(vertical: 12)),
+                child: const Text("Connexion",
+                    style: TextStyle(fontWeight: FontWeight.w700)),
+              )),
+              const SizedBox(width: 10),
+              Expanded(
+                  child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _push('/signup');
+                },
                 style: ElevatedButton.styleFrom(
                     backgroundColor: _appBlue,
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12))),
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  _push('/signup');
-                },
-              ),
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              height: 46,
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.login, size: 18),
-                label: const Text("Connexion",
-                    style:
-                        TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-                style: OutlinedButton.styleFrom(
-                    foregroundColor: t.textPrimary,
-                    side: BorderSide(color: t.borderBright),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12))),
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  _push('/login');
-                },
-              ),
-            ),
+                        borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(vertical: 12)),
+                child: const Text("S'inscrire",
+                    style: TextStyle(fontWeight: FontWeight.w800)),
+              )),
+            ]),
           ]),
         ),
       ),
     );
   }
 
-  Widget _modalBtn(AppThemeProvider t,
-      {required IconData icon,
-      required Color color,
-      required String label,
-      required String subtitle,
-      required VoidCallback onTap}) {
+  Widget _modalContact(AppThemeProvider t, IconData icon, Color color,
+      String label, String subtitle, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.08),
+            color: color.withValues(alpha: 0.07),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: color.withValues(alpha: 0.25))),
+            border: Border.all(color: color.withValues(alpha: 0.22))),
         child: Row(children: [
           Container(
-              width: 36,
-              height: 36,
+              width: 34,
+              height: 34,
               decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(10)),
-              child: Icon(icon, color: color, size: 18)),
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(9)),
+              child: Icon(icon, color: color, size: 17)),
           const SizedBox(width: 12),
           Expanded(
               child: Column(
@@ -280,7 +257,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
                     style: TextStyle(color: t.textMuted, fontSize: 11),
                     overflow: TextOverflow.ellipsis),
               ])),
-          Icon(Icons.arrow_forward_ios, color: color, size: 14),
+          Icon(Icons.arrow_forward_ios, color: color, size: 13),
         ]),
       ),
     );
@@ -299,44 +276,41 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: SafeArea(
-          child: CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(child: _topBar(t, isDesktop)),
-              SliverToBoxAdapter(child: _tickerBanner(t)),
-              SliverToBoxAdapter(child: _hero(t, isDesktop)),
-              SliverToBoxAdapter(child: _countdownBanner(t)),
-              SliverToBoxAdapter(
-                  child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 350),
-                      color: t.bgSection,
-                      child: _servicesSection(t, isDesktop))),
-              SliverToBoxAdapter(
-                  child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 350),
-                      key: _pricingKey,
-                      color: t.sectionLight,
-                      child: _pricingSection(t, isDesktop))),
-              SliverToBoxAdapter(
-                  child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 350),
-                      key: _departuresKey,
-                      color: t.bg,
-                      child: _departuresSection(t, isDesktop))),
-              SliverToBoxAdapter(
-                  child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 350),
-                      key: _contactKey,
-                      color: t.sectionLightAlt,
-                      child: _contactSection(t, isDesktop))),
-              SliverToBoxAdapter(child: _footer(t)),
-            ],
-          ),
-        ),
+            child: CustomScrollView(slivers: [
+          SliverToBoxAdapter(child: _topBar(t, isDesktop)),
+          SliverToBoxAdapter(child: _tickerBanner(t)),
+          SliverToBoxAdapter(child: _hero(t, isDesktop)),
+          SliverToBoxAdapter(child: _countdownBanner(t)),
+          SliverToBoxAdapter(
+              child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 350),
+                  color: t.bgSection,
+                  child: _servicesSection(t, isDesktop))),
+          SliverToBoxAdapter(
+              child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 350),
+                  key: _pricingKey,
+                  color: t.sectionLight,
+                  child: _pricingSection(t, isDesktop))),
+          SliverToBoxAdapter(
+              child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 350),
+                  key: _departuresKey,
+                  color: t.bg,
+                  child: _departuresSection(t, isDesktop))),
+          SliverToBoxAdapter(
+              child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 350),
+                  key: _contactKey,
+                  color: t.sectionLightAlt,
+                  child: _contactSection(t, isDesktop))),
+          SliverToBoxAdapter(child: _footer(t)),
+        ])),
       ),
     );
   }
 
-  // ── TOP BAR avec logo globe ───────────────────────────────────────────────
+  // ── TOP BAR ───────────────────────────────────────────────────────────────
   Widget _topBar(AppThemeProvider t, bool isDesktop) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 350),
@@ -346,15 +320,14 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
         color: t.topBarBg,
         border: Border(
             bottom:
-                BorderSide(color: t.border.withValues(alpha: 0.5), width: 1)),
+                BorderSide(color: t.border.withValues(alpha: 0.4), width: 1)),
       ),
       child: Row(children: [
-        // ✅ Logo globe SVG
-        SamaGlobeLogo(height: 38, showText: true),
+        _brandLogo(),
         const Spacer(),
         if (!isDesktop)
           Row(children: [
-            _themeToggleBtn(t),
+            _themeToggle(t),
             const SizedBox(width: 6),
             _menuButton(t),
           ])
@@ -363,31 +336,68 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
           _navLink("Départs", () => _scroll(_departuresKey)),
           _navLink("Contact", () => _scroll(_contactKey)),
           const SizedBox(width: 12),
-          _themeToggleBtn(t),
+          _themeToggle(t),
           const SizedBox(width: 12),
-          _outlineBtn(t, "Connexion", () => _push('/login')),
+          _outlineBtn("Connexion", () => _push('/login')),
           const SizedBox(width: 10),
-          _solidBtn("Créer un compte", Colors.white, _appBlue,
-              () => _push('/signup')),
+          _solidWhiteBtn("Créer un compte", () => _push('/signup')),
         ],
       ]),
     );
   }
 
-  // ✅ Bouton soleil/lune
-  Widget _themeToggleBtn(AppThemeProvider t) {
+  // ✅ Icône sac sur carré gradient bleu→teal
+  Widget _brandLogo() {
+    return Row(children: [
+      Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          gradient: const LinearGradient(
+              colors: [AppThemeProvider.appBlue, AppThemeProvider.teal],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight),
+        ),
+        child: const Icon(FontAwesomeIcons.bagShopping,
+            color: Colors.white, size: 16),
+      ),
+      const SizedBox(width: 10),
+      Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Text("SAMA",
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 16,
+                    letterSpacing: 2.2,
+                    height: 1.0)),
+            Text("SERVICES INTERNATIONAL",
+                style: TextStyle(
+                    color: Colors.white54,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 9,
+                    letterSpacing: 1.0,
+                    height: 1.0)),
+          ]),
+    ]);
+  }
+
+  Widget _themeToggle(AppThemeProvider t) {
     return Tooltip(
-      message: t.isDark ? "Passer au thème clair" : "Passer au thème sombre",
+      message: t.isDark ? "Thème clair" : "Thème sombre",
       child: GestureDetector(
         onTap: () => context.read<AppThemeProvider>().toggleTheme(),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
-          width: 38,
-          height: 38,
+          width: 36,
+          height: 36,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
+            color: Colors.white.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(9),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
           ),
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 250),
@@ -398,7 +408,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
               t.isDark ? Icons.wb_sunny_outlined : Icons.nightlight_round,
               key: ValueKey(t.isDark),
               color: t.isDark ? _amber : Colors.white,
-              size: 18,
+              size: 17,
             ),
           ),
         ),
@@ -406,44 +416,40 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
     );
   }
 
-  Widget _navLink(String label, VoidCallback onTap) {
-    return TextButton(
-      onPressed: onTap,
-      style: TextButton.styleFrom(
-          foregroundColor: Colors.white.withValues(alpha: 0.85)),
-      child: Text(label,
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-    );
-  }
+  Widget _navLink(String label, VoidCallback onTap) => TextButton(
+        onPressed: onTap,
+        style: TextButton.styleFrom(
+            foregroundColor: Colors.white.withValues(alpha: 0.85)),
+        child: Text(label,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+      );
 
-  Widget _outlineBtn(AppThemeProvider t, String label, VoidCallback onTap) {
-    return OutlinedButton(
-      onPressed: onTap,
-      style: OutlinedButton.styleFrom(
-        foregroundColor: Colors.white,
-        side:
-            BorderSide(color: Colors.white.withValues(alpha: 0.45), width: 1.5),
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-      child: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
-    );
-  }
+  Widget _outlineBtn(String label, VoidCallback onTap) => OutlinedButton(
+        onPressed: onTap,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Colors.white,
+          side: BorderSide(
+              color: Colors.white.withValues(alpha: 0.42), width: 1.5),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+        child: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+      );
 
-  Widget _solidBtn(String label, Color bg, Color fg, VoidCallback onTap) {
-    return ElevatedButton(
-      onPressed: onTap,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: bg,
-        foregroundColor: fg,
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        elevation: 0,
-      ),
-      child: Text(label,
-          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
-    );
-  }
+  Widget _solidWhiteBtn(String label, VoidCallback onTap) => ElevatedButton(
+        onPressed: onTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.white,
+          foregroundColor: _appBlue,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          elevation: 0,
+        ),
+        child: Text(label,
+            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+      );
 
   Widget _menuButton(AppThemeProvider t) {
     return PopupMenuButton<String>(
@@ -477,46 +483,46 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
         }
       },
       itemBuilder: (_) => [
-        _menuItem(t, 'tarifs', 'Tarifs', Icons.local_offer_outlined),
-        _menuItem(t, 'departs', 'Départs', Icons.event_available),
-        _menuItem(t, 'contact', 'Contact', Icons.support_agent),
+        _mi(t, 'tarifs', 'Tarifs', Icons.local_offer_outlined),
+        _mi(t, 'departs', 'Départs', Icons.event_available),
+        _mi(t, 'contact', 'Contact', Icons.support_agent),
         const PopupMenuDivider(),
-        _menuItem(t, 'wa_fr', 'WhatsApp France', FontAwesomeIcons.whatsapp),
-        _menuItem(t, 'wa_sn', 'WhatsApp Dakar', FontAwesomeIcons.whatsapp),
-        _menuItem(t, 'email', 'Email', Icons.email_outlined),
+        _mi(t, 'wa_fr', 'WhatsApp France', FontAwesomeIcons.whatsapp),
+        _mi(t, 'wa_sn', 'WhatsApp Dakar', FontAwesomeIcons.whatsapp),
+        _mi(t, 'email', 'Email', Icons.email_outlined),
         const PopupMenuDivider(),
-        _menuItem(t, 'login', 'Connexion', Icons.login),
-        _menuItem(t, 'signup', 'Créer un compte', Icons.person_add_alt_1),
+        _mi(t, 'login', 'Connexion', Icons.login),
+        _mi(t, 'signup', 'Créer un compte', Icons.person_add_alt_1),
       ],
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.15),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
+            color: Colors.white.withValues(alpha: 0.12),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
             borderRadius: BorderRadius.circular(10)),
         child: const Icon(Icons.menu, color: Colors.white, size: 22),
       ),
     );
   }
 
-  PopupMenuItem<String> _menuItem(
-      AppThemeProvider t, String value, String label, IconData icon) {
-    return PopupMenuItem(
-      value: value,
-      child: Row(children: [
-        Icon(icon, size: 16, color: _appBlue),
-        const SizedBox(width: 10),
-        Text(label,
-            style:
-                TextStyle(color: t.textPrimary, fontWeight: FontWeight.w600)),
-      ]),
-    );
-  }
+  PopupMenuItem<String> _mi(
+          AppThemeProvider t, String v, String label, IconData icon) =>
+      PopupMenuItem(
+        value: v,
+        child: Row(children: [
+          Icon(icon, size: 16, color: _appBlue),
+          const SizedBox(width: 10),
+          Text(label,
+              style:
+                  TextStyle(color: t.textPrimary, fontWeight: FontWeight.w600)),
+        ]),
+      );
 
-  // ── TICKER ────────────────────────────────────────────────────────────────
+  // ── TICKER ✅ uniquement départs à venir ──────────────────────────────────
   Widget _tickerBanner(AppThemeProvider t) {
-    final dep = DepartureCountdownService.allDepartures[
-        _tickerIndex % DepartureCountdownService.allDepartures.length];
+    final upcoming = DepartureCountdownService.upcomingDepartures;
+    if (upcoming.isEmpty) return const SizedBox.shrink();
+    final dep = upcoming[_tickerIndex % upcoming.length];
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 400),
       child: Container(
@@ -546,7 +552,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
                   overflow: TextOverflow.ellipsis)),
           const SizedBox(width: 8),
           GestureDetector(
-            onTap: () => _showReservationModal(context, dep.route),
+            onTap: () => _showReservationModal(dep.route),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
               decoration: BoxDecoration(
@@ -563,9 +569,12 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
     );
   }
 
-  // ── COMPTE À REBOURS AUTOMATIQUE ──────────────────────────────────────────
+  // ── COMPTE À REBOURS — alternance auto + swipe ────────────────────────────
   Widget _countdownBanner(AppThemeProvider t) {
     final dep = _countdown.currentDeparture;
+    final sameDayCount = _countdown.sameDayCount;
+    final inGroupIndex = _countdown.inGroupIndex;
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 350),
       width: double.infinity,
@@ -581,9 +590,9 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
                   color: _countdown.isExpired ? t.textMuted : _green)),
           const SizedBox(width: 8),
           AnimatedSwitcher(
-            duration: const Duration(milliseconds: 400),
+            duration: const Duration(milliseconds: 300),
             child: Text(
-              key: ValueKey(_countdown.currentIndex),
+              key: ValueKey("${dep.date}_$inGroupIndex"),
               _countdown.isExpired
                   ? "TOUS LES DÉPARTS SONT PASSÉS"
                   : "PROCHAIN DÉPART — ${dep.date.toUpperCase()}",
@@ -595,20 +604,74 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
             ),
           ),
         ]),
+
         const SizedBox(height: 6),
-        // ✅ Route dynamique
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 400),
-          child: Text(
-            key: ValueKey("r_${_countdown.currentIndex}"),
-            "${dep.flag}  ${dep.route}",
-            style: TextStyle(
-                color: t.isDark ? _blueBright : _appBlue,
-                fontWeight: FontWeight.w700,
-                fontSize: 14),
-          ),
+
+        // ✅ Swipe horizontal pour changer de départ (même jour)
+        GestureDetector(
+          onHorizontalDragEnd: (d) {
+            if (d.primaryVelocity == null) return;
+            if (d.primaryVelocity! < -200) {
+              _countdown.nextSameDay(() {
+                if (mounted) setState(() {});
+              });
+            } else if (d.primaryVelocity! > 200) {
+              _countdown.prevSameDay(() {
+                if (mounted) setState(() {});
+              });
+            }
+          },
+          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            if (sameDayCount > 1)
+              GestureDetector(
+                  onTap: () => _countdown.prevSameDay(() {
+                        if (mounted) setState(() {});
+                      }),
+                  child: Icon(Icons.chevron_left,
+                      color: t.isDark ? _blueBright : _appBlue, size: 22)),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 350),
+              child: Text(
+                  key: ValueKey("route_${dep.route}"),
+                  "${dep.flag}  ${dep.route}",
+                  style: TextStyle(
+                      color: t.isDark ? _blueBright : _appBlue,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15)),
+            ),
+            if (sameDayCount > 1)
+              GestureDetector(
+                  onTap: () => _countdown.nextSameDay(() {
+                        if (mounted) setState(() {});
+                      }),
+                  child: Icon(Icons.chevron_right,
+                      color: t.isDark ? _blueBright : _appBlue, size: 22)),
+          ]),
         ),
+
+        // ✅ Points indicateurs (plusieurs départs même jour)
+        if (sameDayCount > 1) ...[
+          const SizedBox(height: 8),
+          Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                  sameDayCount,
+                  (i) => AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        margin: const EdgeInsets.symmetric(horizontal: 3),
+                        width: i == inGroupIndex ? 18 : 7,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: i == inGroupIndex
+                              ? _amber
+                              : t.textMuted.withValues(alpha: 0.30),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      ))),
+        ],
+
         const SizedBox(height: 14),
+
         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           _countUnit(t, _countdown.days, "JOURS", _amber),
           _sep(t),
@@ -618,8 +681,9 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
           _sep(t),
           _countUnit(t, _countdown.seconds, "SEC", t.textMuted),
         ]),
+
         const SizedBox(height: 14),
-        // Bouton réserver ce départ
+
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
@@ -633,25 +697,24 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
                 padding: const EdgeInsets.symmetric(vertical: 12)),
-            onPressed: () => _showReservationModal(context, dep.route),
+            onPressed: () => _showReservationModal(dep.route),
           ),
         ),
       ]),
     );
   }
 
-  Widget _countUnit(
-      AppThemeProvider t, String value, String label, Color color) {
+  Widget _countUnit(AppThemeProvider t, String v, String label, Color color) {
     return Column(children: [
       AnimatedContainer(
-        duration: const Duration(milliseconds: 350),
+        duration: const Duration(milliseconds: 300),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
+          color: color.withValues(alpha: 0.11),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
+          border: Border.all(color: color.withValues(alpha: 0.28)),
         ),
-        child: Text(value,
+        child: Text(v,
             style: TextStyle(
                 color: color,
                 fontWeight: FontWeight.w900,
@@ -668,53 +731,42 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
     ]);
   }
 
-  Widget _sep(AppThemeProvider t) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 18, left: 6, right: 6),
-      child: Text(":",
-          style: TextStyle(
-              color: t.textMuted, fontSize: 20, fontWeight: FontWeight.w700)),
-    );
-  }
+  Widget _sep(AppThemeProvider t) => Padding(
+        padding: const EdgeInsets.only(bottom: 18, left: 6, right: 6),
+        child: Text(":",
+            style: TextStyle(
+                color: t.textMuted, fontSize: 20, fontWeight: FontWeight.w700)),
+      );
 
   // ── HERO ──────────────────────────────────────────────────────────────────
   Widget _hero(AppThemeProvider t, bool isDesktop) {
     return AnimatedBuilder(
       animation: _bgAnim,
       builder: (context, _) {
-        final grad = t.heroGradient;
+        final g = t.heroGradient;
         return Container(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                grad[0],
-                grad[1],
-                Color.lerp(grad[1], grad[2], _bgAnim.value)!
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
+              gradient: LinearGradient(
+                  colors: [g[0], g[1], Color.lerp(g[1], g[2], _bgAnim.value)!],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight)),
           padding: EdgeInsets.symmetric(
               horizontal: isDesktop ? 64 : 20, vertical: isDesktop ? 80 : 52),
           child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1100),
-              child: isDesktop
-                  ? Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                          Expanded(flex: 3, child: _heroText(t, isDesktop)),
-                          const SizedBox(width: 48),
-                          Expanded(flex: 2, child: _heroCard(t)),
-                        ])
-                  : Column(children: [
-                      _heroText(t, isDesktop),
-                      const SizedBox(height: 32),
-                      _heroCard(t),
-                    ]),
-            ),
-          ),
+              child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1100),
+            child: isDesktop
+                ? Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+                    Expanded(flex: 3, child: _heroText(t, isDesktop)),
+                    const SizedBox(width: 48),
+                    Expanded(flex: 2, child: _heroCard(t)),
+                  ])
+                : Column(children: [
+                    _heroText(t, isDesktop),
+                    const SizedBox(height: 32),
+                    _heroCard(t),
+                  ]),
+          )),
         );
       },
     );
@@ -728,10 +780,9 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.30)),
-          ),
+              color: Colors.white.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.28))),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
             Container(
                 width: 6,
@@ -768,7 +819,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
         Text("Transport · Shopping · Convoyage\nSuivi GPS · Achats sur demande",
             textAlign: isDesktop ? TextAlign.left : TextAlign.center,
             style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.80),
+                color: Colors.white.withValues(alpha: 0.78),
                 fontWeight: FontWeight.w400,
                 fontSize: 15,
                 height: 1.65)),
@@ -778,10 +829,9 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
           runSpacing: 12,
           alignment: isDesktop ? WrapAlignment.start : WrapAlignment.center,
           children: [
-            _solidBtn("Créer un compte", Colors.white, _appBlue,
-                () => _push('/signup')),
-            _outlineBtn(t, "Connexion", () => _push('/login')),
-            _outlineBtn(t, "Tarifs", () => _scroll(_pricingKey)),
+            _solidWhiteBtn("Créer un compte", () => _push('/signup')),
+            _outlineBtn("Connexion", () => _push('/login')),
+            _outlineBtn("Tarifs", () => _scroll(_pricingKey)),
           ],
         ),
       ],
@@ -815,108 +865,74 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
                   fontSize: 13)),
         ]),
         const SizedBox(height: 16),
-        _heroInfoRow(t, Icons.local_offer_outlined, _appBlue, "Tarifs",
+        _infoRow(t, Icons.local_offer_outlined, _appBlue, "Tarifs",
             "10€/kg · 65DH/kg · 6 500 FCFA/kg"),
+        const SizedBox(height: 10),
+        _infoRow(t, Icons.percent, _amber, "Promo web", "–50 % via l'app"),
         const SizedBox(height: 12),
-        _heroInfoRow(t, Icons.percent, _amber, "Promo web", "–50 % via l'app"),
-        const SizedBox(height: 12),
-        // ✅ Compte à rebours compact et dynamique
+        // Mini countdown
         AnimatedContainer(
           duration: const Duration(milliseconds: 350),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: _amber.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: _amber.withValues(alpha: 0.25)),
+            border: Border.all(color: _amber.withValues(alpha: 0.22)),
           ),
           child: Column(children: [
             Row(children: [
-              const Icon(Icons.flight_takeoff, color: _amber, size: 14),
+              const Icon(Icons.flight_takeoff, color: _amber, size: 13),
               const SizedBox(width: 6),
               Expanded(
                   child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 400),
+                duration: const Duration(milliseconds: 350),
                 child: Text(
-                  key: ValueKey(_countdown.currentIndex),
-                  "${dep.flag} ${dep.route}",
-                  style: const TextStyle(
-                      color: _amber, fontWeight: FontWeight.w700, fontSize: 11),
-                  overflow: TextOverflow.ellipsis,
-                ),
+                    key: ValueKey("hc_${dep.route}"),
+                    "${dep.flag} ${dep.route}",
+                    style: const TextStyle(
+                        color: _amber,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11),
+                    overflow: TextOverflow.ellipsis),
               )),
             ]),
             const SizedBox(height: 10),
             Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-              _miniCountUnit(t, _countdown.days, "J", _amber),
+              _miniUnit(t, _countdown.days, "J", _amber),
               Text(":",
                   style: TextStyle(
                       color: t.textMuted,
-                      fontSize: 16,
+                      fontSize: 15,
                       fontWeight: FontWeight.w700)),
-              _miniCountUnit(t, _countdown.hours, "H", _appBlue),
+              _miniUnit(t, _countdown.hours, "H", _appBlue),
               Text(":",
                   style: TextStyle(
                       color: t.textMuted,
-                      fontSize: 16,
+                      fontSize: 15,
                       fontWeight: FontWeight.w700)),
-              _miniCountUnit(t, _countdown.minutes, "MIN", _appBlue),
+              _miniUnit(t, _countdown.minutes, "MIN", _appBlue),
             ]),
           ]),
         ),
         const SizedBox(height: 14),
         Divider(color: t.borderBright),
         const SizedBox(height: 10),
-        Text("Nous contacter",
-            style: TextStyle(
-                color: t.textMuted,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.5)),
-        const SizedBox(height: 10),
         Row(children: [
           Expanded(child: _waCardBtn(t, "France", _waFrance)),
           const SizedBox(width: 8),
           Expanded(child: _waCardBtn(t, "Dakar", _waDakar)),
         ]),
-        const SizedBox(height: 8),
-        GestureDetector(
-          onTap: _openEmail,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 350),
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: _appBlue.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: _appBlue.withValues(alpha: 0.20)),
-            ),
-            child: Row(children: [
-              const Icon(Icons.email_outlined, color: _appBlue, size: 16),
-              const SizedBox(width: 8),
-              Expanded(
-                  child: Text(_email,
-                      style: TextStyle(
-                          color: t.isDark ? _blueBright : _appBlue,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 11),
-                      overflow: TextOverflow.ellipsis)),
-            ]),
-          ),
-        ),
-        const SizedBox(height: 14),
-        Divider(color: t.borderBright),
         const SizedBox(height: 12),
         Row(children: [
           Expanded(
               child: OutlinedButton(
             onPressed: () => _push('/login'),
             style: OutlinedButton.styleFrom(
-              foregroundColor: t.textPrimary,
-              side: BorderSide(color: t.borderBright),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
-              padding: const EdgeInsets.symmetric(vertical: 12),
-            ),
+                foregroundColor: t.textPrimary,
+                side: BorderSide(color: t.borderBright),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(vertical: 11)),
             child: const Text("Connexion",
                 style: TextStyle(fontWeight: FontWeight.w700)),
           )),
@@ -925,13 +941,12 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
               child: ElevatedButton(
             onPressed: () => _push('/signup'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: _appBlue,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
-              padding: const EdgeInsets.symmetric(vertical: 12),
-            ),
+                backgroundColor: _appBlue,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(vertical: 11)),
             child: const Text("S'inscrire",
                 style: TextStyle(fontWeight: FontWeight.w800)),
           )),
@@ -940,152 +955,145 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
     );
   }
 
-  Widget _waCardBtn(AppThemeProvider t, String label, String digits) {
-    return GestureDetector(
-      onTap: () => _wa(digits),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 350),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: _green.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: _green.withValues(alpha: 0.25)),
+  Widget _waCardBtn(AppThemeProvider t, String label, String digits) =>
+      GestureDetector(
+        onTap: () => _wa(digits),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: _green.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: _green.withValues(alpha: 0.22)),
+          ),
+          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(FontAwesomeIcons.whatsapp, color: _green, size: 13),
+            const SizedBox(width: 6),
+            Text(label,
+                style: TextStyle(
+                    color: t.textPrimary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12)),
+          ]),
         ),
-        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(FontAwesomeIcons.whatsapp, color: _green, size: 14),
-          const SizedBox(width: 6),
-          Text(label,
+      );
+
+  Widget _miniUnit(AppThemeProvider t, String v, String label, Color color) =>
+      Column(children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+          decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: color.withValues(alpha: 0.22))),
+          child: Text(v,
+              style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 17,
+                  letterSpacing: 1)),
+        ),
+        const SizedBox(height: 3),
+        Text(label,
+            style: TextStyle(
+                color: t.textMuted,
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1)),
+      ]);
+
+  Widget _infoRow(AppThemeProvider t, IconData icon, Color color, String title,
+          String value) =>
+      Row(children: [
+        Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(9)),
+            child: Icon(icon, color: color, size: 15)),
+        const SizedBox(width: 10),
+        Expanded(
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title,
+              style: TextStyle(
+                  color: t.textMuted,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 11)),
+          Text(value,
               style: TextStyle(
                   color: t.textPrimary,
                   fontWeight: FontWeight.w700,
-                  fontSize: 12)),
-        ]),
-      ),
-    );
-  }
-
-  Widget _miniCountUnit(
-      AppThemeProvider t, String value, String label, Color color) {
-    return Column(children: [
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: color.withValues(alpha: 0.25)),
-        ),
-        child: Text(value,
-            style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.w900,
-                fontSize: 18,
-                letterSpacing: 1)),
-      ),
-      const SizedBox(height: 3),
-      Text(label,
-          style: TextStyle(
-              color: t.textMuted,
-              fontSize: 9,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1)),
-    ]);
-  }
-
-  Widget _heroInfoRow(AppThemeProvider t, IconData icon, Color color,
-      String title, String value) {
-    return Row(children: [
-      Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(10)),
-          child: Icon(icon, color: color, size: 16)),
-      const SizedBox(width: 12),
-      Expanded(
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(title,
-            style: TextStyle(
-                color: t.textMuted, fontWeight: FontWeight.w600, fontSize: 11)),
-        Text(value,
-            style: TextStyle(
-                color: t.textPrimary,
-                fontWeight: FontWeight.w700,
-                fontSize: 13)),
-      ])),
-    ]);
-  }
+                  fontSize: 13)),
+        ])),
+      ]);
 
   // ── SERVICES ──────────────────────────────────────────────────────────────
-  Widget _servicesSection(AppThemeProvider t, bool isDesktop) {
-    return _sectionWrap(
+  Widget _servicesSection(AppThemeProvider t, bool isDesktop) => _wrap(
       t,
-      isDesktop: isDesktop,
-      title: "Nos Services",
-      subtitle: "Tout ce qu'il faut pour expédier, acheter et suivre.",
-      child: Wrap(
-        spacing: 14,
-        runSpacing: 14,
-        alignment: WrapAlignment.center,
-        children: _services
-            .map((s) => _serviceCard(t, s['icon'] as IconData,
-                s['title'] as String, s['desc'] as String, s['color'] as Color))
-            .toList(),
-      ),
-    );
-  }
+      isDesktop,
+      "Nos Services",
+      "Tout ce qu'il faut pour expédier, acheter et suivre.",
+      Wrap(
+          spacing: 14,
+          runSpacing: 14,
+          alignment: WrapAlignment.center,
+          children: _services
+              .map((s) => _serviceCard(
+                  t,
+                  s['icon'] as IconData,
+                  s['title'] as String,
+                  s['desc'] as String,
+                  s['color'] as Color))
+              .toList()));
 
   Widget _serviceCard(AppThemeProvider t, IconData icon, String title,
-      String desc, Color color) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 350),
-      width: 220,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: t.bgCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.20)),
-        boxShadow: [
-          BoxShadow(
-              color: color.withValues(alpha: 0.07),
-              blurRadius: 16,
-              offset: const Offset(0, 6))
-        ],
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12)),
-            child: Icon(icon, color: color, size: 18)),
-        const SizedBox(height: 12),
-        Text(title,
-            style: TextStyle(
-                color: t.textPrimary,
-                fontWeight: FontWeight.w800,
-                fontSize: 14)),
-        const SizedBox(height: 4),
-        Text(desc,
-            style: TextStyle(
-                color: t.textMuted,
-                fontWeight: FontWeight.w500,
-                fontSize: 12,
-                height: 1.4)),
-      ]),
-    );
-  }
+          String desc, Color color) =>
+      AnimatedContainer(
+        duration: const Duration(milliseconds: 350),
+        width: 220,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+            color: t.bgCard,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: color.withValues(alpha: 0.18)),
+            boxShadow: [
+              BoxShadow(
+                  color: color.withValues(alpha: 0.07),
+                  blurRadius: 14,
+                  offset: const Offset(0, 5))
+            ]),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.11),
+                  borderRadius: BorderRadius.circular(12)),
+              child: Icon(icon, color: color, size: 18)),
+          const SizedBox(height: 12),
+          Text(title,
+              style: TextStyle(
+                  color: t.textPrimary,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14)),
+          const SizedBox(height: 4),
+          Text(desc,
+              style: TextStyle(
+                  color: t.textMuted,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 12,
+                  height: 1.4)),
+        ]),
+      );
 
   // ── TARIFS ────────────────────────────────────────────────────────────────
-  Widget _pricingSection(AppThemeProvider t, bool isDesktop) {
-    return _sectionWrap(
+  Widget _pricingSection(AppThemeProvider t, bool isDesktop) => _wrap(
       t,
-      isDesktop: isDesktop,
-      title: "Tarifs",
-      subtitle: "Prix au kilo. Réduction web disponible.",
-      child: Column(children: [
+      isDesktop,
+      "Tarifs",
+      "Prix au kilo. Réduction web disponible.",
+      Column(children: [
         Wrap(
           spacing: 14,
           runSpacing: 14,
@@ -1101,10 +1109,9 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
-            color: _amberLight,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: _amber.withValues(alpha: 0.35)),
-          ),
+              color: _amberLight,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _amber.withValues(alpha: 0.35))),
           child: const Row(mainAxisSize: MainAxisSize.min, children: [
             Icon(Icons.star, color: _amber, size: 14),
             SizedBox(width: 8),
@@ -1115,121 +1122,120 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
                     fontSize: 13)),
           ]),
         ),
-      ]),
-    );
-  }
+      ]));
 
   Widget _priceCard(AppThemeProvider t, String location, String price,
-      String unit, Color accent) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 350),
-      width: 180,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: t.bgCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: accent.withValues(alpha: 0.2), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-              color: accent.withValues(alpha: 0.08),
-              blurRadius: 14,
-              offset: const Offset(0, 5))
-        ],
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(location,
-            style: TextStyle(
-                color: t.textMuted, fontWeight: FontWeight.w600, fontSize: 12)),
-        const SizedBox(height: 8),
-        Text(price,
-            style: TextStyle(
-                color: accent,
-                fontWeight: FontWeight.w900,
-                fontSize: 26,
-                letterSpacing: -0.5)),
-        Text(unit,
-            style: TextStyle(
-                color: t.textMuted, fontWeight: FontWeight.w500, fontSize: 12)),
-      ]),
-    );
-  }
+          String unit, Color accent) =>
+      AnimatedContainer(
+        duration: const Duration(milliseconds: 350),
+        width: 180,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+            color: t.bgCard,
+            borderRadius: BorderRadius.circular(16),
+            border:
+                Border.all(color: accent.withValues(alpha: 0.18), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                  color: accent.withValues(alpha: 0.07),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4))
+            ]),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(location,
+              style: TextStyle(
+                  color: t.textMuted,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12)),
+          const SizedBox(height: 8),
+          Text(price,
+              style: TextStyle(
+                  color: accent,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 26,
+                  letterSpacing: -0.5)),
+          Text(unit,
+              style: TextStyle(
+                  color: t.textMuted,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 12)),
+        ]),
+      );
 
   // ── DÉPARTS ───────────────────────────────────────────────────────────────
-  Widget _departuresSection(AppThemeProvider t, bool isDesktop) {
-    return _sectionWrap(
+  Widget _departuresSection(AppThemeProvider t, bool isDesktop) => _wrap(
       t,
-      isDesktop: isDesktop,
-      title: "Départs à venir",
-      subtitle: "Les prochaines dates de convoyage disponibles.",
-      child: Column(
-        children:
-            DepartureCountdownService.allDepartures.asMap().entries.map((e) {
-          final dep = e.value;
-          final isCurrent = e.key == _countdown.currentIndex;
-          final isPast = dep.dateTime.isBefore(DateTime.now());
-          return AnimatedContainer(
-            duration: const Duration(milliseconds: 350),
-            margin: const EdgeInsets.only(bottom: 10),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            decoration: BoxDecoration(
-              color: isCurrent
-                  ? _amber.withValues(alpha: t.isDark ? 0.10 : 0.07)
-                  : isPast
-                      ? t.bgCard.withValues(alpha: 0.5)
-                      : t.bgCard,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                  color: isCurrent
-                      ? _amber.withValues(alpha: 0.35)
-                      : isPast
-                          ? t.border.withValues(alpha: 0.4)
-                          : t.border),
-            ),
-            child: Row(children: [
-              Text(dep.flag, style: const TextStyle(fontSize: 20)),
-              const SizedBox(width: 14),
-              Expanded(
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                    Text(dep.route,
-                        style: TextStyle(
-                            color: isPast
-                                ? t.textMuted
-                                : isCurrent
-                                    ? _amber
-                                    : t.textPrimary,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14)),
-                    Text(dep.date,
-                        style: TextStyle(
-                            color: t.textMuted,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 12)),
-                    if (isCurrent)
-                      Text("En cours de compte à rebours",
-                          style: TextStyle(
-                              color: _amber,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600)),
-                  ])),
-              if (isPast)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                      color: t.border, borderRadius: BorderRadius.circular(20)),
-                  child: Text("PASSÉ",
+      isDesktop,
+      "Départs à venir",
+      "Les prochaines dates de convoyage disponibles.",
+      Column(
+          children: DepartureCountdownService.allDepartures.map((dep) {
+        final isCurrent = dep.route == _countdown.currentDeparture.route &&
+            dep.date == _countdown.currentDeparture.date;
+        final isPast = dep.dateTime.isBefore(DateTime.now());
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 350),
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          decoration: BoxDecoration(
+            color: isCurrent
+                ? _amber.withValues(alpha: t.isDark ? 0.10 : 0.07)
+                : isPast
+                    ? t.bgCard.withValues(alpha: 0.5)
+                    : t.bgCard,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+                color: isCurrent
+                    ? _amber.withValues(alpha: 0.35)
+                    : isPast
+                        ? t.border.withValues(alpha: 0.4)
+                        : t.border),
+          ),
+          child: Row(children: [
+            Text(dep.flag, style: const TextStyle(fontSize: 20)),
+            const SizedBox(width: 14),
+            Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                  Text(dep.route,
+                      style: TextStyle(
+                          color: isPast
+                              ? t.textMuted
+                              : isCurrent
+                                  ? _amber
+                                  : t.textPrimary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14)),
+                  Text(dep.date,
                       style: TextStyle(
                           color: t.textMuted,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 9,
-                          letterSpacing: 0.8)),
-                )
-              else
-                ElevatedButton(
-                  onPressed: () => _showReservationModal(context, dep.route),
-                  style: ElevatedButton.styleFrom(
+                          fontWeight: FontWeight.w500,
+                          fontSize: 12)),
+                  if (isCurrent)
+                    const Text("En cours de compte à rebours",
+                        style: TextStyle(
+                            color: _amber,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600)),
+                ])),
+            if (isPast)
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                    color: t.border, borderRadius: BorderRadius.circular(20)),
+                child: Text("PASSÉ",
+                    style: TextStyle(
+                        color: t.textMuted,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 9,
+                        letterSpacing: 0.8)),
+              )
+            else
+              ElevatedButton(
+                onPressed: () => _showReservationModal(dep.route),
+                style: ElevatedButton.styleFrom(
                     backgroundColor: _amber,
                     foregroundColor: _textDark,
                     padding:
@@ -1238,129 +1244,109 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
                         borderRadius: BorderRadius.circular(8)),
                     elevation: 0,
                     minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: const Text("Réserver",
-                      style:
-                          TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
-                ),
-            ]),
-          );
-        }).toList(),
-      ),
-    );
-  }
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                child: const Text("Réserver",
+                    style:
+                        TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+              ),
+          ]),
+        );
+      }).toList()));
 
   // ── CONTACT ───────────────────────────────────────────────────────────────
-  Widget _contactSection(AppThemeProvider t, bool isDesktop) {
-    return _sectionWrap(
+  Widget _contactSection(AppThemeProvider t, bool isDesktop) => _wrap(
       t,
-      isDesktop: isDesktop,
-      title: "Contact",
-      subtitle: "Nous sommes disponibles 7j/7.",
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 12,
-        alignment: WrapAlignment.center,
-        children: [
-          _contactBtn(t, FontAwesomeIcons.whatsapp, "WhatsApp France",
-              "+33 76 891 30 74", _green, () => _wa(_waFrance)),
-          _contactBtn(t, FontAwesomeIcons.whatsapp, "WhatsApp Dakar",
-              "+221 78 304 28 38", _green, () => _wa(_waDakar)),
-          _contactBtn(
-              t, Icons.email_outlined, "Email", _email, _appBlue, _openEmail),
-        ],
-      ),
-    );
-  }
+      isDesktop,
+      "Contact",
+      "Disponibles 7j/7.",
+      Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          alignment: WrapAlignment.center,
+          children: [
+            _contactBtn(t, FontAwesomeIcons.whatsapp, "WhatsApp France",
+                "+33 76 891 30 74", _green, () => _wa(_waFrance)),
+            _contactBtn(t, FontAwesomeIcons.whatsapp, "WhatsApp Dakar",
+                "+221 78 304 28 38", _green, () => _wa(_waDakar)),
+            _contactBtn(
+                t, Icons.email_outlined, "Email", _email, _appBlue, _openEmail),
+          ]));
 
   Widget _contactBtn(AppThemeProvider t, IconData icon, String title,
-      String subtitle, Color color, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 350),
-        width: 240,
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: t.bgCard,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withValues(alpha: 0.18)),
-          boxShadow: [
-            BoxShadow(
-                color: color.withValues(alpha: 0.07),
-                blurRadius: 14,
-                offset: const Offset(0, 5))
-          ],
+          String subtitle, Color color, VoidCallback onTap) =>
+      GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 350),
+          width: 240,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+              color: t.bgCard,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: color.withValues(alpha: 0.16)),
+              boxShadow: [
+                BoxShadow(
+                    color: color.withValues(alpha: 0.06),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4))
+              ]),
+          child: Row(children: [
+            Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(12)),
+                child: Icon(icon, color: color, size: 18)),
+            const SizedBox(width: 12),
+            Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                  Text(title,
+                      style: TextStyle(
+                          color: t.textPrimary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13)),
+                  Text(subtitle,
+                      style: TextStyle(
+                          color: t.textMuted,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 11),
+                      overflow: TextOverflow.ellipsis),
+                ])),
+          ]),
         ),
-        child: Row(children: [
-          Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(12)),
-              child: Icon(icon, color: color, size: 18)),
-          const SizedBox(width: 12),
-          Expanded(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                Text(title,
-                    style: TextStyle(
-                        color: t.textPrimary,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13)),
-                Text(subtitle,
-                    style: TextStyle(
-                        color: t.textMuted,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 11),
-                    overflow: TextOverflow.ellipsis),
-              ])),
-        ]),
-      ),
-    );
-  }
+      );
 
   // ── FOOTER ────────────────────────────────────────────────────────────────
-  Widget _footer(AppThemeProvider t) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-            colors: [Color(0xFF0A1628), Color(0xFF0D3060)],
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight),
-      ),
-      child: Column(children: [
-        // ✅ Logo globe dans le footer aussi
-        SamaGlobeLogo(height: 32, showText: true),
-        const SizedBox(height: 12),
-        Text(
-            "© 2026 SAMA · Services International · Paris · Casablanca · Dakar",
-            textAlign: TextAlign.center,
-            style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.60),
-                fontWeight: FontWeight.w500,
-                fontSize: 12)),
-      ]),
-    );
-  }
+  Widget _footer(AppThemeProvider t) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+            gradient: LinearGradient(
+                colors: [Color(0xFF0A1628), Color(0xFF0D3060)],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight)),
+        child: Column(children: [
+          _brandLogo(),
+          const SizedBox(height: 12),
+          Text(
+              "© 2026 SAMA · Services International · Paris · Casablanca · Dakar",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.55),
+                  fontWeight: FontWeight.w500,
+                  fontSize: 12)),
+        ]),
+      );
 
-  // ── SECTION WRAPPER ───────────────────────────────────────────────────────
-  Widget _sectionWrap(
-    AppThemeProvider t, {
-    required bool isDesktop,
-    required String title,
-    required String subtitle,
-    required Widget child,
-  }) {
-    return Padding(
-      padding: EdgeInsets.symmetric(
-          horizontal: isDesktop ? 64 : 20, vertical: isDesktop ? 56 : 36),
-      child: Center(
-        child: ConstrainedBox(
+  Widget _wrap(AppThemeProvider t, bool isDesktop, String title,
+          String subtitle, Widget child) =>
+      Padding(
+        padding: EdgeInsets.symmetric(
+            horizontal: isDesktop ? 64 : 20, vertical: isDesktop ? 56 : 36),
+        child: Center(
+            child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1100),
           child: Column(children: [
             Text(title,
@@ -1380,8 +1366,6 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
             const SizedBox(height: 28),
             child,
           ]),
-        ),
-      ),
-    );
-  }
+        )),
+      );
 }

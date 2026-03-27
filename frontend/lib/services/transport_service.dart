@@ -1,3 +1,5 @@
+// lib/services/transport_service.dart
+
 import 'package:http/http.dart' as http;
 import 'package:sama/config/api_config.dart';
 import 'dart:convert';
@@ -27,7 +29,7 @@ class TransportService {
   String get userEndpoint => ApiConfig.transportEndpoint; // "/api/transports"
   String get adminEndpoint => "/admin/transports";
 
-  // Créer un transport (toujours user)
+  // ── Créer un transport (toujours user) ────────────────────────────────────
   Future<Transport?> createTransport(Transport transport) async {
     try {
       final url = '${ApiConfig.baseUrl}$userEndpoint';
@@ -60,7 +62,7 @@ class TransportService {
     }
   }
 
-  // Récupérer tous les transports de l'utilisateur/admin
+  // ── Récupérer tous les transports (user ou admin) ─────────────────────────
   Future<List<Transport>?> getAllTransports() async {
     try {
       final url = isAdmin
@@ -70,10 +72,7 @@ class TransportService {
       final headers = await _headers();
 
       final response = await http
-          .get(
-            Uri.parse(url),
-            headers: headers,
-          )
+          .get(Uri.parse(url), headers: headers)
           .timeout(ApiConfig.receiveTimeout);
 
       logger.i('Status: ${response.statusCode}');
@@ -94,10 +93,8 @@ class TransportService {
     }
   }
 
-  // Récupérer tous les transports pour un userId spécifique
-  //
-  // NOTE: ton backend /api/transports ignore ce param (il renvoie les transports du principal).
-  // On garde quand même la méthode pour compat, mais tu peux juste appeler getAllTransports() côté user.
+  // ── Récupérer les transports d'un userId spécifique ──────────────────────
+  // NOTE: backend /api/transports ignore ce param (renvoie ceux du principal).
   Future<List<Transport>?> getAllTransportsForUser(String userId) async {
     try {
       final url = '${ApiConfig.baseUrl}$userEndpoint?userId=$userId';
@@ -105,10 +102,7 @@ class TransportService {
       final headers = await _headers();
 
       final response = await http
-          .get(
-            Uri.parse(url),
-            headers: headers,
-          )
+          .get(Uri.parse(url), headers: headers)
           .timeout(ApiConfig.receiveTimeout);
 
       logger.i('Status: ${response.statusCode}');
@@ -128,10 +122,8 @@ class TransportService {
     }
   }
 
-  // Récupérer un transport par ID
-  //
-  // NOTE: backend actuel n'a pas de GET /admin/transports/{id}
-  // donc en admin ça fera 404. On garde l'accès via endpoint user.
+  // ── Récupérer un transport par ID ─────────────────────────────────────────
+  // NOTE: backend n'a pas de GET /admin/transports/{id} → accès via user.
   Future<Transport?> getTransportById(int id) async {
     final url = '${ApiConfig.baseUrl}$userEndpoint/$id';
     try {
@@ -139,10 +131,7 @@ class TransportService {
       final headers = await _headers();
 
       final response = await http
-          .get(
-            Uri.parse(url),
-            headers: headers,
-          )
+          .get(Uri.parse(url), headers: headers)
           .timeout(ApiConfig.receiveTimeout);
 
       logger.i('Status: ${response.statusCode}');
@@ -160,7 +149,7 @@ class TransportService {
     }
   }
 
-  // Mettre à jour un transport (user ou admin)
+  // ── Mettre à jour un transport (user ou admin) ────────────────────────────
   Future<Transport?> updateTransport(int id, Transport transport) async {
     final url = isAdmin
         ? '${ApiConfig.baseUrl}$adminEndpoint/$id'
@@ -192,7 +181,7 @@ class TransportService {
     }
   }
 
-  // Supprimer un transport (user ou admin)
+  // ── Supprimer un transport (user ou admin) ────────────────────────────────
   Future<bool> deleteTransport(int id) async {
     final url = isAdmin
         ? '${ApiConfig.baseUrl}$adminEndpoint/$id'
@@ -202,10 +191,7 @@ class TransportService {
       final headers = await _headers();
 
       final response = await http
-          .delete(
-            Uri.parse(url),
-            headers: headers,
-          )
+          .delete(Uri.parse(url), headers: headers)
           .timeout(ApiConfig.connectTimeout);
 
       logger.i('Status: ${response.statusCode}');
@@ -222,9 +208,7 @@ class TransportService {
     }
   }
 
-  // --- ARCHIVAGE : pour admin ET user ---
-
-  /// Archive un transport.
+  // ── Archiver un transport (admin ET user) ─────────────────────────────────
   Future<bool> archiveTransport(int id) async {
     final url = isAdmin
         ? '${ApiConfig.baseUrl}$adminEndpoint/$id/archive'
@@ -233,10 +217,7 @@ class TransportService {
       logger.i('PATCH $url [ARCHIVE]');
       final headers = await _headers();
       final response = await http
-          .patch(
-            Uri.parse(url),
-            headers: headers,
-          )
+          .patch(Uri.parse(url), headers: headers)
           .timeout(ApiConfig.connectTimeout);
       logger.i('Status: ${response.statusCode}');
       if (response.statusCode == 200) {
@@ -252,7 +233,7 @@ class TransportService {
     }
   }
 
-  /// Désarchive un transport (admin uniquement)
+  // ── Désarchiver un transport (admin uniquement) ───────────────────────────
   Future<bool> unarchiveTransportAdmin(int id) async {
     if (!isAdmin) return false;
     try {
@@ -261,10 +242,7 @@ class TransportService {
       final headers = await _headers();
 
       final response = await http
-          .patch(
-            Uri.parse(url),
-            headers: headers,
-          )
+          .patch(Uri.parse(url), headers: headers)
           .timeout(ApiConfig.connectTimeout);
 
       logger.i('Status: ${response.statusCode}');
@@ -281,9 +259,9 @@ class TransportService {
     }
   }
 
-  // --- CHANGEMENT DE STATUT : pour admin ET user ---
-
-  /// Change le statut d'un transport.
+  // ── Changer le statut texte libre (EN_COURS, LIVRE, ANNULE…) ─────────────
+  // Utilisé par ModernStatusDropdown dans TransportListScreen.
+  // DISTINCT de updateStatutSuivi qui gère les 7 étapes structurées.
   Future<bool> changeTransportStatut(int id, String newStatut) async {
     final url = isAdmin
         ? '${ApiConfig.baseUrl}$adminEndpoint/$id/statut'
@@ -315,10 +293,52 @@ class TransportService {
     }
   }
 
-  // Recherche par statut (user ou admin)
+  // ── ✅ NOUVEAU — Mise à jour du statut de suivi structuré (admin) ─────────
+  // Appelle PATCH /api/admin/transports/{id}/status
+  // Corps : { "status": "EN_TRANSIT" }
+  //
+  // Valeurs acceptées (TransportStatus.java) :
+  //   EN_ATTENTE · DEPART_CONFIRME · EN_TRANSIT · EN_DOUANE
+  //   ARRIVE · PRET_RECUPERATION · LIVRE
+  //
+  // Déclenche automatiquement côté backend :
+  //   notif in-app + SMS Twilio + email Brevo + WhatsApp Twilio
+  Future<bool> updateStatutSuivi(int id, String newStatus) async {
+    if (!isAdmin) {
+      logger.w('⛔ updateStatutSuivi: accès refusé (non admin)');
+      return false;
+    }
+    final url = '${ApiConfig.baseUrl}/api/admin/transports/$id/status';
+    try {
+      logger.i('PATCH $url [STATUT_SUIVI=$newStatus]');
+      final headers = await _headers();
+
+      final response = await http
+          .patch(
+            Uri.parse(url),
+            headers: headers,
+            body: jsonEncode({'status': newStatus}),
+          )
+          .timeout(ApiConfig.connectTimeout);
+
+      logger.i('Status: ${response.statusCode}');
+      if (response.statusCode == 200) {
+        logger.i('✅ StatutSuivi mis à jour → $newStatus (transport $id)');
+        return true;
+      } else {
+        logger.e(
+            '❌ Erreur updateStatutSuivi: ${response.statusCode} ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      logger.e('❌ Exception updateStatutSuivi: $e');
+      return false;
+    }
+  }
+
+  // ── Recherche par statut ──────────────────────────────────────────────────
   Future<List<Transport>?> getTransportsByStatut(String statut) async {
     final encoded = Uri.encodeQueryComponent(statut);
-
     final url = isAdmin
         ? '${ApiConfig.baseUrl}$adminEndpoint/search/statut?statut=$encoded'
         : '${ApiConfig.baseUrl}$userEndpoint/search/statut?statut=$encoded';
@@ -327,10 +347,7 @@ class TransportService {
       final headers = await _headers();
 
       final response = await http
-          .get(
-            Uri.parse(url),
-            headers: headers,
-          )
+          .get(Uri.parse(url), headers: headers)
           .timeout(ApiConfig.receiveTimeout);
 
       logger.i('Status: ${response.statusCode}');
@@ -349,7 +366,7 @@ class TransportService {
     }
   }
 
-  // Archives utilisateur
+  // ── Archives utilisateur ──────────────────────────────────────────────────
   Future<List<Transport>?> getTransportsArchivesUser() async {
     try {
       final url = '${ApiConfig.baseUrl}$userEndpoint/archives';
@@ -357,10 +374,7 @@ class TransportService {
       final headers = await _headers();
 
       final response = await http
-          .get(
-            Uri.parse(url),
-            headers: headers,
-          )
+          .get(Uri.parse(url), headers: headers)
           .timeout(ApiConfig.receiveTimeout);
 
       logger.i('Status: ${response.statusCode}');
@@ -380,15 +394,19 @@ class TransportService {
     }
   }
 
-  // Archives admin
+  // ── Archives admin ────────────────────────────────────────────────────────
   Future<List<Transport>?> getTransportsArchivesAdmin() async {
     if (!isAdmin) return null;
     try {
       final url = '${ApiConfig.baseUrl}$adminEndpoint/archives';
+      logger.i('GET $url [ARCHIVES admin]');
       final headers = await _headers();
 
-      final response = await http.get(Uri.parse(url), headers: headers);
-      logger.i('GET $url [ARCHIVES admin]');
+      final response = await http
+          .get(Uri.parse(url), headers: headers)
+          .timeout(ApiConfig.receiveTimeout);
+
+      logger.i('Status: ${response.statusCode}');
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body);
         final List<dynamic> data =
@@ -405,13 +423,15 @@ class TransportService {
     }
   }
 
-  // --- Option : récupérer dynamiquement la liste des statuts possibles ---
+  // ── Statuts possibles (liste dynamique depuis le backend) ─────────────────
   Future<List<String>?> getStatutsTransports() async {
     try {
       final url = '${ApiConfig.baseUrl}/api/statuts-transports';
       logger.i('GET $url [STATUTS]');
       final headers = await _headers();
-      final response = await http.get(Uri.parse(url), headers: headers);
+      final response = await http
+          .get(Uri.parse(url), headers: headers)
+          .timeout(ApiConfig.receiveTimeout);
       logger.i('Status: ${response.statusCode}');
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body);
