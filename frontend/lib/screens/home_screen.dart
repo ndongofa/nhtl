@@ -1,5 +1,4 @@
 // lib/screens/home_screen.dart
-// Top bar icône sac + countdown alternant auto+swipe + ticker filtré passés
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -12,6 +11,7 @@ import '../services/auth_service.dart';
 import '../services/departure_countdown_service.dart';
 import '../models/logged_user.dart';
 import '../debug/debug_token.dart';
+import 'admin/admin_departures_screen.dart'; // ✅ AJOUT
 import 'admin/admin_user_screen.dart';
 import 'commande_form_screen.dart';
 import 'commandes_list_screen.dart';
@@ -51,7 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     _tickerTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       if (!mounted) return;
-      final upcoming = DepartureCountdownService.upcomingDepartures;
+      final upcoming = _countdown.upcomingDepartures; // ✅ instance
       if (upcoming.isEmpty) return;
       setState(() => _tickerIndex = (_tickerIndex + 1) % upcoming.length);
     });
@@ -425,9 +425,9 @@ class _HomeScreenState extends State<HomeScreen> {
             ]),
       ]);
 
-  // ── TICKER ────────────────────────────────────────────────────────────────
+  // ── TICKER ✅ getter d'instance ────────────────────────────────────────────
   Widget _ticker(AppThemeProvider t) {
-    final upcoming = DepartureCountdownService.upcomingDepartures;
+    final upcoming = _countdown.upcomingDepartures; // ✅ instance
     if (upcoming.isEmpty) return const SizedBox.shrink();
     final dep = upcoming[_tickerIndex % upcoming.length];
     return AnimatedSwitcher(
@@ -480,6 +480,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final dep = _countdown.currentDeparture;
     final sameDayCount = _countdown.sameDayCount;
     final inGroupIndex = _countdown.inGroupIndex;
+    final groupCount = _countdown.groupCount; // ✅ pour dots inter-groupes
+    final groupIndex = _countdown.groupIndex; // ✅
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 350),
@@ -507,7 +509,7 @@ class _HomeScreenState extends State<HomeScreen> {
           AnimatedSwitcher(
               duration: const Duration(milliseconds: 300),
               child: Text(
-                  key: ValueKey("${dep.date}_$inGroupIndex"),
+                  key: ValueKey("${dep.date}_${groupIndex}_$inGroupIndex"),
                   _countdown.isExpired
                       ? "TOUS LES DÉPARTS SONT PASSÉS"
                       : "PROCHAIN DÉPART — ${dep.date.toUpperCase()}",
@@ -531,7 +533,7 @@ class _HomeScreenState extends State<HomeScreen> {
               });
           },
           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            if (sameDayCount > 1)
+            if (sameDayCount > 1 || groupCount > 1) // ✅ inter-groupes aussi
               GestureDetector(
                   onTap: () => _countdown.prevSameDay(() {
                         if (mounted) setState(() {});
@@ -541,13 +543,13 @@ class _HomeScreenState extends State<HomeScreen> {
             AnimatedSwitcher(
                 duration: const Duration(milliseconds: 350),
                 child: Text(
-                    key: ValueKey("r_${dep.route}"),
+                    key: ValueKey("r_${dep.route}_$groupIndex"),
                     "${dep.flag}  ${dep.route}",
                     style: TextStyle(
                         color: t.isDark ? _blueBright : _appBlue,
                         fontWeight: FontWeight.w700,
                         fontSize: 14))),
-            if (sameDayCount > 1)
+            if (sameDayCount > 1 || groupCount > 1) // ✅
               GestureDetector(
                   onTap: () => _countdown.nextSameDay(() {
                         if (mounted) setState(() {});
@@ -556,22 +558,25 @@ class _HomeScreenState extends State<HomeScreen> {
                       color: t.isDark ? _blueBright : _appBlue, size: 22)),
           ]),
         ),
-        if (sameDayCount > 1) ...[
+        // ✅ Dots — même jour ET inter-groupes (3-4 prochains départs)
+        if (sameDayCount > 1 || groupCount > 1) ...[
           const SizedBox(height: 8),
           Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(
-                  sameDayCount,
-                  (i) => AnimatedContainer(
-                      duration: const Duration(milliseconds: 250),
-                      margin: const EdgeInsets.symmetric(horizontal: 3),
-                      width: i == inGroupIndex ? 18 : 7,
-                      height: 6,
-                      decoration: BoxDecoration(
-                          color: i == inGroupIndex
-                              ? _amber
-                              : t.textMuted.withValues(alpha: 0.30),
-                          borderRadius: BorderRadius.circular(3))))),
+                  groupCount > 1 ? groupCount : sameDayCount, (i) {
+                final current = groupCount > 1 ? groupIndex : inGroupIndex;
+                return AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: i == current ? 18 : 7,
+                    height: 6,
+                    decoration: BoxDecoration(
+                        color: i == current
+                            ? _amber
+                            : t.textMuted.withValues(alpha: 0.30),
+                        borderRadius: BorderRadius.circular(3)));
+              })),
         ],
         const SizedBox(height: 14),
         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -925,8 +930,9 @@ class _HomeScreenState extends State<HomeScreen> {
       color: Colors.white.withValues(alpha: 0.20),
       margin: const EdgeInsets.symmetric(horizontal: 4));
 
-  // ── TOUS LES DÉPARTS ──────────────────────────────────────────────────────
+  // ── TOUS LES DÉPARTS ✅ getter d'instance ─────────────────────────────────
   Widget _departures(BuildContext context, AppThemeProvider t) {
+    final allDeps = _countdown.allDepartures; // ✅ instance
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [
         _lbl(t, "Tous les départs"),
@@ -944,7 +950,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ]),
       const SizedBox(height: 12),
-      ...DepartureCountdownService.allDepartures.map((dep) {
+      ...allDeps.map((dep) {
         final isCurrent = dep.route == _countdown.currentDeparture.route &&
             dep.date == _countdown.currentDeparture.date;
         final isPast = dep.dateTime.isBefore(DateTime.now());
@@ -1021,9 +1027,15 @@ class _HomeScreenState extends State<HomeScreen> {
     ]);
   }
 
-  // ── ADMIN ─────────────────────────────────────────────────────────────────
+  // ── ADMIN ✅ avec Départs ajouté ──────────────────────────────────────────
   Widget _admin(BuildContext context, AppThemeProvider t) {
     final items = [
+      {
+        "icon": Icons.flight_takeoff, "label": "Départs", // ✅ AJOUT
+        "color": _teal,
+        "onTap": () => Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const AdminDeparturesScreen()))
+      },
       {
         "icon": Icons.badge_outlined,
         "label": "GP Agents",
@@ -1062,12 +1074,12 @@ class _HomeScreenState extends State<HomeScreen> {
         final item = e.value;
         return Expanded(
             child: Padding(
-          padding: EdgeInsets.only(right: e.key < items.length - 1 ? 12 : 0),
+          padding: EdgeInsets.only(right: e.key < items.length - 1 ? 10 : 0),
           child: GestureDetector(
             onTap: item['onTap'] as VoidCallback,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 350),
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                   color: t.bgCard,
                   borderRadius: BorderRadius.circular(14),
@@ -1079,15 +1091,16 @@ class _HomeScreenState extends State<HomeScreen> {
                         blurRadius: 10,
                         offset: const Offset(0, 4))
                   ]),
-              child: Row(children: [
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
                 Icon(item['icon'] as IconData,
-                    color: item['color'] as Color, size: 20),
-                const SizedBox(width: 10),
+                    color: item['color'] as Color, size: 22),
+                const SizedBox(height: 6),
                 Text(item['label'] as String,
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                         color: t.textPrimary,
                         fontWeight: FontWeight.w700,
-                        fontSize: 13)),
+                        fontSize: 12)),
               ]),
             ),
           ),

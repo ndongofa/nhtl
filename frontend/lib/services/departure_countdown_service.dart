@@ -1,44 +1,45 @@
 // lib/services/departure_countdown_service.dart
 //
-// ✅ Compte à rebours vers le prochain départ à venir
-// ✅ Groupement par jour — alternance auto 5s entre départs du même jour
-// ✅ Swipe manuel nextSameDay() / prevSameDay()
-// ✅ Ticker : uniquement les départs à venir (passés filtrés)
-// ✅ Passage auto au groupe suivant quand tous écoulés
+// ✅ Charge les départs depuis l'API (plus hardcodés)
+// ✅ Fallback silencieux si l'API est indisponible
+// ✅ 3-4 prochains départs s'alternent (toutes les 5s)
+// ✅ Groupement par jour + swipe manuel inter-jours
+// ✅ Ticker filtré départs à venir uniquement
 
 import 'dart:async';
+import 'departure_api_service.dart';
+import '../models/departure_model.dart';
 
 class Departure {
   final String date;
   final DateTime dateTime;
   final String route;
   final String flag;
+  final int? id;
 
   const Departure({
     required this.date,
     required this.dateTime,
     required this.route,
     required this.flag,
+    this.id,
   });
+
+  factory Departure.fromModel(DepartureModel m) => Departure(
+        date: m.dateLabel,
+        dateTime: m.departureDateTime,
+        route: m.route,
+        flag: m.flagEmoji,
+        id: m.id,
+      );
 }
 
 class DepartureCountdownService {
-  static final List<Departure> allDepartures = [
-    Departure(
-        date: '23 mars 2026',
-        dateTime: DateTime(2026, 3, 23, 8, 0),
-        route: 'Dakar → Paris',
-        flag: '🇸🇳🇫🇷'),
-    Departure(
-        date: '23 mars 2026',
-        dateTime: DateTime(2026, 3, 23, 14, 0),
-        route: 'Dakar → Casablanca',
-        flag: '🇸🇳🇲🇦'),
-    Departure(
-        date: '25 mars 2026',
-        dateTime: DateTime(2026, 3, 25, 10, 0),
-        route: 'Casablanca → Paris',
-        flag: '🇲🇦🇫🇷'),
+  final _api = DepartureApiService();
+
+  List<Departure> _loaded = [];
+
+  static final List<Departure> _fallback = [
     Departure(
         date: '28 avril 2026',
         dateTime: DateTime(2026, 4, 28, 9, 0),
@@ -51,13 +52,13 @@ class DepartureCountdownService {
         flag: '🇲🇦🇸🇳'),
   ];
 
-  // ✅ Uniquement les départs à venir — pour le ruban ticker
-  static List<Departure> get upcomingDepartures {
+  List<Departure> get allDepartures => _loaded.isNotEmpty ? _loaded : _fallback;
+
+  List<Departure> get upcomingDepartures {
     final now = DateTime.now();
     return allDepartures.where((d) => d.dateTime.isAfter(now)).toList();
   }
 
-  // ── État interne ──────────────────────────────────────────────────────────
   List<List<Departure>> _groups = [];
   int _groupIndex = 0;
   int _inGroupIndex = 0;
@@ -65,7 +66,6 @@ class DepartureCountdownService {
   Timer? _countdownTimer;
   Timer? _autoSwitchTimer;
 
-  // ── Accesseurs ────────────────────────────────────────────────────────────
   List<Departure> get sameDayGroup {
     if (_groups.isEmpty || _groupIndex >= _groups.length) return [];
     return _groups[_groupIndex];
@@ -73,11 +73,16 @@ class DepartureCountdownService {
 
   int get sameDayCount => sameDayGroup.length;
   int get inGroupIndex => _inGroupIndex;
+  int get groupIndex => _groupIndex; // ✅ index du groupe actif
+  int get groupCount => _groups.length; // ✅ total groupes (jours distincts)
   bool get isExpired => _remaining == Duration.zero && _groups.isEmpty;
   Duration get remaining => _remaining;
 
   Departure get currentDeparture {
-    if (_groups.isEmpty) return allDepartures.last;
+    if (_groups.isEmpty) {
+      final up = upcomingDepartures;
+      return up.isNotEmpty ? up.first : _fallback.last;
+    }
     final g = _groups[_groupIndex];
     return g[_inGroupIndex.clamp(0, g.length - 1)];
   }
@@ -87,12 +92,22 @@ class DepartureCountdownService {
   String get minutes => (_remaining.inMinutes % 60).toString().padLeft(2, '0');
   String get seconds => (_remaining.inSeconds % 60).toString().padLeft(2, '0');
 
-  // ── Démarrage ─────────────────────────────────────────────────────────────
-  void start(void Function() onTick) {
-    _buildGroups();
-    _updateRemaining();
+  Future<void> loadDepartures() async {
+    try {
+      final models = await _api.getPublicNext();
+      if (models.isNotEmpty) {
+        _loaded = models.map((m) => Departure.fromModel(m)).toList();
+      }
+    } catch (_) {}
+  }
 
-    // Tick 1s — mise à jour + passage auto au groupe suivant
+  void start(void Function() onTick) {
+    loadDepartures().then((_) {
+      _buildGroups();
+      _updateRemaining();
+      onTick();
+    });
+
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       _updateRemaining();
       if (_remaining == Duration.zero && _groups.isNotEmpty) {
@@ -109,10 +124,15 @@ class DepartureCountdownService {
       onTick();
     });
 
-    // ✅ Alternance auto 5s entre départs du même jour
+    // ✅ Alternance auto 5s — même jour ET inter-groupes (3-4 prochains)
     _autoSwitchTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (sameDayCount > 1) {
         _inGroupIndex = (_inGroupIndex + 1) % sameDayCount;
+        onTick();
+      } else if (_groups.length > 1) {
+        _groupIndex = (_groupIndex + 1) % _groups.length;
+        _inGroupIndex = 0;
+        _updateRemaining();
         onTick();
       }
     });
@@ -120,17 +140,34 @@ class DepartureCountdownService {
     onTick();
   }
 
-  // ✅ Swipe manuel suivant (même jour)
-  void nextSameDay(void Function() onTick) {
-    if (sameDayCount <= 1) return;
-    _inGroupIndex = (_inGroupIndex + 1) % sameDayCount;
+  Future<void> reload(void Function() onTick) async {
+    await loadDepartures();
+    _groupIndex = 0;
+    _inGroupIndex = 0;
+    _buildGroups();
+    _updateRemaining();
     onTick();
   }
 
-  // ✅ Swipe manuel précédent (même jour)
+  void nextSameDay(void Function() onTick) {
+    if (sameDayCount > 1) {
+      _inGroupIndex = (_inGroupIndex + 1) % sameDayCount;
+    } else if (_groups.length > 1) {
+      _groupIndex = (_groupIndex + 1) % _groups.length;
+      _inGroupIndex = 0;
+      _updateRemaining();
+    }
+    onTick();
+  }
+
   void prevSameDay(void Function() onTick) {
-    if (sameDayCount <= 1) return;
-    _inGroupIndex = (_inGroupIndex - 1 + sameDayCount) % sameDayCount;
+    if (sameDayCount > 1) {
+      _inGroupIndex = (_inGroupIndex - 1 + sameDayCount) % sameDayCount;
+    } else if (_groups.length > 1) {
+      _groupIndex = (_groupIndex - 1 + _groups.length) % _groups.length;
+      _inGroupIndex = 0;
+      _updateRemaining();
+    }
     onTick();
   }
 

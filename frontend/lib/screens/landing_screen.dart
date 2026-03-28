@@ -66,7 +66,6 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
   late final AnimationController _bgAnim;
   final DepartureCountdownService _countdown = DepartureCountdownService();
 
-  // ✅ Ticker uniquement sur les départs à venir
   int _tickerIndex = 0;
   Timer? _tickerTimer;
 
@@ -83,7 +82,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
 
     _tickerTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       if (!mounted) return;
-      final upcoming = DepartureCountdownService.upcomingDepartures;
+      final upcoming = _countdown.upcomingDepartures; // ✅ instance
       if (upcoming.isEmpty) return;
       setState(() => _tickerIndex = (_tickerIndex + 1) % upcoming.length);
     });
@@ -263,7 +262,6 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
     );
   }
 
-  // ── BUILD ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final t = context.watch<AppThemeProvider>();
@@ -346,7 +344,6 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
     );
   }
 
-  // ✅ Icône sac sur carré gradient bleu→teal
   Widget _brandLogo() {
     return Row(children: [
       Container(
@@ -405,11 +402,10 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
                 turns: anim,
                 child: FadeTransition(opacity: anim, child: child)),
             child: Icon(
-              t.isDark ? Icons.wb_sunny_outlined : Icons.nightlight_round,
-              key: ValueKey(t.isDark),
-              color: t.isDark ? _amber : Colors.white,
-              size: 17,
-            ),
+                t.isDark ? Icons.wb_sunny_outlined : Icons.nightlight_round,
+                key: ValueKey(t.isDark),
+                color: t.isDark ? _amber : Colors.white,
+                size: 17),
           ),
         ),
       ),
@@ -518,9 +514,9 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
         ]),
       );
 
-  // ── TICKER ✅ uniquement départs à venir ──────────────────────────────────
+  // ── TICKER ✅ getter d'instance ────────────────────────────────────────────
   Widget _tickerBanner(AppThemeProvider t) {
-    final upcoming = DepartureCountdownService.upcomingDepartures;
+    final upcoming = _countdown.upcomingDepartures; // ✅ instance
     if (upcoming.isEmpty) return const SizedBox.shrink();
     final dep = upcoming[_tickerIndex % upcoming.length];
     return AnimatedSwitcher(
@@ -569,11 +565,13 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
     );
   }
 
-  // ── COMPTE À REBOURS — alternance auto + swipe ────────────────────────────
+  // ── COMPTE À REBOURS ✅ getter d'instance + dots inter-groupes ────────────
   Widget _countdownBanner(AppThemeProvider t) {
     final dep = _countdown.currentDeparture;
     final sameDayCount = _countdown.sameDayCount;
     final inGroupIndex = _countdown.inGroupIndex;
+    final groupCount = _countdown.groupCount; // ✅
+    final groupIndex = _countdown.groupIndex; // ✅
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 350),
@@ -592,7 +590,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 300),
             child: Text(
-              key: ValueKey("${dep.date}_$inGroupIndex"),
+              key: ValueKey("${dep.date}_${groupIndex}_$inGroupIndex"),
               _countdown.isExpired
                   ? "TOUS LES DÉPARTS SONT PASSÉS"
                   : "PROCHAIN DÉPART — ${dep.date.toUpperCase()}",
@@ -607,22 +605,20 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
 
         const SizedBox(height: 6),
 
-        // ✅ Swipe horizontal pour changer de départ (même jour)
         GestureDetector(
           onHorizontalDragEnd: (d) {
             if (d.primaryVelocity == null) return;
-            if (d.primaryVelocity! < -200) {
+            if (d.primaryVelocity! < -200)
               _countdown.nextSameDay(() {
                 if (mounted) setState(() {});
               });
-            } else if (d.primaryVelocity! > 200) {
+            else if (d.primaryVelocity! > 200)
               _countdown.prevSameDay(() {
                 if (mounted) setState(() {});
               });
-            }
           },
           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            if (sameDayCount > 1)
+            if (sameDayCount > 1 || groupCount > 1) // ✅ inter-groupes
               GestureDetector(
                   onTap: () => _countdown.prevSameDay(() {
                         if (mounted) setState(() {});
@@ -632,14 +628,14 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 350),
               child: Text(
-                  key: ValueKey("route_${dep.route}"),
+                  key: ValueKey("route_${dep.route}_$groupIndex"),
                   "${dep.flag}  ${dep.route}",
                   style: TextStyle(
                       color: t.isDark ? _blueBright : _appBlue,
                       fontWeight: FontWeight.w700,
                       fontSize: 15)),
             ),
-            if (sameDayCount > 1)
+            if (sameDayCount > 1 || groupCount > 1) // ✅
               GestureDetector(
                   onTap: () => _countdown.nextSameDay(() {
                         if (mounted) setState(() {});
@@ -649,25 +645,25 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
           ]),
         ),
 
-        // ✅ Points indicateurs (plusieurs départs même jour)
-        if (sameDayCount > 1) ...[
+        // ✅ Dots — même jour ET inter-groupes (3-4 prochains départs)
+        if (sameDayCount > 1 || groupCount > 1) ...[
           const SizedBox(height: 8),
           Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(
-                  sameDayCount,
-                  (i) => AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        margin: const EdgeInsets.symmetric(horizontal: 3),
-                        width: i == inGroupIndex ? 18 : 7,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: i == inGroupIndex
-                              ? _amber
-                              : t.textMuted.withValues(alpha: 0.30),
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                      ))),
+                  groupCount > 1 ? groupCount : sameDayCount, (i) {
+                final current = groupCount > 1 ? groupIndex : inGroupIndex;
+                return AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: i == current ? 18 : 7,
+                    height: 6,
+                    decoration: BoxDecoration(
+                        color: i == current
+                            ? _amber
+                            : t.textMuted.withValues(alpha: 0.30),
+                        borderRadius: BorderRadius.circular(3)));
+              })),
         ],
 
         const SizedBox(height: 14),
@@ -870,7 +866,6 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
         const SizedBox(height: 10),
         _infoRow(t, Icons.percent, _amber, "Promo web", "–50 % via l'app"),
         const SizedBox(height: 12),
-        // Mini countdown
         AnimatedContainer(
           duration: const Duration(milliseconds: 350),
           padding: const EdgeInsets.all(12),
@@ -1162,96 +1157,99 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
         ]),
       );
 
-  // ── DÉPARTS ───────────────────────────────────────────────────────────────
-  Widget _departuresSection(AppThemeProvider t, bool isDesktop) => _wrap(
-      t,
-      isDesktop,
-      "Départs à venir",
-      "Les prochaines dates de convoyage disponibles.",
-      Column(
-          children: DepartureCountdownService.allDepartures.map((dep) {
-        final isCurrent = dep.route == _countdown.currentDeparture.route &&
-            dep.date == _countdown.currentDeparture.date;
-        final isPast = dep.dateTime.isBefore(DateTime.now());
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 350),
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          decoration: BoxDecoration(
-            color: isCurrent
-                ? _amber.withValues(alpha: t.isDark ? 0.10 : 0.07)
-                : isPast
-                    ? t.bgCard.withValues(alpha: 0.5)
-                    : t.bgCard,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-                color: isCurrent
-                    ? _amber.withValues(alpha: 0.35)
-                    : isPast
-                        ? t.border.withValues(alpha: 0.4)
-                        : t.border),
-          ),
-          child: Row(children: [
-            Text(dep.flag, style: const TextStyle(fontSize: 20)),
-            const SizedBox(width: 14),
-            Expanded(
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                  Text(dep.route,
-                      style: TextStyle(
-                          color: isPast
-                              ? t.textMuted
-                              : isCurrent
-                                  ? _amber
-                                  : t.textPrimary,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14)),
-                  Text(dep.date,
+  // ── DÉPARTS ✅ getter d'instance ──────────────────────────────────────────
+  Widget _departuresSection(AppThemeProvider t, bool isDesktop) {
+    final allDeps = _countdown.allDepartures; // ✅ instance
+    return _wrap(
+        t,
+        isDesktop,
+        "Départs à venir",
+        "Les prochaines dates de convoyage disponibles.",
+        Column(
+            children: allDeps.map((dep) {
+          final isCurrent = dep.route == _countdown.currentDeparture.route &&
+              dep.date == _countdown.currentDeparture.date;
+          final isPast = dep.dateTime.isBefore(DateTime.now());
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 350),
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            decoration: BoxDecoration(
+              color: isCurrent
+                  ? _amber.withValues(alpha: t.isDark ? 0.10 : 0.07)
+                  : isPast
+                      ? t.bgCard.withValues(alpha: 0.5)
+                      : t.bgCard,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                  color: isCurrent
+                      ? _amber.withValues(alpha: 0.35)
+                      : isPast
+                          ? t.border.withValues(alpha: 0.4)
+                          : t.border),
+            ),
+            child: Row(children: [
+              Text(dep.flag, style: const TextStyle(fontSize: 20)),
+              const SizedBox(width: 14),
+              Expanded(
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                    Text(dep.route,
+                        style: TextStyle(
+                            color: isPast
+                                ? t.textMuted
+                                : isCurrent
+                                    ? _amber
+                                    : t.textPrimary,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14)),
+                    Text(dep.date,
+                        style: TextStyle(
+                            color: t.textMuted,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 12)),
+                    if (isCurrent)
+                      const Text("En cours de compte à rebours",
+                          style: TextStyle(
+                              color: _amber,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600)),
+                  ])),
+              if (isPast)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                      color: t.border, borderRadius: BorderRadius.circular(20)),
+                  child: Text("PASSÉ",
                       style: TextStyle(
                           color: t.textMuted,
-                          fontWeight: FontWeight.w500,
-                          fontSize: 12)),
-                  if (isCurrent)
-                    const Text("En cours de compte à rebours",
-                        style: TextStyle(
-                            color: _amber,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600)),
-                ])),
-            if (isPast)
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                    color: t.border, borderRadius: BorderRadius.circular(20)),
-                child: Text("PASSÉ",
-                    style: TextStyle(
-                        color: t.textMuted,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 9,
-                        letterSpacing: 0.8)),
-              )
-            else
-              ElevatedButton(
-                onPressed: () => _showReservationModal(dep.route),
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: _amber,
-                    foregroundColor: _textDark,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                    elevation: 0,
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-                child: const Text("Réserver",
-                    style:
-                        TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
-              ),
-          ]),
-        );
-      }).toList()));
+                          fontWeight: FontWeight.w700,
+                          fontSize: 9,
+                          letterSpacing: 0.8)),
+                )
+              else
+                ElevatedButton(
+                  onPressed: () => _showReservationModal(dep.route),
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: _amber,
+                      foregroundColor: _textDark,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                      elevation: 0,
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                  child: const Text("Réserver",
+                      style:
+                          TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+                ),
+            ]),
+          );
+        }).toList()));
+  }
 
   // ── CONTACT ───────────────────────────────────────────────────────────────
   Widget _contactSection(AppThemeProvider t, bool isDesktop) => _wrap(
