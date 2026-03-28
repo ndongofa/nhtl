@@ -11,46 +11,18 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Icônes
   font_awesome_flutter: ^10.7.0
-
-
-  intl: ^0.18.1
-
-  # Champ téléphone international
-  intl_phone_field: ^3.2.0
-
-  # HTTP Client pour API
-  http: ^1.1.0
-
-  # Notifications Toast
-  fluttertoast: ^9.0.0
-
-  # Logging
-  logger: ^2.0.1
-
-  # Pour les dates
   intl: ^0.20.2
-
-  # Storage local
+  intl_phone_field: ^3.2.0
+  http: ^1.1.0
+  fluttertoast: ^9.0.0
+  logger: ^2.0.1
   shared_preferences: ^2.2.0
-
-  # State Management
   provider: ^6.1.2
-
-  # Navigation
   go_router: ^10.0.0
-
-  # UI - Responsive design
   flutter_screenutil: ^5.8.0
-
-  # Supabase
   supabase_flutter: ^2.12.0
-
-  # ✅ SVG — logo globe SAMA (sama_globe_logo.dart)
   flutter_svg: ^2.0.10
-
-  # ✅ URL Launcher — WhatsApp, email, liens externes
   url_launcher: ^6.3.0
 
 dev_dependencies:
@@ -72,4 +44,3 @@ flutter:
     - assets/flyer8.png
     - assets/flyer9.png
     - assets/flyer10.png
-    # Ajoute ici tous tes autres flyers/images utilisées dans le carousel
