@@ -13,6 +13,7 @@ import 'screens/auth/signup_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/landing_screen.dart';
 import 'services/auth_service.dart';
+import 'services/departure_countdown_service.dart';
 import 'ui/app_brand.dart';
 
 void main() async {
@@ -27,9 +28,15 @@ void main() async {
   final isLoggedIn = AuthService.isLoggedIn();
 
   runApp(
-    // ✅ ChangeNotifierProvider enveloppe toute l'app
-    ChangeNotifierProvider(
-      create: (_) => AppThemeProvider(),
+    MultiProvider(
+      providers: [
+        // ✅ Thème clair/sombre partagé sur toute l'app
+        ChangeNotifierProvider(create: (_) => AppThemeProvider()),
+        // ✅ Compte à rebours départs — partagé entre LandingScreen et HomeScreen
+        //    start() lance le chargement API + le ticker 1s + le rechargement 5min
+        ChangeNotifierProvider(
+            create: (_) => DepartureCountdownService()..start()),
+      ],
       child: MyApp(isLoggedIn: isLoggedIn),
     ),
   );
