@@ -1,34 +1,34 @@
-// lib/screens/transport_tracking_screen.dart
+// lib/screens/commande_tracking_screen.dart
 //
-// ✅ Lit transport.statutSuivi (suivi LOGISTIQUE)
-// ✅ Ne lit PAS transport.statut (statut ADMINISTRATIF)
-// ✅ Se met à jour à chaque setState depuis TransportListScreen
+// ✅ Lit commande.statutSuivi (suivi LOGISTIQUE CommandeStatus)
+// ✅ Ne lit PAS commande.statut (statut ADMINISTRATIF)
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../models/transport.dart';
+import '../models/commande.dart';
 import '../providers/app_theme_provider.dart';
 
-class TransportTrackingScreen extends StatelessWidget {
-  final Transport transport;
+class CommandeTrackingScreen extends StatelessWidget {
+  final Commande commande;
 
-  const TransportTrackingScreen({Key? key, required this.transport})
+  const CommandeTrackingScreen({Key? key, required this.commande})
       : super(key: key);
 
   static const List<_Step> _steps = [
     _Step('EN_ATTENTE', '⏳', 'En attente',
-        'Votre demande de transport a été reçue.'),
-    _Step('DEPART_CONFIRME', '✅', 'Départ confirmé',
-        'Confirmé pour le prochain départ SAMA.'),
+        'Votre commande a été reçue, en attente de traitement.'),
+    _Step('COMMANDE_CONFIRMEE', '🛒', 'Commande confirmée',
+        'Votre commande a été passée sur la plateforme.'),
     _Step('EN_TRANSIT', '🚚', 'En transit',
         'Votre colis est en cours d\'acheminement.'),
     _Step('EN_DOUANE', '🛃', 'En douane', 'Traitement douanier en cours.'),
-    _Step('ARRIVE', '📍', 'Arrivé à destination',
-        'Votre colis est arrivé. Vous serez contacté.'),
-    _Step('PRET_RECUPERATION', '📦', 'Prêt à être récupéré',
-        'Présentez-vous muni de votre pièce d\'identité.'),
-    _Step('LIVRE', '🎉', 'Livré', 'Votre colis a été remis. Merci !'),
+    _Step('ARRIVE', '📍', 'Arrivé à l\'entrepôt',
+        'Votre colis est arrivé. La livraison est en cours d\'organisation.'),
+    _Step('PRET_LIVRAISON', '📦', 'Prêt à être livré',
+        'Vous serez contacté très prochainement pour la livraison.'),
+    _Step('LIVRE', '🎉', 'Livré',
+        'Votre commande a été livrée. Merci pour votre confiance !'),
   ];
 
   @override
@@ -36,15 +36,15 @@ class TransportTrackingScreen extends StatelessWidget {
     final t = context.watch<AppThemeProvider>();
 
     // ✅ Lit statutSuivi (logistique) — jamais statut (administratif)
-    final currentStatut = transport.statutSuivi.toUpperCase().trim();
+    final currentStatut = commande.statutSuivi.toUpperCase().trim();
     final currentIdx = _steps
         .indexWhere((s) => s.key == currentStatut)
         .clamp(0, _steps.length - 1);
     final currentStep = _steps[currentIdx];
     final isFinal = currentIdx == _steps.length - 1;
 
-    final refLabel = '#${transport.id ?? '?'} — '
-        '${transport.paysExpediteur} → ${transport.paysDestinataire}';
+    final refLabel = '#${commande.id ?? '?'} — '
+        '${commande.plateforme} → ${commande.paysLivraison}';
 
     return Scaffold(
       backgroundColor: t.bg,
@@ -53,7 +53,7 @@ class TransportTrackingScreen extends StatelessWidget {
         foregroundColor: Colors.white,
         elevation: 0,
         title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Suivi logistique',
+          const Text('Suivi commande',
               style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
           Text(refLabel,
               style: TextStyle(
@@ -93,7 +93,7 @@ class TransportTrackingScreen extends StatelessWidget {
 
           const SizedBox(height: 20),
 
-          // ── Infos transport ───────────────────────────────────────────────
+          // ── Infos commande ────────────────────────────────────────────────
           AnimatedContainer(
             duration: const Duration(milliseconds: 350),
             padding: const EdgeInsets.all(18),
@@ -104,42 +104,33 @@ class TransportTrackingScreen extends StatelessWidget {
             ),
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Détails du transport',
+              Text('Détails de la commande',
                   style: TextStyle(
                       color: t.textPrimary,
                       fontWeight: FontWeight.w800,
                       fontSize: 14)),
               const SizedBox(height: 14),
+              _InfoRow(t: t, label: 'Plateforme', value: commande.plateforme),
               _InfoRow(
                   t: t,
-                  label: 'Expéditeur',
+                  label: 'Livraison',
                   value:
-                      '${transport.villeExpediteur}, ${transport.paysExpediteur}'),
+                      '${commande.villeLivraison}, ${commande.paysLivraison}'),
+              _InfoRow(t: t, label: 'Quantité', value: '${commande.quantite}'),
               _InfoRow(
                   t: t,
-                  label: 'Destinataire',
+                  label: 'Total',
                   value:
-                      '${transport.villeDestinataire}, ${transport.paysDestinataire}'),
-              _InfoRow(
-                  t: t,
-                  label: 'Marchandise',
-                  value: transport.typesMarchandise.isNotEmpty
-                      ? transport.typesMarchandise
-                      : '—'),
-              if (transport.poids != null)
-                _InfoRow(t: t, label: 'Poids', value: '${transport.poids} kg'),
-              if (transport.gpNom != null && transport.gpNom!.isNotEmpty)
+                      '${commande.prixTotal.toStringAsFixed(2)} ${commande.devise}'),
+              if (commande.gpNom != null && commande.gpNom!.isNotEmpty)
                 _InfoRow(
                     t: t,
                     label: 'Agent GP',
-                    value:
-                        '${transport.gpPrenom ?? ''} ${transport.gpNom ?? ''}'
-                            .trim()),
+                    value: '${commande.gpPrenom ?? ''} ${commande.gpNom ?? ''}'
+                        .trim()),
               const Divider(height: 24),
-              // ✅ Affiche le statut logistique lisible
               _InfoRow(t: t, label: 'Suivi', value: currentStep.label),
-              // Statut admin affiché séparément pour info
-              _InfoRow(t: t, label: 'Dossier', value: transport.statut),
+              _InfoRow(t: t, label: 'Dossier', value: commande.statut),
             ]),
           ),
 
@@ -169,7 +160,7 @@ class _StatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isFinal ? AppThemeProvider.green : AppThemeProvider.appBlue;
+    final color = isFinal ? AppThemeProvider.green : AppThemeProvider.amber;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 350),
       width: double.infinity,
@@ -216,7 +207,7 @@ class _TimelineItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = done
-        ? (isActive ? AppThemeProvider.appBlue : AppThemeProvider.green)
+        ? (isActive ? AppThemeProvider.amber : AppThemeProvider.green)
         : t.border;
 
     return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -258,7 +249,7 @@ class _TimelineItem extends StatelessWidget {
           Text(step.label,
               style: TextStyle(
                   color: isActive
-                      ? AppThemeProvider.appBlue
+                      ? AppThemeProvider.amber
                       : done
                           ? t.textPrimary
                           : t.textMuted,

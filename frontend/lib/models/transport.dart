@@ -1,9 +1,4 @@
 // lib/models/transport.dart
-//
-// ✅ Ajout du champ optionnel `statutSuivi` (String?) — aligné sur TransportStatus.java
-// ✅ Zéro régression : tous les champs existants conservés, même signature
-// ✅ fromJson/toJson mis à jour
-// ✅ copyWith mis à jour
 
 class Transport {
   final int? id;
@@ -22,12 +17,15 @@ class Transport {
   final double? poids;
   final double valeurEstimee;
   final String devise;
+
+  // Statut ADMINISTRATIF (gestion du dossier)
+  // Valeurs : EN_ATTENTE, EN_COURS, LIVRE, ANNULE
   final String statut;
 
-  // ✅ NOUVEAU — suivi structuré (miroir de TransportStatus.java côté backend)
-  // Valeurs possibles : EN_ATTENTE · DEPART_CONFIRME · EN_TRANSIT ·
-  //                    EN_DOUANE · ARRIVE · PRET_RECUPERATION · LIVRE
-  final String? statutSuivi;
+  // Statut LOGISTIQUE (suivi physique du colis)
+  // Valeurs : EN_ATTENTE, DEPART_CONFIRME, EN_TRANSIT, EN_DOUANE,
+  //           ARRIVE, PRET_RECUPERATION, LIVRE
+  final String statutSuivi;
 
   final bool archived;
   final String? userId;
@@ -58,7 +56,7 @@ class Transport {
     required this.valeurEstimee,
     required this.devise,
     required this.statut,
-    this.statutSuivi, // ✅ optionnel — null si backend pas encore mis à jour
+    this.statutSuivi = 'EN_ATTENTE',
     this.archived = false,
     this.userId,
     this.dateCreation,
@@ -150,8 +148,8 @@ class Transport {
           : (json['valeurEstimee'] as double? ?? 0.0),
       devise: json['devise'] as String? ?? 'EUR',
       statut: json['statut'] as String? ?? 'EN_ATTENTE',
-      // ✅ NOUVEAU — null-safe : absent des anciennes réponses backend
-      statutSuivi: json['statutSuivi'] as String?,
+      // ✅ statutSuivi logistique — défaut EN_ATTENTE si absent (old backend)
+      statutSuivi: json['statutSuivi'] as String? ?? 'EN_ATTENTE',
       archived: json['archived'] is int
           ? (json['archived'] == 1)
           : (json['archived'] as bool? ?? false),
@@ -188,12 +186,11 @@ class Transport {
       'valeurEstimee': valeurEstimee,
       'devise': devise,
       'statut': statut,
-      // statutSuivi géré par le backend via PATCH /status — exclu du POST/PUT
+      // statutSuivi géré par PATCH /status — exclu du POST/PUT
       'gpId': gpId,
       'gpPrenom': gpPrenom,
       'gpNom': gpNom,
       'gpPhoneNumber': gpPhoneNumber,
-      // archived, userId, dates : gérés côté backend
     };
   }
 }

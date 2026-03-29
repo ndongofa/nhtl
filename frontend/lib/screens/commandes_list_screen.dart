@@ -1,35 +1,85 @@
+// lib/screens/commandes_list_screen.dart
+//
+// ✅ Dropdown statut ADMINISTRATIF (statut String : EN_ATTENTE, EN_COURS…)
+// ✅ Dropdown statut LOGISTIQUE (statutSuivi : 7 étapes CommandeStatus)
+// ✅ Bouton suivi → CommandeTrackingScreen
+// ✅ Structure miroir de TransportListScreen
+
 import 'package:flutter/material.dart';
-import 'package:sama/screens/commandes_archives_screen.dart';
 import '../models/commande.dart';
 import '../services/commande_service.dart';
 import '../models/logged_user.dart';
 import 'commande_form_screen.dart';
-import '../services/gp_service.dart';
-import '../models/gp_agent.dart';
+import 'commande_tracking_screen.dart';
 
-final Map<String, Color> statutColors = {
+// ── Statut ADMINISTRATIF ──────────────────────────────────────────────────────
+final Map<String, Color> statutAdminColors = {
   "EN_ATTENTE": Colors.grey,
-  "CONFIRMEE": Color(0xFF22C55E),
-  "EN_TRAITEMENT": Color(0xFFFFB300),
-  "EXPEDIEE": Color(0xFF42AAFE),
-  "LIVREE": Color(0xFF2296F3),
-  "ANNULEE": Colors.red,
-  "REMBOURSEE": Colors.purple,
-  "ARCHIVEE": Colors.grey,
+  "EN_COURS": const Color(0xFFFFB300),
+  "LIVRE": const Color(0xFF22C55E),
+  "ANNULE": Colors.red,
 };
 
-final Map<String, IconData> statutIcons = {
+final Map<String, IconData> statutAdminIcons = {
   "EN_ATTENTE": Icons.timelapse,
-  "CONFIRMEE": Icons.check_circle,
-  "EN_TRAITEMENT": Icons.sync,
-  "EXPEDIEE": Icons.local_shipping_outlined,
-  "LIVREE": Icons.done,
-  "ANNULEE": Icons.cancel,
-  "REMBOURSEE": Icons.currency_exchange,
-  "ARCHIVEE": Icons.archive,
+  "EN_COURS": Icons.sync,
+  "LIVRE": Icons.done,
+  "ANNULE": Icons.cancel,
 };
 
-// ── Palette ───────────────────────────────────────────────────────────────
+// ── Statut LOGISTIQUE commande (7 étapes) ─────────────────────────────────────
+final Map<String, Color> statutSuiviColors = {
+  "EN_ATTENTE": Colors.grey,
+  "COMMANDE_CONFIRMEE": const Color(0xFF2296F3),
+  "EN_TRANSIT": const Color(0xFFFFB300),
+  "EN_DOUANE": Colors.deepPurple,
+  "ARRIVE": const Color(0xFF00D4C8),
+  "PRET_LIVRAISON": const Color(0xFF22C55E),
+  "LIVRE": const Color(0xFF22C55E),
+};
+
+final Map<String, IconData> statutSuiviIcons = {
+  "EN_ATTENTE": Icons.hourglass_empty,
+  "COMMANDE_CONFIRMEE": Icons.shopping_cart_outlined,
+  "EN_TRANSIT": Icons.local_shipping_outlined,
+  "EN_DOUANE": Icons.gavel_outlined,
+  "ARRIVE": Icons.location_on_outlined,
+  "PRET_LIVRAISON": Icons.inventory_2_outlined,
+  "LIVRE": Icons.celebration_outlined,
+};
+
+const List<String> _statutsSuiviOrdonnes = [
+  "EN_ATTENTE",
+  "COMMANDE_CONFIRMEE",
+  "EN_TRANSIT",
+  "EN_DOUANE",
+  "ARRIVE",
+  "PRET_LIVRAISON",
+  "LIVRE",
+];
+
+String _labelSuivi(String s) {
+  switch (s) {
+    case "EN_ATTENTE":
+      return "En attente";
+    case "COMMANDE_CONFIRMEE":
+      return "Commande confirmée";
+    case "EN_TRANSIT":
+      return "En transit";
+    case "EN_DOUANE":
+      return "En douane";
+    case "ARRIVE":
+      return "Arrivé";
+    case "PRET_LIVRAISON":
+      return "Prêt à livrer";
+    case "LIVRE":
+      return "Livré";
+    default:
+      return s;
+  }
+}
+
+// ── Couleurs UI ───────────────────────────────────────────────────────────────
 const Color _bg = Color(0xFF0D1B2E);
 const Color _bgSection = Color(0xFF112236);
 const Color _bgCard = Color(0xFF1A2E45);
@@ -38,6 +88,8 @@ const Color _amber = Color(0xFFFFB300);
 const Color _textPrimary = Color(0xFFF0F6FF);
 const Color _textMuted = Color(0xFF7A94B0);
 const Color _border = Color(0xFF1E3A55);
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 class CommandesListScreen extends StatefulWidget {
   const CommandesListScreen({Key? key}) : super(key: key);
@@ -48,12 +100,11 @@ class CommandesListScreen extends StatefulWidget {
 
 class _CommandesListScreenState extends State<CommandesListScreen> {
   final _service = CommandeService();
-  final _gpService = GpService();
 
   late LoggedUser logged;
   List<Commande> commandes = [];
   List<String> possibleStatuses = [];
-  bool _loadingStatuses = false;
+  bool _loading = false;
 
   @override
   void initState() {
@@ -67,7 +118,6 @@ class _CommandesListScreenState extends State<CommandesListScreen> {
   }
 
   Future<void> _loadStatuses() async {
-    setState(() => _loadingStatuses = true);
     try {
       final statuses = await _service.getStatutsCommandes();
       if (!mounted) return;
@@ -80,42 +130,23 @@ class _CommandesListScreenState extends State<CommandesListScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        possibleStatuses = const [
-          "EN_ATTENTE",
-          "CONFIRMEE",
-          "EN_TRAITEMENT",
-          "EXPEDIEE",
-          "LIVREE",
-          "ANNULEE",
-          "REMBOURSEE"
-        ];
+        possibleStatuses = const ["EN_ATTENTE", "EN_COURS", "LIVRE", "ANNULE"];
       });
-    } finally {
-      if (mounted) setState(() => _loadingStatuses = false);
     }
   }
 
   Future<void> _loadCommandes() async {
-    final allCmds = logged.role == "admin"
-        ? await _service.getAllCommandesAdmin()
-        : await _service.getAllCommandes();
+    setState(() => _loading = true);
+    final all = await _service.getAllCommandes();
     if (!mounted) return;
     setState(() {
-      commandes = (allCmds ?? []).where((c) => c.archived != true).toList();
+      commandes = (all ?? []).where((c) => c.archived != true).toList();
+      _loading = false;
     });
   }
 
   Future<void> _refresh() async {
     await Future.wait([_loadStatuses(), _loadCommandes()]);
-  }
-
-  Future<void> _goToArchivesScreen() async {
-    await Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (_) =>
-                CommandesArchivesScreen(isAdmin: logged.role == "admin")));
-    _refresh();
   }
 
   Future<void> _editCommande(Commande commande) async {
@@ -124,6 +155,13 @@ class _CommandesListScreenState extends State<CommandesListScreen> {
         MaterialPageRoute(
             builder: (_) => CommandeFormScreen(commande: commande)));
     if (refresh == true) _refresh();
+  }
+
+  void _openTracking(Commande commande) {
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (_) => CommandeTrackingScreen(commande: commande)));
   }
 
   Future<void> _deleteCommande(int id) async {
@@ -159,24 +197,27 @@ class _CommandesListScreenState extends State<CommandesListScreen> {
       final res = await _service.deleteCommande(id);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(res ? "Supprimé" : "Erreur suppression")));
+          SnackBar(content: Text(res ? "Supprimée" : "Erreur suppression")));
       _refresh();
     }
   }
 
   Future<void> _archiveCommande(int id) async {
-    final res = await _service.archiveCommandeAdmin(id);
+    if (logged.role != "admin") return;
+    final res = await _service.archiveCommande(id);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(res ? "Archivée" : "Erreur archivage")));
     _refresh();
   }
 
-  Future<void> _changeStatutCommande(int id, String newStatut) async {
-    final res = await _service.changeStatutCommandeAdmin(id, newStatut);
+  // ✅ Statut ADMINISTRATIF — sans notifications
+  Future<void> _changeStatutAdmin(int id, String newStatut) async {
+    if (logged.role != "admin") return;
+    final res = await _service.changeCommandeStatut(id, newStatut);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(res ? "Statut changé" : "Erreur statut")));
+        SnackBar(content: Text(res ? "Statut mis à jour" : "Erreur statut")));
     if (res) {
       setState(() {
         final idx = commandes.indexWhere((c) => c.id == id);
@@ -186,82 +227,21 @@ class _CommandesListScreenState extends State<CommandesListScreen> {
     }
   }
 
-  Future<GpAgent?> _pickGpDialog() async {
-    try {
-      final gps = await _gpService.getActive();
-      if (!mounted) return null;
-      if (gps.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Aucun GP actif disponible.")));
-        return null;
-      }
-      return showDialog<GpAgent>(
-        context: context,
-        builder: (_) => SimpleDialog(
-          backgroundColor: _bgCard,
-          title: const Text("Choisir un GP",
-              style:
-                  TextStyle(color: _textPrimary, fontWeight: FontWeight.w800)),
-          children: gps
-              .map((gp) => SimpleDialogOption(
-                    onPressed: () => Navigator.pop(context, gp),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Row(children: [
-                        Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                                color: _appBlue.withValues(alpha: 0.15),
-                                shape: BoxShape.circle),
-                            child: Center(
-                                child: Text(
-                                    gp.prenom.isNotEmpty
-                                        ? gp.prenom[0].toUpperCase()
-                                        : 'G',
-                                    style: const TextStyle(
-                                        color: _appBlue,
-                                        fontWeight: FontWeight.w900)))),
-                        const SizedBox(width: 10),
-                        Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(gp.fullName,
-                                  style: const TextStyle(
-                                      color: _textPrimary,
-                                      fontWeight: FontWeight.w700)),
-                              Text(gp.phoneNumber ?? '—',
-                                  style: const TextStyle(
-                                      color: _textMuted, fontSize: 12)),
-                            ]),
-                      ]),
-                    ),
-                  ))
-              .toList(),
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return null;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Erreur chargement GP: $e")));
-      return null;
-    }
-  }
-
-  Future<void> _assignGpToCommande(Commande commande) async {
-    final gp = await _pickGpDialog();
-    if (gp == null) return;
-    try {
-      await _gpService.assignGpToCommande(
-          commandeId: commande.id!, gpId: gp.id, newStatut: "EN_TRAITEMENT");
-      if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("GP assigné: ${gp.fullName}")));
-      _refresh();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Erreur assignation GP: $e")));
+  // ✅ Statut LOGISTIQUE — avec notifications
+  Future<void> _updateStatutSuivi(int id, String newStatus) async {
+    if (logged.role != "admin") return;
+    final res = await _service.updateStatutSuivi(id, newStatus);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(res
+            ? "✅ Suivi mis à jour → ${_labelSuivi(newStatus)} (notifications envoyées)"
+            : "❌ Erreur mise à jour suivi")));
+    if (res) {
+      setState(() {
+        final idx = commandes.indexWhere((c) => c.id == id);
+        if (idx != -1)
+          commandes[idx] = commandes[idx].copyWith(statutSuivi: newStatus);
+      });
     }
   }
 
@@ -284,88 +264,94 @@ class _CommandesListScreenState extends State<CommandesListScreen> {
           IconButton(
               onPressed: _refresh,
               icon: const Icon(Icons.refresh, color: _textPrimary)),
-          IconButton(
-              icon: const Icon(Icons.archive, color: _textPrimary),
-              tooltip: "Commandes archivées",
-              onPressed: _goToArchivesScreen),
         ],
       ),
-      body: commandes.isEmpty
-          ? Center(
-              child: _loadingStatuses
-                  ? const CircularProgressIndicator(color: _appBlue)
-                  : const Text('Aucune commande',
+      body: _loading
+          ? const Center(child: CircularProgressIndicator(color: _appBlue))
+          : commandes.isEmpty
+              ? const Center(
+                  child: Text('Aucune commande',
                       style: TextStyle(color: _textPrimary)))
-          : ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: commandes.length,
-              itemBuilder: (context, index) {
-                final commande = commandes[index];
-                return CommandeTile(
-                  commande: commande,
-                  logged: logged,
-                  possibleStatuses: possibleStatuses,
-                  onEdit: () => _editCommande(commande),
-                  onDelete: () => _deleteCommande(commande.id!),
-                  onArchive: logged.role == "admin"
-                      ? () => _archiveCommande(commande.id!)
-                      : null,
-                  onStatutChanged: logged.role == "admin"
-                      ? (s) => _changeStatutCommande(commande.id!, s)
-                      : null,
-                  onAssignGp: logged.role == "admin"
-                      ? () => _assignGpToCommande(commande)
-                      : null,
-                );
-              },
-            ),
+              : ListView.builder(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: commandes.length,
+                  itemBuilder: (context, index) {
+                    final commande = commandes[index];
+                    return CommandeTile(
+                      commande: commande,
+                      logged: logged,
+                      possibleStatuses: possibleStatuses,
+                      onEdit: () => _editCommande(commande),
+                      onDelete: () => _deleteCommande(commande.id!),
+                      onTracking: () => _openTracking(commande),
+                      onArchive: logged.role == "admin"
+                          ? () => _archiveCommande(commande.id!)
+                          : null,
+                      onStatutAdminChanged: logged.role == "admin"
+                          ? (s) => _changeStatutAdmin(commande.id!, s)
+                          : null,
+                      onStatutSuiviChanged: logged.role == "admin"
+                          ? (s) => _updateStatutSuivi(commande.id!, s)
+                          : null,
+                    );
+                  },
+                ),
     );
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+
 class CommandeTile extends StatelessWidget {
   final Commande commande;
   final LoggedUser logged;
+  final List<String> possibleStatuses;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final VoidCallback onTracking;
   final VoidCallback? onArchive;
-  final void Function(String)? onStatutChanged;
-  final VoidCallback? onAssignGp;
-  final List<String> possibleStatuses;
+  final void Function(String)? onStatutAdminChanged;
+  final void Function(String)? onStatutSuiviChanged;
 
   const CommandeTile({
     super.key,
     required this.commande,
     required this.logged,
+    required this.possibleStatuses,
     required this.onEdit,
     required this.onDelete,
+    required this.onTracking,
     this.onArchive,
-    this.onStatutChanged,
-    this.onAssignGp,
-    required this.possibleStatuses,
+    this.onStatutAdminChanged,
+    this.onStatutSuiviChanged,
   });
 
   @override
   Widget build(BuildContext context) {
-    final color = statutColors[commande.statut] ?? Colors.grey.shade400;
-    final icon = statutIcons[commande.statut] ?? Icons.info;
-    final gpInfo = _buildGpInfo();
+    final adminColor =
+        statutAdminColors[commande.statut] ?? Colors.grey.shade400;
+    final adminIcon = statutAdminIcons[commande.statut] ?? Icons.info;
+
+    final suiviKey = commande.statutSuivi.toUpperCase().trim();
+    final suiviColor = statutSuiviColors[suiviKey] ?? Colors.grey;
+    final suiviIcon = statutSuiviIcons[suiviKey] ?? Icons.track_changes;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: _bgCard,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.25)),
+        border: Border.all(color: adminColor.withValues(alpha: 0.25)),
         boxShadow: [
           BoxShadow(
-              color: color.withValues(alpha: 0.06),
+              color: adminColor.withValues(alpha: 0.06),
               blurRadius: 10,
               offset: const Offset(0, 3))
         ],
       ),
       padding: const EdgeInsets.fromLTRB(16, 14, 12, 12),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // ── Infos client ─────────────────────────────────────────────────
         Text("${commande.nom} ${commande.prenom}",
             style: const TextStyle(
                 color: _textPrimary,
@@ -373,69 +359,141 @@ class CommandeTile extends StatelessWidget {
                 fontSize: 15)),
         const SizedBox(height: 2),
         Text(
-            "${commande.plateforme} — ${commande.prixTotal.toStringAsFixed(2)} ${commande.devise}",
+            "${commande.plateforme} — ${commande.quantite}x "
+            "${commande.prixTotal.toStringAsFixed(2)} ${commande.devise}",
             style: const TextStyle(color: _textMuted, fontSize: 13)),
-        if (gpInfo != null) ...[const SizedBox(height: 8), gpInfo],
+        Text("→ ${commande.villeLivraison}, ${commande.paysLivraison}",
+            style: const TextStyle(color: _textMuted, fontSize: 12)),
+
         const SizedBox(height: 10),
+
+        // ── Statut logistique (chip + dropdown) ──────────────────────────
+        _SuiviChip(
+          currentSuivi: suiviKey,
+          suiviColor: suiviColor,
+          suiviIcon: suiviIcon,
+          isAdmin: logged.role == "admin",
+          onSuiviChanged: onStatutSuiviChanged,
+        ),
+
+        const SizedBox(height: 8),
+
+        // ── Actions ──────────────────────────────────────────────────────
         Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+          // Bouton suivi logistique
+          IconButton(
+              icon: const Icon(Icons.track_changes,
+                  color: Color(0xFF22C55E), size: 20),
+              tooltip: "Voir le suivi logistique",
+              onPressed: onTracking,
+              splashRadius: 18),
+
           if ((logged.role == "admin") || (commande.userId == logged.userId))
             _iconBtn(Icons.edit, _appBlue, "Modifier", onEdit),
+
           if ((logged.role == "admin") || (commande.userId == logged.userId))
             _iconBtn(Icons.delete, Colors.red.shade400, "Supprimer", onDelete),
+
           if (logged.role == "admin" && onArchive != null)
             _iconBtn(Icons.archive, _amber, "Archiver", onArchive!),
-          if (logged.role == "admin" && onAssignGp != null)
-            _iconBtn(Icons.badge_outlined, Colors.deepPurple.shade300,
-                "Assigner GP", onAssignGp!),
-          ModernStatusDropdown(
-              current: commande.statut,
-              possibleValues: possibleStatuses,
-              onChanged: onStatutChanged,
-              isAdmin: logged.role == "admin",
-              chipColor: color,
-              chipIcon: icon),
+
+          // ✅ Dropdown statut ADMINISTRATIF
+          _AdminStatusDropdown(
+            current: commande.statut,
+            possibleValues: possibleStatuses,
+            onChanged: onStatutAdminChanged,
+            isAdmin: logged.role == "admin",
+            chipColor: adminColor,
+            chipIcon: adminIcon,
+          ),
         ]),
       ]),
     );
   }
 
   Widget _iconBtn(
-      IconData icon, Color color, String tooltip, VoidCallback onTap) {
-    return IconButton(
-        icon: Icon(icon, color: color, size: 20),
-        tooltip: tooltip,
-        onPressed: onTap,
-        splashRadius: 18);
-  }
+          IconData icon, Color color, String tooltip, VoidCallback onTap) =>
+      IconButton(
+          icon: Icon(icon, color: color, size: 20),
+          tooltip: tooltip,
+          onPressed: onTap,
+          splashRadius: 18);
+}
 
-  Widget? _buildGpInfo() {
-    final gpPrenom = (commande.gpPrenom ?? '').trim();
-    final gpNom = (commande.gpNom ?? '').trim();
-    final gpPhone = (commande.gpPhoneNumber ?? '').trim();
-    if (gpPrenom.isEmpty && gpNom.isEmpty && gpPhone.isEmpty) return null;
-    final name = ('$gpPrenom $gpNom').trim();
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Colors.deepPurple.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.deepPurple.withValues(alpha: 0.20)),
+// ── Chip + dropdown statut LOGISTIQUE ────────────────────────────────────────
+
+class _SuiviChip extends StatelessWidget {
+  final String currentSuivi;
+  final Color suiviColor;
+  final IconData suiviIcon;
+  final bool isAdmin;
+  final void Function(String)? onSuiviChanged;
+
+  const _SuiviChip({
+    required this.currentSuivi,
+    required this.suiviColor,
+    required this.suiviIcon,
+    required this.isAdmin,
+    required this.onSuiviChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(children: [
+      const Text("Suivi : ",
+          style: TextStyle(
+              color: _textMuted, fontSize: 11, fontWeight: FontWeight.w600)),
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: suiviColor.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: suiviColor.withValues(alpha: 0.35)),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(suiviIcon, color: suiviColor, size: 13),
+          const SizedBox(width: 5),
+          Text(_labelSuivi(currentSuivi),
+              style: TextStyle(
+                  color: suiviColor,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 11)),
+        ]),
       ),
-      child: Row(children: [
-        const Icon(Icons.verified_user, color: Colors.deepPurple, size: 16),
-        const SizedBox(width: 8),
-        Expanded(
-            child: Text(
-          'GP: ${name.isEmpty ? "—" : name}${gpPhone.isNotEmpty ? " • $gpPhone" : ""}',
-          style: const TextStyle(
-              color: _textPrimary, fontWeight: FontWeight.w600, fontSize: 12),
-        )),
-      ]),
-    );
+      if (isAdmin && onSuiviChanged != null)
+        PopupMenuButton<String>(
+          icon: const Icon(Icons.arrow_drop_down, color: _textMuted, size: 20),
+          color: _bgCard,
+          tooltip: "Changer l'étape de suivi",
+          itemBuilder: (_) => _statutsSuiviOrdonnes.map((s) {
+            final c = statutSuiviColors[s] ?? Colors.grey;
+            final i = statutSuiviIcons[s] ?? Icons.info;
+            return PopupMenuItem<String>(
+              value: s,
+              child: Row(children: [
+                Icon(i, size: 16, color: s == currentSuivi ? c : _textMuted),
+                const SizedBox(width: 8),
+                Text(_labelSuivi(s),
+                    style: TextStyle(
+                        color: s == currentSuivi ? c : _textMuted,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13)),
+                if (s == currentSuivi) ...[
+                  const SizedBox(width: 6),
+                  Icon(Icons.check, size: 14, color: c),
+                ],
+              ]),
+            );
+          }).toList(),
+          onSelected: onSuiviChanged,
+        ),
+    ]);
   }
 }
 
-class ModernStatusDropdown extends StatelessWidget {
+// ── Dropdown statut ADMINISTRATIF ────────────────────────────────────────────
+
+class _AdminStatusDropdown extends StatelessWidget {
   final String current;
   final List<String> possibleValues;
   final Function(String)? onChanged;
@@ -443,18 +501,22 @@ class ModernStatusDropdown extends StatelessWidget {
   final Color chipColor;
   final IconData chipIcon;
 
-  const ModernStatusDropdown(
-      {Key? key,
-      required this.current,
-      required this.possibleValues,
-      required this.onChanged,
-      required this.isAdmin,
-      required this.chipColor,
-      required this.chipIcon})
-      : super(key: key);
+  const _AdminStatusDropdown({
+    required this.current,
+    required this.possibleValues,
+    required this.onChanged,
+    required this.isAdmin,
+    required this.chipColor,
+    required this.chipIcon,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final safeValues = possibleValues.isNotEmpty
+        ? possibleValues
+        : ["EN_ATTENTE", "EN_COURS", "LIVRE", "ANNULE"];
+    final safeValue = safeValues.contains(current) ? current : safeValues.first;
+
     return Row(mainAxisSize: MainAxisSize.min, children: [
       Container(
         decoration: BoxDecoration(
@@ -464,7 +526,7 @@ class ModernStatusDropdown extends StatelessWidget {
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Icon(chipIcon, color: Colors.white, size: 16),
           const SizedBox(width: 5),
-          Text(current,
+          Text(safeValue,
               style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -475,26 +537,27 @@ class ModernStatusDropdown extends StatelessWidget {
         PopupMenuButton<String>(
           icon: const Icon(Icons.arrow_drop_down, color: _textMuted),
           color: _bgCard,
-          itemBuilder: (_) => possibleValues
-              .map((status) => PopupMenuItem<String>(
-                    value: status,
+          tooltip: "Changer le statut administratif",
+          itemBuilder: (_) => safeValues
+              .map((s) => PopupMenuItem<String>(
+                    value: s,
                     child: Row(children: [
-                      Icon(statutIcons[status] ?? Icons.info,
+                      Icon(statutAdminIcons[s] ?? Icons.info,
                           size: 16,
-                          color: status == current
-                              ? (statutColors[status] ?? Colors.grey)
+                          color: s == current
+                              ? (statutAdminColors[s] ?? Colors.grey)
                               : _textMuted),
                       const SizedBox(width: 8),
-                      Text(status,
+                      Text(s,
                           style: TextStyle(
-                              color: status == current
-                                  ? (statutColors[status] ?? Colors.grey)
+                              color: s == current
+                                  ? (statutAdminColors[s] ?? Colors.grey)
                                   : _textMuted,
                               fontWeight: FontWeight.w600)),
                     ]),
                   ))
               .toList(),
-          onSelected: onChanged,
+          onSelected: (v) => onChanged!(v),
         ),
     ]);
   }
