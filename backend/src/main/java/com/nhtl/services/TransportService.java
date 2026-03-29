@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 
 import com.nhtl.dto.TransportDTO;
 import com.nhtl.models.GpAgent;
-import com.nhtl.models.StatutTransport;
+import com.nhtl.models.TransportStatus;
 import com.nhtl.models.Transport;
 import com.nhtl.notifications.NotificationDispatcher;
 import com.nhtl.notifications.NotificationTemplates;
@@ -63,7 +63,7 @@ public class TransportService {
 		t.setDevise(dto.getDevise());
 
 		// ✅ statut normalisé + validé (fallback EN_ATTENTE)
-		t.setStatut(parseOrDefault(dto.getStatut(), StatutTransport.EN_ATTENTE).name());
+		t.setStatut(parseOrDefault(dto.getStatut(), TransportStatus.EN_ATTENTE).name());
 
 		t.setTypeTransport(dto.getTypeTransport());
 		t.setDateCreation(java.time.LocalDateTime.now());
@@ -225,7 +225,7 @@ public class TransportService {
 
 		Transport t = opt.get();
 
-		StatutTransport parsed = tryParseTransportStatut(statut);
+		TransportStatus parsed = tryParseTransportStatut(statut);
 		boolean changed = false;
 
 		if (parsed != null) {
@@ -238,13 +238,13 @@ public class TransportService {
 		// ✅ Notifications statut (ne doit jamais casser)
 		if (changed) {
 			try {
-				StatutTransport statusEnum = StatutTransport.valueOf(t.getStatut());
+				TransportStatus statusEnum = TransportStatus.valueOf(t.getStatut());
 
 				notificationDispatcher.dispatch(templates.transportStatusUpdated(t.getUserId(), t.getEmail(),
 						t.getNumeroTelephone(), t.getId(), statusEnum));
 
 				// "accomplissement" transport
-				if (statusEnum == StatutTransport.LIVRE) {
+				if (statusEnum == TransportStatus.LIVRE) {
 					notificationDispatcher.dispatch(templates.transportCompleted(t.getUserId(), t.getEmail(),
 							t.getNumeroTelephone(), t.getId()));
 				}
@@ -283,7 +283,7 @@ public class TransportService {
 		t.setGpNom(gp.getNom());
 		t.setGpPhoneNumber(gp.getPhoneNumber());
 
-		StatutTransport parsed = tryParseTransportStatut(statut);
+		TransportStatus parsed = tryParseTransportStatut(statut);
 		if (parsed != null) {
 			t.setStatut(parsed.name());
 		}
@@ -293,9 +293,9 @@ public class TransportService {
 
 		// ✅ Notification multi-canaux (email/sms/in-app) - ne doit jamais casser
 		try {
-			StatutTransport newStatus = null;
+			TransportStatus newStatus = null;
 			try {
-				newStatus = StatutTransport.valueOf(saved.getStatut());
+				newStatus = TransportStatus.valueOf(saved.getStatut());
 			} catch (Exception ignored) {
 			}
 
@@ -312,12 +312,12 @@ public class TransportService {
 
 	// ===================== Helpers (normalisation) =====================
 
-	private StatutTransport parseOrDefault(String raw, StatutTransport def) {
-		StatutTransport parsed = tryParseTransportStatut(raw);
+	private TransportStatus parseOrDefault(String raw, TransportStatus def) {
+		TransportStatus parsed = tryParseTransportStatut(raw);
 		return parsed != null ? parsed : def;
 	}
 
-	private StatutTransport tryParseTransportStatut(String raw) {
+	private TransportStatus tryParseTransportStatut(String raw) {
 		if (raw == null || raw.trim().isEmpty()) {
 			return null;
 		}
@@ -332,11 +332,11 @@ public class TransportService {
 
 		// compat éventuelle
 		if ("LIVREE".equals(s) || "LIVRE".equals(s)) {
-			return StatutTransport.LIVRE;
+			return TransportStatus.LIVRE;
 		}
 
 		try {
-			return StatutTransport.valueOf(s);
+			return TransportStatus.valueOf(s);
 		} catch (IllegalArgumentException ex) {
 			return null;
 		}
@@ -400,7 +400,7 @@ public class TransportService {
 		t.setDevise(dto.getDevise());
 
 		// ✅ normalisé + validé
-		t.setStatut(parseOrDefault(dto.getStatut(), StatutTransport.EN_ATTENTE).name());
+		t.setStatut(parseOrDefault(dto.getStatut(), TransportStatus.EN_ATTENTE).name());
 
 		t.setTypeTransport(dto.getTypeTransport());
 		t.setArchived(dto.getArchived());

@@ -1,258 +1,165 @@
 package com.nhtl.models;
 
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "commandes")
 public class Commande {
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
 
-	@Column(nullable = false)
-	private String userId;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-	private String nom;
-	private String prenom;
-	private String numeroTelephone;
-	private String email;
-	private String paysLivraison;
-	private String villeLivraison;
-	private String adresseLivraison;
-	private String plateforme;
-	private String lienProduit;
-	private String descriptionCommande;
-	private Integer quantite;
-	private BigDecimal prixUnitaire;
-	private BigDecimal prixTotal;
-	private String devise;
-	private String notesSpeciales;
-	private String statut;
+    @Column(nullable = false)
+    private String userId;
 
-	// --- GP assignment (nouveau) ---
-	@Column(name = "gp_id")
-	private Long gpId;
+    private String nom;
+    private String prenom;
+    private String numeroTelephone;
+    private String email;
 
-	@Column(name = "gp_prenom")
-	private String gpPrenom;
+    private String paysLivraison;
+    private String villeLivraison;
+    private String adresseLivraison;
 
-	@Column(name = "gp_nom")
-	private String gpNom;
+    private String plateforme;
+    private String lienProduit;
+    private String descriptionCommande;
 
-	@Column(name = "gp_phone_number")
-	private String gpPhoneNumber;
+    private Integer quantite;
+    private BigDecimal prixUnitaire;
+    private BigDecimal prixTotal;
+    private String devise;
+    private String notesSpeciales;
 
-	@Column(nullable = false)
-	private Boolean archived = false;
+    // Statut ADMINISTRATIF (gestion du dossier)
+    // Valeurs : EN_ATTENTE, EN_COURS, LIVRE, ANNULE
+    private String statut = "EN_ATTENTE";
 
-	private LocalDateTime dateCreation;
-	private LocalDateTime dateModification;
+    // ✅ Statut LOGISTIQUE (suivi de la livraison physique)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "statut_suivi_commande", nullable = false)
+    private CommandeStatus statutSuivi = CommandeStatus.EN_ATTENTE;
 
-	public Long getId() {
-		return id;
-	}
+    @Column(nullable = false)
+    private Boolean archived = false;
 
-	public void setId(Long id) {
-		this.id = id;
-	}
+    // GP assignment
+    @Column(name = "gp_id")
+    private Long gpId;
+    @Column(name = "gp_prenom")
+    private String gpPrenom;
+    @Column(name = "gp_nom")
+    private String gpNom;
+    @Column(name = "gp_phone_number")
+    private String gpPhoneNumber;
 
-	public String getUserId() {
-		return userId;
-	}
+    private LocalDateTime dateCreation;
+    private LocalDateTime dateModification;
 
-	public void setUserId(String userId) {
-		this.userId = userId;
-	}
+    @PrePersist
+    protected void onCreate() {
+        dateCreation     = LocalDateTime.now();
+        dateModification = LocalDateTime.now();
+    }
 
-	public String getNom() {
-		return nom;
-	}
+    @PreUpdate
+    protected void onUpdate() {
+        dateModification = LocalDateTime.now();
+    }
 
-	public void setNom(String nom) {
-		this.nom = nom;
-	}
+    // ── Helpers ────────────────────────────────────────────────────────────
 
-	public String getPrenom() {
-		return prenom;
-	}
+    public String getReference() {
+        return "#" + id + " — " + (plateforme != null ? plateforme : "?")
+                + " → " + (paysLivraison != null ? paysLivraison : "?");
+    }
 
-	public void setPrenom(String prenom) {
-		this.prenom = prenom;
-	}
+    public String getClientFullName() {
+        String p = prenom != null ? prenom : "";
+        String n = nom    != null ? nom    : "";
+        return (p + " " + n).trim();
+    }
 
-	public String getNumeroTelephone() {
-		return numeroTelephone;
-	}
+    // ── Getters & Setters ──────────────────────────────────────────────────
 
-	public void setNumeroTelephone(String numeroTelephone) {
-		this.numeroTelephone = numeroTelephone;
-	}
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-	public String getEmail() {
-		return email;
-	}
+    public String getUserId() { return userId; }
+    public void setUserId(String userId) { this.userId = userId; }
 
-	public void setEmail(String email) {
-		this.email = email;
-	}
+    public String getNom() { return nom; }
+    public void setNom(String nom) { this.nom = nom; }
 
-	public String getPaysLivraison() {
-		return paysLivraison;
-	}
+    public String getPrenom() { return prenom; }
+    public void setPrenom(String prenom) { this.prenom = prenom; }
 
-	public void setPaysLivraison(String paysLivraison) {
-		this.paysLivraison = paysLivraison;
-	}
+    public String getNumeroTelephone() { return numeroTelephone; }
+    public void setNumeroTelephone(String n) { this.numeroTelephone = n; }
 
-	public String getVilleLivraison() {
-		return villeLivraison;
-	}
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-	public void setVilleLivraison(String villeLivraison) {
-		this.villeLivraison = villeLivraison;
-	}
+    public String getPaysLivraison() { return paysLivraison; }
+    public void setPaysLivraison(String p) { this.paysLivraison = p; }
 
-	public String getAdresseLivraison() {
-		return adresseLivraison;
-	}
+    public String getVilleLivraison() { return villeLivraison; }
+    public void setVilleLivraison(String v) { this.villeLivraison = v; }
 
-	public void setAdresseLivraison(String adresseLivraison) {
-		this.adresseLivraison = adresseLivraison;
-	}
+    public String getAdresseLivraison() { return adresseLivraison; }
+    public void setAdresseLivraison(String a) { this.adresseLivraison = a; }
 
-	public String getPlateforme() {
-		return plateforme;
-	}
+    public String getPlateforme() { return plateforme; }
+    public void setPlateforme(String p) { this.plateforme = p; }
 
-	public void setPlateforme(String plateforme) {
-		this.plateforme = plateforme;
-	}
+    public String getLienProduit() { return lienProduit; }
+    public void setLienProduit(String l) { this.lienProduit = l; }
 
-	public String getLienProduit() {
-		return lienProduit;
-	}
+    public String getDescriptionCommande() { return descriptionCommande; }
+    public void setDescriptionCommande(String d) { this.descriptionCommande = d; }
 
-	public void setLienProduit(String lienProduit) {
-		this.lienProduit = lienProduit;
-	}
+    public Integer getQuantite() { return quantite; }
+    public void setQuantite(Integer q) { this.quantite = q; }
 
-	public String getDescriptionCommande() {
-		return descriptionCommande;
-	}
+    public BigDecimal getPrixUnitaire() { return prixUnitaire; }
+    public void setPrixUnitaire(BigDecimal p) { this.prixUnitaire = p; }
 
-	public void setDescriptionCommande(String descriptionCommande) {
-		this.descriptionCommande = descriptionCommande;
-	}
+    public BigDecimal getPrixTotal() { return prixTotal; }
+    public void setPrixTotal(BigDecimal p) { this.prixTotal = p; }
 
-	public Integer getQuantite() {
-		return quantite;
-	}
+    public String getDevise() { return devise; }
+    public void setDevise(String d) { this.devise = d; }
 
-	public void setQuantite(Integer quantite) {
-		this.quantite = quantite;
-	}
+    public String getNotesSpeciales() { return notesSpeciales; }
+    public void setNotesSpeciales(String n) { this.notesSpeciales = n; }
 
-	public BigDecimal getPrixUnitaire() {
-		return prixUnitaire;
-	}
+    public String getStatut() { return statut; }
+    public void setStatut(String s) { this.statut = s; }
 
-	public void setPrixUnitaire(BigDecimal prixUnitaire) {
-		this.prixUnitaire = prixUnitaire;
-	}
+    public CommandeStatus getStatutSuivi() { return statutSuivi; }
+    public void setStatutSuivi(CommandeStatus s) { this.statutSuivi = s; }
 
-	public BigDecimal getPrixTotal() {
-		return prixTotal;
-	}
+    public Boolean getArchived() { return archived; }
+    public void setArchived(Boolean a) { this.archived = a; }
 
-	public void setPrixTotal(BigDecimal prixTotal) {
-		this.prixTotal = prixTotal;
-	}
+    public Long getGpId() { return gpId; }
+    public void setGpId(Long g) { this.gpId = g; }
 
-	public String getDevise() {
-		return devise;
-	}
+    public String getGpPrenom() { return gpPrenom; }
+    public void setGpPrenom(String g) { this.gpPrenom = g; }
 
-	public void setDevise(String devise) {
-		this.devise = devise;
-	}
+    public String getGpNom() { return gpNom; }
+    public void setGpNom(String g) { this.gpNom = g; }
 
-	public String getNotesSpeciales() {
-		return notesSpeciales;
-	}
+    public String getGpPhoneNumber() { return gpPhoneNumber; }
+    public void setGpPhoneNumber(String g) { this.gpPhoneNumber = g; }
 
-	public void setNotesSpeciales(String notesSpeciales) {
-		this.notesSpeciales = notesSpeciales;
-	}
+    public LocalDateTime getDateCreation() { return dateCreation; }
+    public void setDateCreation(LocalDateTime d) { this.dateCreation = d; }
 
-	public String getStatut() {
-		return statut;
-	}
-
-	public void setStatut(String statut) {
-		this.statut = statut;
-	}
-
-	public Long getGpId() {
-		return gpId;
-	}
-
-	public void setGpId(Long gpId) {
-		this.gpId = gpId;
-	}
-
-	public String getGpPrenom() {
-		return gpPrenom;
-	}
-
-	public void setGpPrenom(String gpPrenom) {
-		this.gpPrenom = gpPrenom;
-	}
-
-	public String getGpNom() {
-		return gpNom;
-	}
-
-	public void setGpNom(String gpNom) {
-		this.gpNom = gpNom;
-	}
-
-	public String getGpPhoneNumber() {
-		return gpPhoneNumber;
-	}
-
-	public void setGpPhoneNumber(String gpPhoneNumber) {
-		this.gpPhoneNumber = gpPhoneNumber;
-	}
-
-	public Boolean getArchived() {
-		return archived;
-	}
-
-	public void setArchived(Boolean archived) {
-		this.archived = archived;
-	}
-
-	public LocalDateTime getDateCreation() {
-		return dateCreation;
-	}
-
-	public void setDateCreation(LocalDateTime dateCreation) {
-		this.dateCreation = dateCreation;
-	}
-
-	public LocalDateTime getDateModification() {
-		return dateModification;
-	}
-
-	public void setDateModification(LocalDateTime dateModification) {
-		this.dateModification = dateModification;
-	}
+    public LocalDateTime getDateModification() { return dateModification; }
+    public void setDateModification(LocalDateTime d) { this.dateModification = d; }
 }

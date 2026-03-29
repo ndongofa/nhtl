@@ -1,37 +1,27 @@
 package com.nhtl.controllers;
 
-import java.util.Map;
-
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.nhtl.models.Transport;
-import com.nhtl.models.StatutTransport;
+import com.nhtl.models.TransportStatus;
 import com.nhtl.notifications.providers.EmailProvider;
 import com.nhtl.notifications.providers.SmsProvider;
 import com.nhtl.notifications.providers.WhatsAppProvider;
 import com.nhtl.repositories.TransportRepository;
 import com.nhtl.services.NotificationService;
-
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 /**
  * PATCH /api/admin/transports/{id}/status
- * Corps : { "status": "EN_TRANSIT" }
  *
- * ✅ Admin uniquement
- * ✅ Notif in-app  (NotificationService existant)
- * ✅ SMS           (TwilioSmsProvider existant)
- * ✅ Email         (BrevoApiEmailProvider existant)
- * ✅ WhatsApp      (TwilioWhatsAppProvider nouveau)
+ * Change le statut LOGISTIQUE (statutSuivi) et déclenche les notifications
+ * multi-canaux : in-app + SMS + email + WhatsApp.
  *
- * Chaque canal est isolé dans un try/catch :
- * un canal qui échoue n'arrête pas les autres.
+ * NB : le statut ADMINISTRATIF (statut String) est géré séparément par
+ * TransportAdminController sans notifications.
  */
 @Slf4j
 @RestController
@@ -39,19 +29,19 @@ import lombok.extern.slf4j.Slf4j;
 @PreAuthorize("hasRole('ADMIN')")
 public class TransportStatusController {
 
-    private final TransportRepository transportRepository;
+    private final TransportRepository repo;
     private final NotificationService notificationService;
     private final EmailProvider       emailProvider;
     private final SmsProvider         smsProvider;
     private final WhatsAppProvider    whatsAppProvider;
 
     public TransportStatusController(
-            TransportRepository transportRepository,
+            TransportRepository repo,
             NotificationService notificationService,
             EmailProvider       emailProvider,
             SmsProvider         smsProvider,
             WhatsAppProvider    whatsAppProvider) {
-        this.transportRepository = transportRepository;
+        this.repo                = repo;
         this.notificationService = notificationService;
         this.emailProvider       = emailProvider;
         this.smsProvider         = smsProvider;
@@ -59,111 +49,107 @@ public class TransportStatusController {
     }
 
     @PatchMapping("/{id}/status")
-    public ResponseEntity<?> updateStatus(
+    public ResponseEntity<?> updateStatutSuivi(
             @PathVariable Long id,
             @RequestBody  Map<String, String> body) {
 
         // 1 — Récupérer le transport
-        Transport transport = transportRepository.findById(id)
+        Transport transport = repo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Transport introuvable : " + id));
 
-        // 2 — Parser le nouveau statut
+        // 2 — Parser le nouveau statut logistique
         String rawStatus = body.get("status");
-        StatutTransport newStatus;
+        TransportStatus newStatus;
         try {
-            newStatus = StatutTransport.valueOf(rawStatus);
+            newStatus = TransportStatus.valueOf(rawStatus);
         } catch (IllegalArgumentException | NullPointerException e) {
             return ResponseEntity.badRequest().body(Map.of(
-                    "error", "Statut invalide : " + rawStatus,
-                    "valeurs_acceptees", StatutTransport.values()));
+                    "error", "Statut logistique invalide : " + rawStatus,
+                    "valeurs_acceptees", TransportStatus.values()));
         }
 
-        // 3 — Appliquer et sauvegarder
+        // 3 — Appliquer
         transport.setStatutSuivi(newStatus);
-        transportRepository.save(transport);
+        repo.save(transport);
 
-        // 4 — Préparer le contenu
-        String emoji     = statusEmoji(newStatus);
-        String label     = statusLabel(newStatus);
+        // 4 — Préparer les messages
+        String emoji     = emoji(newStatus);
+        String label     = label(newStatus);
         String client    = transport.getClientFullName();
         String reference = transport.getReference();
         String userId    = transport.getUserId();
         String message   = buildMessage(client, reference, label, newStatus);
-        String subject   = "SAMA — Mise à jour transport " + reference;
+        String subject   = "SAMA — Suivi transport " + reference;
 
-        // 5 — ✅ Notif in-app (NotificationService existant)
+        // 5 — Notif in-app
         try {
             notificationService.create(userId, "TRANSPORT_STATUS",
                     emoji + " " + label, message);
-            log.info("[STATUS] in-app OK userId={} transport={} status={}", userId, id, newStatus);
+            log.info("[SUIVI] in-app OK transport={} status={}", id, newStatus);
         } catch (Exception e) {
-            log.warn("[STATUS] in-app FAILED transport={}: {}", id, e.getMessage());
+            log.warn("[SUIVI] in-app FAILED transport={}: {}", id, e.getMessage());
         }
 
-        // 6 — ✅ SMS (TwilioSmsProvider existant)
+        // 6 — SMS
         String phone = transport.getNumeroTelephone();
         if (phone != null && !phone.isBlank()) {
             try {
                 smsProvider.sendSms(phone, message);
-                log.info("[STATUS] SMS OK transport={} phone={}", id, phone);
+                log.info("[SUIVI] SMS OK transport={}", id);
             } catch (Exception e) {
-                log.warn("[STATUS] SMS FAILED transport={} phone={}: {}", id, phone, e.getMessage());
+                log.warn("[SUIVI] SMS FAILED transport={}: {}", id, e.getMessage());
             }
         }
 
-        // 7 — ✅ Email (BrevoApiEmailProvider existant)
+        // 7 — Email
         String email = transport.getEmail();
         if (email != null && !email.isBlank()) {
             try {
                 emailProvider.sendEmail(email, subject, message);
-                log.info("[STATUS] email OK transport={} email={}", id, email);
+                log.info("[SUIVI] email OK transport={}", id);
             } catch (Exception e) {
-                log.warn("[STATUS] email FAILED transport={} email={}: {}", id, email, e.getMessage());
+                log.warn("[SUIVI] email FAILED transport={}: {}", id, e.getMessage());
             }
         }
 
-        // 8 — ✅ WhatsApp (TwilioWhatsAppProvider nouveau)
+        // 8 — WhatsApp
         if (phone != null && !phone.isBlank()) {
             try {
                 whatsAppProvider.sendWhatsApp(phone, message);
-                log.info("[STATUS] WhatsApp OK transport={} phone={}", id, phone);
+                log.info("[SUIVI] WhatsApp OK transport={}", id);
             } catch (Exception e) {
-                log.warn("[STATUS] WhatsApp FAILED transport={} phone={}: {}", id, phone, e.getMessage());
+                log.warn("[SUIVI] WhatsApp FAILED transport={}: {}", id, e.getMessage());
             }
         }
 
-        log.info("[STATUS] transport={} → {} channels: in-app+sms+email+whatsapp client={}",
-                id, newStatus, client);
+        log.info("[SUIVI] transport={} → {} (client={})", id, newStatus, client);
 
         return ResponseEntity.ok(Map.of(
-                "success", true,
-                "id",      id,
-                "status",  newStatus.name(),
-                "label",   label
-        ));
+                "success",     true,
+                "id",          id,
+                "statutSuivi", newStatus.name(),
+                "label",       label));
     }
 
-    // ── Messages personnalisés par étape ──────────────────────────────────
-
     private String buildMessage(String client, String reference,
-                                 String label, StatutTransport status) {
+                                String label, TransportStatus status) {
         String greeting = (client != null && !client.isBlank())
                 ? "Bonjour " + client + ","
                 : "Bonjour,";
 
         String detail = switch (status) {
-            case DEPART_CONFIRME   -> "Votre transport a été confirmé et sera pris en charge lors du prochain départ SAMA.";
-            case EN_TRANSIT        -> "Votre colis est actuellement en transit vers sa destination.";
-            case EN_DOUANE         -> "Votre colis est en cours de traitement douanier. Des délais supplémentaires peuvent survenir.";
-            case ARRIVE            -> "Votre colis est arrivé à destination. Vous serez contacté pour les modalités de récupération.";
-            case PRET_RECUPERATION -> "Votre colis est disponible et prêt à être récupéré. Présentez-vous muni de votre pièce d'identité.";
-            case LIVRE             -> "Votre colis a bien été remis. Merci de votre confiance !";
+            case DEPART_CONFIRME   -> "Votre transport a été confirmé pour le prochain départ SAMA.";
+            case EN_TRANSIT        -> "Votre colis est en transit vers sa destination.";
+            case EN_DOUANE         -> "Votre colis est en traitement douanier. Des délais peuvent survenir.";
+            case ARRIVE            -> "Votre colis est arrivé à destination.";
+            case PRET_RECUPERATION -> "Votre colis est prêt à être récupéré. Présentez-vous avec une pièce d'identité.";
+            case LIVRE             -> "Votre colis a été remis. Merci pour votre confiance !";
             default                -> "Votre transport a été mis à jour.";
         };
 
         return greeting + "\n\n"
                 + "Transport " + reference + "\n"
-                + "Statut : " + label + "\n\n"
+                + "Nouveau statut : " + label + "\n\n"
                 + detail + "\n\n"
                 + "Questions ?\n"
                 + "• WhatsApp France : +33 76 891 30 74\n"
@@ -172,8 +158,8 @@ public class TransportStatusController {
                 + "sama-services-intl.com";
     }
 
-    private String statusLabel(StatutTransport status) {
-        return switch (status) {
+    private String label(TransportStatus s) {
+        return switch (s) {
             case EN_ATTENTE        -> "En attente";
             case DEPART_CONFIRME   -> "Départ confirmé";
             case EN_TRANSIT        -> "En transit";
@@ -184,8 +170,8 @@ public class TransportStatusController {
         };
     }
 
-    private String statusEmoji(StatutTransport status) {
-        return switch (status) {
+    private String emoji(TransportStatus s) {
+        return switch (s) {
             case EN_ATTENTE        -> "⏳";
             case DEPART_CONFIRME   -> "✅";
             case EN_TRANSIT        -> "🚚";

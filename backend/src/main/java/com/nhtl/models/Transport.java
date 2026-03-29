@@ -53,7 +53,7 @@ public class Transport {
     // ✅ NOUVEAU — suivi structuré 6 étapes
     @Enumerated(EnumType.STRING)
     @Column(name = "statut_suivi", nullable = false)
-    private StatutTransport statutSuivi = StatutTransport.EN_ATTENTE;
+    private TransportStatus statutSuivi = TransportStatus.EN_ATTENTE;
 
     private String typeTransport;
 
@@ -163,8 +163,8 @@ public class Transport {
     public String getStatut() { return statut; }
     public void setStatut(String s) { this.statut = s; }
 
-    public StatutTransport getStatutSuivi() { return statutSuivi; }
-    public void setStatutSuivi(StatutTransport s) { this.statutSuivi = s; }
+    public TransportStatus getStatutSuivi() { return statutSuivi; }
+    public void setStatutSuivi(TransportStatus s) { this.statutSuivi = s; }
 
     public String getTypeTransport() { return typeTransport; }
     public void setTypeTransport(String t) { this.typeTransport = t; }

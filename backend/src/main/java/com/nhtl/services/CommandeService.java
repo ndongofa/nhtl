@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 import com.nhtl.dto.CommandeDTO;
 import com.nhtl.models.Commande;
 import com.nhtl.models.GpAgent;
-import com.nhtl.models.StatutCommande;
+import com.nhtl.models.CommandeStatus;
 import com.nhtl.notifications.NotificationDispatcher;
 import com.nhtl.notifications.NotificationTemplates;
 import com.nhtl.repositories.CommandeRepository;
@@ -60,7 +60,7 @@ public class CommandeService {
 		c.setNotesSpeciales(dto.getNotesSpeciales());
 
 		// ✅ statut normalisé + validé (fallback EN_ATTENTE)
-		c.setStatut(parseOrDefault(dto.getStatut(), StatutCommande.EN_ATTENTE).name());
+		c.setStatut(parseOrDefault(dto.getStatut(), CommandeStatus.EN_ATTENTE).name());
 
 		c.setArchived(false);
 		c.setDateCreation(java.time.LocalDateTime.now());
@@ -184,7 +184,7 @@ public class CommandeService {
 
 		Commande c = opt.get();
 
-		StatutCommande parsed = tryParseStatut(nouveauStatut);
+		CommandeStatus parsed = tryParseStatut(nouveauStatut);
 		boolean changed = false;
 
 		if (parsed != null) {
@@ -197,13 +197,13 @@ public class CommandeService {
 		// ✅ Notifications statut (ne doit jamais casser)
 		if (changed) {
 			try {
-				StatutCommande statusEnum = StatutCommande.valueOf(c.getStatut());
+				CommandeStatus statusEnum = CommandeStatus.valueOf(c.getStatut());
 
 				notificationDispatcher.dispatch(templates.commandeStatusUpdated(c.getUserId(), c.getEmail(),
 						c.getNumeroTelephone(), c.getId(), statusEnum));
 
 				// "accomplissement" commande
-				if (statusEnum == StatutCommande.LIVREE) {
+				if (statusEnum == CommandeStatus.LIVREE) {
 					notificationDispatcher.dispatch(templates.commandeCompleted(c.getUserId(), c.getEmail(),
 							c.getNumeroTelephone(), c.getId()));
 				}
@@ -268,7 +268,7 @@ public class CommandeService {
 		c.setGpNom(gp.getNom());
 		c.setGpPhoneNumber(gp.getPhoneNumber());
 
-		StatutCommande parsed = tryParseStatut(statut);
+		CommandeStatus parsed = tryParseStatut(statut);
 		if (parsed != null) {
 			c.setStatut(parsed.name());
 		}
@@ -278,9 +278,9 @@ public class CommandeService {
 
 		// ✅ Notification multi-canaux (email/sms/in-app) - ne doit jamais casser
 		try {
-			StatutCommande newStatus = null;
+			CommandeStatus newStatus = null;
 			try {
-				newStatus = StatutCommande.valueOf(saved.getStatut());
+				newStatus = CommandeStatus.valueOf(saved.getStatut());
 			} catch (Exception ignored) {
 			}
 
@@ -297,19 +297,19 @@ public class CommandeService {
 
 	// ===================== Helpers =====================
 
-	private StatutCommande parseOrDefault(String raw, StatutCommande def) {
-		StatutCommande parsed = tryParseStatut(raw);
+	private CommandeStatus parseOrDefault(String raw, CommandeStatus def) {
+		CommandeStatus parsed = tryParseStatut(raw);
 		return parsed != null ? parsed : def;
 	}
 
-	private StatutCommande tryParseStatut(String raw) {
+	private CommandeStatus tryParseStatut(String raw) {
 		if (raw == null || raw.trim().isEmpty()) {
 			return null;
 		}
 
 		String normalized = normalizeStatut(raw);
 		try {
-			return StatutCommande.valueOf(normalized);
+			return CommandeStatus.valueOf(normalized);
 		} catch (IllegalArgumentException ex) {
 			return null;
 		}
@@ -384,7 +384,7 @@ public class CommandeService {
 		c.setNotesSpeciales(dto.getNotesSpeciales());
 
 		// ✅ on normalise ici aussi (sinon régression)
-		c.setStatut(parseOrDefault(dto.getStatut(), StatutCommande.EN_ATTENTE).name());
+		c.setStatut(parseOrDefault(dto.getStatut(), CommandeStatus.EN_ATTENTE).name());
 
 		c.setArchived(dto.getArchived());
 		// On ne modifie pas userId ni dateCreation sur update

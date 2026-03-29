@@ -1,6 +1,6 @@
 package com.nhtl.models;
 
-public enum StatutTransport {
+public enum TransportStatus {
     EN_ATTENTE,          // état initial à la création
     DEPART_CONFIRME,     // confirmé pour le prochain départ
     EN_TRANSIT,          // en cours d'acheminement
