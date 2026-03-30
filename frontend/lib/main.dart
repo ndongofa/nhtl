@@ -11,7 +11,7 @@ import 'screens/auth/login_screen.dart';
 import 'screens/auth/reset_password_screen.dart';
 import 'screens/auth/signup_screen.dart';
 import 'screens/home_screen.dart';
-import 'screens/landing_screen.dart';
+import 'screens/services_hub_screen.dart';
 import 'services/auth_service.dart';
 import 'services/departure_countdown_service.dart';
 import 'ui/app_brand.dart';
@@ -30,10 +30,7 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
-        // ✅ Thème clair/sombre partagé sur toute l'app
         ChangeNotifierProvider(create: (_) => AppThemeProvider()),
-        // ✅ Compte à rebours départs — partagé entre LandingScreen et HomeScreen
-        //    start() lance le chargement API + le ticker 1s + le rechargement 5min
         ChangeNotifierProvider(
             create: (_) => DepartureCountdownService()..start()),
       ],
@@ -44,11 +41,7 @@ void main() async {
 
 class MyApp extends StatelessWidget {
   final bool isLoggedIn;
-
-  const MyApp({
-    Key? key,
-    required this.isLoggedIn,
-  }) : super(key: key);
+  const MyApp({Key? key, required this.isLoggedIn}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -68,22 +61,19 @@ class MyApp extends StatelessWidget {
             backgroundColor: primary,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
         ),
         textButtonTheme: TextButtonThemeData(
-          style: TextButton.styleFrom(
-            foregroundColor: primary,
-          ),
+          style: TextButton.styleFrom(foregroundColor: primary),
         ),
       ),
       initialRoute: '/',
       routes: {
-        '/': (context) => isLoggedIn
-            ? const HomeScreen()
-            : LandingScreenSamaServicesInternational(),
+        // ✅ Hub public pour les non-connectés, dashboard pour les connectés
+        '/': (context) =>
+            isLoggedIn ? const HomeScreen() : const ServicesHubScreen(),
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignupScreen(),
         '/forgot-password': (context) => const ForgotPasswordScreen(),

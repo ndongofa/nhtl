@@ -16,7 +16,7 @@ import 'admin/admin_user_screen.dart';
 import 'commande_form_screen.dart';
 import 'commandes_list_screen.dart';
 import 'gp/gp_list_screen.dart';
-import 'landing_screen.dart';
+import 'services_hub_screen.dart';
 import 'notifications/notifications_screen.dart';
 import 'transport_form_screen.dart';
 import 'transports_list_screen.dart';
@@ -111,8 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!mounted) return;
       // ✅ Navigation directe vers LandingScreen — bypass la route '/' figée
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(
-            builder: (_) => const LandingScreenSamaServicesInternational()),
+        MaterialPageRoute(builder: (_) => const ServicesHubScreen()),
         (_) => false,
       );
     });
