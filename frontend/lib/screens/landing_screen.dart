@@ -65,7 +65,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
 
   late final AnimationController _bgAnim;
 
-  // Ticker index — local car c'est juste de l'UI
+  // ✅ Ticker index — local uniquement (UI state)
   int _tickerIndex = 0;
   Timer? _tickerTimer;
 
@@ -76,7 +76,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
         AnimationController(vsync: this, duration: const Duration(seconds: 8))
           ..repeat(reverse: true);
 
-    // ✅ Ticker rafraîchi depuis le provider
+    // ✅ Ticker rafraîchi depuis le provider partagé (pas d'instance locale)
     _tickerTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       if (!mounted) return;
       final svc = context.read<DepartureCountdownService>();
@@ -91,6 +91,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
     _bgAnim.dispose();
     _tickerTimer?.cancel();
     super.dispose();
+    // ✅ PAS de _countdown.dispose() — le provider est géré par main.dart
   }
 
   void _push(String route) {
@@ -258,10 +259,12 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
         ),
       );
 
+  // ── BUILD ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final t = context.watch<AppThemeProvider>();
-    final svc = context.watch<DepartureCountdownService>(); // ✅ ChangeNotifier
+    final svc =
+        context.watch<DepartureCountdownService>(); // ✅ provider partagé
     final w = MediaQuery.of(context).size.width;
     final isDesktop = w >= 1024;
 
@@ -306,38 +309,40 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
   }
 
   // ── TOP BAR ───────────────────────────────────────────────────────────────
-  Widget _topBar(AppThemeProvider t, bool isDesktop) => AnimatedContainer(
-        duration: const Duration(milliseconds: 350),
-        padding:
-            EdgeInsets.symmetric(horizontal: isDesktop ? 40 : 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: t.topBarBg,
-          border: Border(
-              bottom:
-                  BorderSide(color: t.border.withValues(alpha: 0.4), width: 1)),
-        ),
-        child: Row(children: [
-          _brandLogo(),
-          const Spacer(),
-          if (!isDesktop)
-            Row(children: [
-              _themeToggle(t),
-              const SizedBox(width: 6),
-              _menuButton(t),
-            ])
-          else ...[
-            _navLink("Tarifs", () => _scroll(_pricingKey)),
-            _navLink("Départs", () => _scroll(_departuresKey)),
-            _navLink("Contact", () => _scroll(_contactKey)),
-            const SizedBox(width: 12),
+  Widget _topBar(AppThemeProvider t, bool isDesktop) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 350),
+      padding:
+          EdgeInsets.symmetric(horizontal: isDesktop ? 40 : 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: t.topBarBg,
+        border: Border(
+            bottom:
+                BorderSide(color: t.border.withValues(alpha: 0.4), width: 1)),
+      ),
+      child: Row(children: [
+        _brandLogo(),
+        const Spacer(),
+        if (!isDesktop)
+          Row(children: [
             _themeToggle(t),
-            const SizedBox(width: 12),
-            _outlineBtn("Connexion", () => _push('/login')),
-            const SizedBox(width: 10),
-            _solidWhiteBtn("Créer un compte", () => _push('/signup')),
-          ],
-        ]),
-      );
+            const SizedBox(width: 6),
+            _menuButton(t),
+          ])
+        else ...[
+          _navLink("Tarifs", () => _scroll(_pricingKey)),
+          _navLink("Départs", () => _scroll(_departuresKey)),
+          _navLink("Contact", () => _scroll(_contactKey)),
+          const SizedBox(width: 12),
+          _themeToggle(t),
+          const SizedBox(width: 12),
+          _outlineBtn("Connexion", () => _push('/login')),
+          const SizedBox(width: 10),
+          _solidWhiteBtn("Créer un compte", () => _push('/signup')),
+        ],
+      ]),
+    );
+  }
 
   Widget _brandLogo() => Row(children: [
         Container(
@@ -503,7 +508,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
         ]),
       );
 
-  // ── TICKER ────────────────────────────────────────────────────────────────
+  // ── TICKER ✅ instance provider — emoji natif ──────────────────────────────
   Widget _tickerBanner(AppThemeProvider t, DepartureCountdownService svc) {
     final upcoming = svc.upcomingDepartures;
     if (upcoming.isEmpty) return const SizedBox.shrink();
@@ -513,24 +518,24 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
       child: Container(
         key: ValueKey(_tickerIndex),
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         color: _amber,
         child: Row(children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-                color: t.bg, borderRadius: BorderRadius.circular(5)),
+                color: t.bg, borderRadius: BorderRadius.circular(6)),
             child: Text("DÉPARTS",
                 style: TextStyle(
                     color: _amber,
-                    fontSize: 9,
+                    fontSize: 10,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1.5)),
           ),
-          const SizedBox(width: 10),
-          Text(dep.flag, style: const TextStyle(fontSize: 16)),
-          const SizedBox(width: 6),
-          // ✅ Route en gras, date en secondaire
+          const SizedBox(width: 14),
+          // ✅ Emoji rendu natif — pas de frising
+          _emojiText(dep.flag, 18),
+          const SizedBox(width: 8),
           Expanded(
               child: RichText(
             overflow: TextOverflow.ellipsis,
@@ -538,27 +543,31 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
               TextSpan(
                   text: dep.route,
                   style: TextStyle(
-                      color: t.bg, fontWeight: FontWeight.w900, fontSize: 14)),
+                      color: t.bg,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 14,
+                      fontFamily: 'Roboto')),
               TextSpan(
                   text: "  ·  ${dep.date}",
                   style: TextStyle(
                       color: t.bg.withValues(alpha: 0.75),
                       fontWeight: FontWeight.w600,
-                      fontSize: 12)),
+                      fontSize: 12,
+                      fontFamily: 'Roboto')),
             ]),
           )),
           const SizedBox(width: 8),
           GestureDetector(
             onTap: () => _showReservationModal(dep.route),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
               decoration: BoxDecoration(
-                  color: t.bg, borderRadius: BorderRadius.circular(7)),
+                  color: t.bg, borderRadius: BorderRadius.circular(8)),
               child: Text("Réserver →",
                   style: TextStyle(
                       color: _amber,
                       fontWeight: FontWeight.w800,
-                      fontSize: 11)),
+                      fontSize: 12)),
             ),
           ),
         ]),
@@ -566,7 +575,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
     );
   }
 
-  // ── COMPTE À REBOURS ✅ Route + date mis en avant ─────────────────────────
+  // ── COMPTE À REBOURS ✅ provider + emoji natif ─────────────────────────────
   Widget _countdownBanner(AppThemeProvider t, DepartureCountdownService svc) {
     final dep = svc.currentDeparture;
     final sameDayCount = svc.sameDayCount;
@@ -580,7 +589,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
       color: t.bgSection,
       child: Column(children: [
-        // ✅ 1 — Flag + Route — PREMIER PLAN (grand)
+        // ✅ Flag + Route mis en avant
         GestureDetector(
           onHorizontalDragEnd: (d) {
             if (d.primaryVelocity == null) return;
@@ -595,16 +604,12 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
                   child: Icon(Icons.chevron_left,
                       color: t.isDark ? _blueBright : _appBlue, size: 26)),
             Column(children: [
-              // Emoji flag grand
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
-                child: Text(
-                    key: ValueKey("flag_${dep.flag}_$groupIndex"),
-                    dep.flag,
-                    style: const TextStyle(fontSize: 32)),
+                child: _emojiText(dep.flag, 32,
+                    key: ValueKey("flag_${dep.flag}_$groupIndex")),
               ),
               const SizedBox(height: 6),
-              // Route en très grand
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 350),
                 child: Text(
@@ -628,7 +633,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
 
         const SizedBox(height: 6),
 
-        // ✅ 2 — Date — bien visible
+        // ✅ Date bien visible
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
           child: Text(
@@ -644,7 +649,6 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
 
         const SizedBox(height: 4),
 
-        // Dot live
         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           Container(
               width: 6,
@@ -661,7 +665,6 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
                   letterSpacing: 1)),
         ]),
 
-        // Dots navigation
         if (groupCount > 1 || sameDayCount > 1) ...[
           const SizedBox(height: 10),
           _dotsIndicator(t, sameDayCount, groupCount, inGroupIndex, groupIndex),
@@ -669,7 +672,6 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
 
         const SizedBox(height: 16),
 
-        // ✅ 3 — Compte à rebours — support visuel, plus petit
         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           _countUnit(t, svc.days, "JOURS", _amber),
           _sep(t),
@@ -889,7 +891,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
         const SizedBox(height: 10),
         _infoRow(t, Icons.percent, _amber, "Promo web", "–50 % via l'app"),
         const SizedBox(height: 12),
-        // Mini départ mis en avant
+        // Mini départ
         AnimatedContainer(
           duration: const Duration(milliseconds: 350),
           padding: const EdgeInsets.all(14),
@@ -901,7 +903,8 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
-              Text(dep.flag, style: const TextStyle(fontSize: 20)),
+              // ✅ Emoji natif
+              _emojiText(dep.flag, 20),
               const SizedBox(width: 8),
               Expanded(
                   child: AnimatedSwitcher(
@@ -1189,7 +1192,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
         ]),
       );
 
-  // ── DÉPARTS ✅ route + date mis en avant ──────────────────────────────────
+  // ── DÉPARTS ✅ provider + emoji natif ─────────────────────────────────────
   Widget _departuresSection(
       AppThemeProvider t, bool isDesktop, DepartureCountdownService svc) {
     final allDeps = svc.allDepartures;
@@ -1222,8 +1225,8 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
                           : t.border),
             ),
             child: Row(children: [
-              // ✅ Flag + infos route/date côte à côte bien lisibles
-              Text(dep.flag, style: const TextStyle(fontSize: 24)),
+              // ✅ Emoji natif
+              _emojiText(dep.flag, 22),
               const SizedBox(width: 14),
               Expanded(
                   child: Column(
@@ -1267,17 +1270,17 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
                   ])),
               if (isPast)
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                      color: t.border, borderRadius: BorderRadius.circular(20)),
-                  child: Text("PASSÉ",
-                      style: TextStyle(
-                          color: t.textMuted,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 9,
-                          letterSpacing: 0.8)),
-                )
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                        color: t.border,
+                        borderRadius: BorderRadius.circular(20)),
+                    child: Text("PASSÉ",
+                        style: TextStyle(
+                            color: t.textMuted,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 9,
+                            letterSpacing: 0.8)))
               else
                 ElevatedButton(
                   onPressed: () => _showReservationModal(dep.route),
@@ -1414,5 +1417,21 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
             child,
           ]),
         )),
+      );
+
+  // ✅ Rendu emoji natif — fontFamily vide force le renderer système
+  Widget _emojiText(String emoji, double size, {Key? key}) => Text(
+        key: key,
+        emoji,
+        style: TextStyle(
+          fontSize: size,
+          fontFamily: '',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Noto Color Emoji',
+            'Segoe UI Emoji',
+            'Segoe UI Symbol',
+          ],
+        ),
       );
 }

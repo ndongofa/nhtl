@@ -16,6 +16,7 @@ import 'admin/admin_user_screen.dart';
 import 'commande_form_screen.dart';
 import 'commandes_list_screen.dart';
 import 'gp/gp_list_screen.dart';
+import 'landing_screen.dart';
 import 'notifications/notifications_screen.dart';
 import 'transport_form_screen.dart';
 import 'transports_list_screen.dart';
@@ -73,9 +74,9 @@ class _HomeScreenState extends State<HomeScreen> {
     if (await canLaunchUrl(uri)) await launchUrl(uri);
   }
 
+  // ✅ Fix déconnexion : navigation directe vers LandingScreen (pas via route '/')
   void _logout(BuildContext context) {
     final t = context.read<AppThemeProvider>();
-    final navigator = Navigator.of(context);
     showDialog<bool>(
       context: context,
       barrierDismissible: true,
@@ -107,7 +108,13 @@ class _HomeScreenState extends State<HomeScreen> {
     ).then((confirmed) async {
       if (confirmed != true) return;
       await AuthService.logout();
-      navigator.pushNamedAndRemoveUntil('/', (_) => false);
+      if (!mounted) return;
+      // ✅ Navigation directe vers LandingScreen — bypass la route '/' figée
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+            builder: (_) => const LandingScreenSamaServicesInternational()),
+        (_) => false,
+      );
     });
   }
 
@@ -260,7 +267,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final t = context.watch<AppThemeProvider>();
-    final svc = context.watch<DepartureCountdownService>(); // ✅ ChangeNotifier
+    final svc = context.watch<DepartureCountdownService>();
     final user = LoggedUser.fromSupabase();
     final w = MediaQuery.of(context).size.width;
     final isDesktop = w >= 900;
@@ -446,9 +453,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       fontWeight: FontWeight.w800,
                       letterSpacing: 1.5))),
           const SizedBox(width: 10),
-          Text(dep.flag, style: const TextStyle(fontSize: 16)),
+          // ✅ Emoji dans Text.rich pour forcer rendu natif — évite le frising
+          _emojiText(dep.flag, 16),
           const SizedBox(width: 6),
-          // ✅ Route en gras, date secondaire
           Expanded(
               child: RichText(
             overflow: TextOverflow.ellipsis,
@@ -456,13 +463,17 @@ class _HomeScreenState extends State<HomeScreen> {
               TextSpan(
                   text: dep.route,
                   style: TextStyle(
-                      color: t.bg, fontWeight: FontWeight.w900, fontSize: 14)),
+                      color: t.bg,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 14,
+                      fontFamily: 'Roboto')),
               TextSpan(
                   text: "  ·  ${dep.date}",
                   style: TextStyle(
                       color: t.bg.withValues(alpha: 0.75),
                       fontWeight: FontWeight.w600,
-                      fontSize: 12)),
+                      fontSize: 12,
+                      fontFamily: 'Roboto')),
             ]),
           )),
           const SizedBox(width: 8),
@@ -484,7 +495,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── COMPTE À REBOURS ✅ Route + date mis en avant ─────────────────────────
+  // ── COMPTE À REBOURS ──────────────────────────────────────────────────────
   Widget _countdownSection(
       BuildContext context, AppThemeProvider t, DepartureCountdownService svc) {
     final dep = svc.currentDeparture;
@@ -508,7 +519,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       child: Column(children: [
-        // ✅ 1 — Flag + Route en grand
+        // ✅ Flag + Route mis en avant
         GestureDetector(
           onHorizontalDragEnd: (d) {
             if (d.primaryVelocity == null) return;
@@ -523,12 +534,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Icon(Icons.chevron_left,
                       color: t.isDark ? _blueBright : _appBlue, size: 26)),
             Column(children: [
+              // ✅ Emoji dans widget dédié — rendu natif immédiat
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
-                child: Text(
-                    key: ValueKey("flag_${dep.flag}_$groupIndex"),
-                    dep.flag,
-                    style: const TextStyle(fontSize: 30)),
+                child: _emojiText(dep.flag, 32,
+                    key: ValueKey("flag_${dep.flag}_$groupIndex")),
               ),
               const SizedBox(height: 4),
               AnimatedSwitcher(
@@ -554,7 +564,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
         const SizedBox(height: 4),
 
-        // ✅ 2 — Date bien visible
+        // Date
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
           child: Text(
@@ -593,7 +603,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
         const SizedBox(height: 14),
 
-        // ✅ 3 — Compte à rebours en support
         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           _cu(t, svc.days, "JOURS", _amber),
           _sp(t),
@@ -625,6 +634,22 @@ class _HomeScreenState extends State<HomeScreen> {
       ]),
     );
   }
+
+  // ✅ Widget emoji — fontFamily vide force le rendu emoji natif du système
+  Widget _emojiText(String emoji, double size, {Key? key}) => Text(
+        key: key,
+        emoji,
+        style: TextStyle(
+          fontSize: size,
+          fontFamily: '', // ✅ force rendu emoji natif — pas de police de texte
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Noto Color Emoji',
+            'Segoe UI Emoji',
+            'Segoe UI Symbol'
+          ],
+        ),
+      );
 
   Widget _dotsIndicator(AppThemeProvider t, int sameDayCount, int groupCount,
       int inGroupIndex, int groupIndex) {
@@ -840,7 +865,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ]),
           ),
         );
-
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       _lbl(t, "Mes activités"),
       const SizedBox(height: 12),
@@ -948,12 +972,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _tf(String flag, String city, String price) => Expanded(
           child: Column(children: [
-        Text("$flag $city",
-            textAlign: TextAlign.center,
-            style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.75),
-                fontWeight: FontWeight.w600,
-                fontSize: 11)),
+        // ✅ Flag emoji séparé — rendu natif immédiat
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          _emojiText(flag, 14),
+          const SizedBox(width: 4),
+          Text(city,
+              style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.75),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 11)),
+        ]),
         const SizedBox(height: 4),
         Text(price,
             textAlign: TextAlign.center,
@@ -969,7 +997,7 @@ class _HomeScreenState extends State<HomeScreen> {
       color: Colors.white.withValues(alpha: 0.20),
       margin: const EdgeInsets.symmetric(horizontal: 4));
 
-  // ── TOUS LES DÉPARTS ✅ route + date mis en avant ─────────────────────────
+  // ── TOUS LES DÉPARTS ──────────────────────────────────────────────────────
   Widget _departures(
       BuildContext context, AppThemeProvider t, DepartureCountdownService svc) {
     final allDeps = svc.allDepartures;
@@ -1013,13 +1041,13 @@ class _HomeScreenState extends State<HomeScreen> {
                         : t.border),
           ),
           child: Row(children: [
-            Text(dep.flag, style: const TextStyle(fontSize: 22)),
+            // ✅ Emoji flag rendu natif
+            _emojiText(dep.flag, 22),
             const SizedBox(width: 12),
             Expanded(
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                  // ✅ Route en premier, grande
                   Text(dep.route,
                       style: TextStyle(
                           color: isPast
@@ -1030,7 +1058,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           fontWeight: FontWeight.w800,
                           fontSize: 14)),
                   const SizedBox(height: 2),
-                  // ✅ Date avec icône calendrier
                   Row(children: [
                     Icon(Icons.calendar_today,
                         size: 11, color: isPast ? t.textMuted : _amber),
@@ -1044,17 +1071,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   if (isCurrent) ...[
                     const SizedBox(height: 4),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 7, vertical: 2),
-                      decoration: BoxDecoration(
-                          color: _green.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(8)),
-                      child: const Text("● En cours",
-                          style: TextStyle(
-                              color: _green,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700)),
-                    ),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(
+                            color: _green.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8)),
+                        child: const Text("● En cours",
+                            style: TextStyle(
+                                color: _green,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700))),
                   ],
                 ])),
             if (isPast)
