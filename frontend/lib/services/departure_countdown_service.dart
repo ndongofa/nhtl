@@ -29,11 +29,15 @@ class Departure {
       );
 }
 
-// ✅ ChangeNotifier — les écrans se rebuildent automatiquement
+// ✅ ChangeNotifier — les écrans se rebuildent automatiquement via context.watch
 class DepartureCountdownService extends ChangeNotifier {
   final _api = DepartureApiService();
 
-  List<Departure> _loaded = [];
+  // ── Deux listes distinctes ────────────────────────────────────────────────
+  // _nextLoaded  : 3-4 prochains publiés → compte à rebours + ticker
+  // _allLoaded   : TOUS les publiés (passés + à venir) → section "Tous les départs"
+  List<Departure> _nextLoaded = [];
+  List<Departure> _allLoaded = [];
 
   // Fallback si l'API est indisponible
   static final List<Departure> _fallback = [
@@ -47,23 +51,37 @@ class DepartureCountdownService extends ChangeNotifier {
         dateTime: DateTime(2026, 4, 29, 11, 0),
         route: 'Casablanca → Dakar',
         flag: '🇲🇦🇸🇳'),
+    Departure(
+        date: '15 mai 2026',
+        dateTime: DateTime(2026, 5, 15, 10, 0),
+        route: 'Dakar → Paris',
+        flag: '🇸🇳🇫🇷'),
+    Departure(
+        date: '20 mai 2026',
+        dateTime: DateTime(2026, 5, 20, 14, 0),
+        route: 'Paris → Dakar',
+        flag: '🇫🇷🇸🇳'),
   ];
 
-  List<Departure> get allDepartures => _loaded.isNotEmpty ? _loaded : _fallback;
+  // ✅ allDepartures — utilisé pour la section "Tous les départs" (passés inclus)
+  List<Departure> get allDepartures =>
+      _allLoaded.isNotEmpty ? _allLoaded : _fallback;
 
+  // ✅ upcomingDepartures — utilisé pour le ticker (départs à venir uniquement)
   List<Departure> get upcomingDepartures {
     final now = DateTime.now();
     return allDepartures.where((d) => d.dateTime.isAfter(now)).toList();
   }
 
-  // ── État interne ──────────────────────────────────────────────────────────
+  // ── État interne du compte à rebours ─────────────────────────────────────
+  // _groups : groupes des prochains départs (1 groupe = 1 jour)
   List<List<Departure>> _groups = [];
   int _groupIndex = 0;
   int _inGroupIndex = 0;
   Duration _remaining = Duration.zero;
   Timer? _countdownTimer;
   Timer? _autoSwitchTimer;
-  Timer? _refreshTimer; // ✅ rechargement API toutes les 5 minutes
+  Timer? _refreshTimer;
 
   // ── Accesseurs ────────────────────────────────────────────────────────────
   List<Departure> get sameDayGroup {
@@ -80,8 +98,9 @@ class DepartureCountdownService extends ChangeNotifier {
 
   Departure get currentDeparture {
     if (_groups.isEmpty) {
+      // Fallback : premier à venir dans allDepartures
       final up = upcomingDepartures;
-      return up.isNotEmpty ? up.first : _fallback.last;
+      return up.isNotEmpty ? up.first : _fallback.first;
     }
     final g = _groups[_groupIndex];
     return g[_inGroupIndex.clamp(0, g.length - 1)];
@@ -95,25 +114,36 @@ class DepartureCountdownService extends ChangeNotifier {
   // ── Chargement API ────────────────────────────────────────────────────────
   Future<void> loadDepartures() async {
     try {
-      final models = await _api.getPublicNext();
-      if (models.isNotEmpty) {
-        _loaded = models.map((m) => Departure.fromModel(m)).toList();
-        _buildGroups();
-        _updateRemaining();
-        notifyListeners(); // ✅ notifie les widgets après chaque chargement
+      // Appel 1 : 3-4 prochains → pour le compte à rebours
+      final nextModels = await _api.getPublicNext();
+      if (nextModels.isNotEmpty) {
+        _nextLoaded = nextModels.map(Departure.fromModel).toList();
       }
-    } catch (_) {}
+
+      // Appel 2 : TOUS les publiés → pour la section "Tous les départs"
+      final allModels = await _api.getAllPublic();
+      if (allModels.isNotEmpty) {
+        _allLoaded = allModels.map(Departure.fromModel).toList();
+      }
+
+      // Reconstruire les groupes depuis _nextLoaded (prochains seulement)
+      _buildGroups();
+      _updateRemaining();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('[DepartureCountdownService] loadDepartures error: $e');
+    }
   }
 
   // ── Démarrage ─────────────────────────────────────────────────────────────
   void start() {
-    // Charge immédiatement
     loadDepartures();
 
     // Tick 1s — compte à rebours
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       _updateRemaining();
       if (_remaining == Duration.zero && _groups.isNotEmpty) {
+        // Retirer les départs expirés du groupe courant
         _groups[_groupIndex]
             .removeWhere((d) => !d.dateTime.isAfter(DateTime.now()));
         if (_groups[_groupIndex].isEmpty) {
@@ -127,26 +157,32 @@ class DepartureCountdownService extends ChangeNotifier {
       notifyListeners();
     });
 
-    // Alternance auto 5s entre départs
+    // ✅ Alternance auto toutes les 5s entre les prochains départs
+    // Fonctionne même si plusieurs départs sont le même jour (sameDayCount > 1)
+    // ou si les départs sont sur des jours différents (groupCount > 1)
     _autoSwitchTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (_groups.isEmpty) return;
       if (sameDayCount > 1) {
+        // Plusieurs départs le même jour → cycler dans le groupe
         _inGroupIndex = (_inGroupIndex + 1) % sameDayCount;
         notifyListeners();
       } else if (_groups.length > 1) {
+        // Départs sur des jours différents → cycler entre les groupes
         _groupIndex = (_groupIndex + 1) % _groups.length;
         _inGroupIndex = 0;
         _updateRemaining();
         notifyListeners();
       }
+      // Si un seul départ : pas d'alternance, le ticker reste sur ce départ
     });
 
-    // ✅ Rechargement API toutes les 5 minutes — capte les nouveaux départs publiés
+    // Rechargement API toutes les 5 minutes
     _refreshTimer = Timer.periodic(const Duration(minutes: 5), (_) {
       loadDepartures();
     });
   }
 
-  // ✅ Rechargement manuel — appelé après publication admin
+  // ✅ Rechargement manuel — à appeler depuis AdminDeparturesScreen après publication
   Future<void> reload() async {
     await loadDepartures();
     _groupIndex = 0;
@@ -157,6 +193,7 @@ class DepartureCountdownService extends ChangeNotifier {
   }
 
   void nextSameDay() {
+    if (_groups.isEmpty) return;
     if (sameDayCount > 1) {
       _inGroupIndex = (_inGroupIndex + 1) % sameDayCount;
     } else if (_groups.length > 1) {
@@ -168,6 +205,7 @@ class DepartureCountdownService extends ChangeNotifier {
   }
 
   void prevSameDay() {
+    if (_groups.isEmpty) return;
     if (sameDayCount > 1) {
       _inGroupIndex = (_inGroupIndex - 1 + sameDayCount) % sameDayCount;
     } else if (_groups.length > 1) {
@@ -178,10 +216,16 @@ class DepartureCountdownService extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ── Helpers internes ──────────────────────────────────────────────────────
+
   void _buildGroups() {
     final now = DateTime.now();
-    final upcoming =
-        allDepartures.where((d) => d.dateTime.isAfter(now)).toList();
+
+    // ✅ Les groupes se construisent depuis _nextLoaded (prochains) ou fallback
+    // — PAS depuis allDepartures qui inclut les passés
+    final source = _nextLoaded.isNotEmpty ? _nextLoaded : _fallback;
+    final upcoming = source.where((d) => d.dateTime.isAfter(now)).toList();
+
     _groups = [];
     String? lastDate;
     for (final dep in upcoming) {
@@ -192,6 +236,8 @@ class DepartureCountdownService extends ChangeNotifier {
         _groups.last.add(dep);
       }
     }
+
+    // Garder les indices valides
     if (_groups.isNotEmpty && _groupIndex >= _groups.length) _groupIndex = 0;
     if (sameDayCount > 0 && _inGroupIndex >= sameDayCount) _inGroupIndex = 0;
   }
