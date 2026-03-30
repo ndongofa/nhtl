@@ -162,7 +162,7 @@ class _HomeScreenState extends State<HomeScreen> {
               width: double.infinity,
               height: 50,
               child: ElevatedButton.icon(
-                icon: const Icon(FontAwesomeIcons.truckFast, size: 16),
+                icon: const FaIcon(FontAwesomeIcons.truckFast, size: 16),
                 label: const Text("Nouveau Transport",
                     style:
                         TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
@@ -184,7 +184,7 @@ class _HomeScreenState extends State<HomeScreen> {
               width: double.infinity,
               height: 50,
               child: ElevatedButton.icon(
-                icon: const Icon(FontAwesomeIcons.bagShopping, size: 16),
+                icon: const FaIcon(FontAwesomeIcons.bagShopping, size: 16),
                 label: const Text("Nouvelle Commande",
                     style:
                         TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
@@ -204,19 +204,35 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 16),
             Divider(color: t.border),
             const SizedBox(height: 12),
-            _mBtn(t, FontAwesomeIcons.whatsapp, _green, "WhatsApp France",
+            _mBtn(
+                t,
+                const FaIcon(FontAwesomeIcons.whatsapp,
+                    color: AppThemeProvider.green, size: 18),
+                _green,
+                "WhatsApp France",
                 "+33 76 891 30 74", () {
               Navigator.pop(ctx);
               _wa(_waFrance);
             }),
             const SizedBox(height: 8),
-            _mBtn(t, FontAwesomeIcons.whatsapp, _green, "WhatsApp Dakar",
+            _mBtn(
+                t,
+                const FaIcon(FontAwesomeIcons.whatsapp,
+                    color: AppThemeProvider.green, size: 18),
+                _green,
+                "WhatsApp Dakar",
                 "+221 78 304 28 38", () {
               Navigator.pop(ctx);
               _wa(_waDakar);
             }),
             const SizedBox(height: 8),
-            _mBtn(t, Icons.email_outlined, _appBlue, "Email", _email, () {
+            _mBtn(
+                t,
+                const Icon(Icons.email_outlined,
+                    color: AppThemeProvider.appBlue, size: 18),
+                _appBlue,
+                "Email",
+                _email, () {
               Navigator.pop(ctx);
               _openEmail();
             }),
@@ -226,7 +242,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _mBtn(AppThemeProvider t, IconData icon, Color color, String label,
+  // ✅ Widget icon au lieu de IconData — compatible FaIcon et Icon
+  Widget _mBtn(AppThemeProvider t, Widget icon, Color color, String label,
           String sub, VoidCallback onTap) =>
       GestureDetector(
         onTap: onTap,
@@ -243,7 +260,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(10)),
-                child: Icon(icon, color: color, size: 18)),
+                child: Center(child: icon)),
             const SizedBox(width: 12),
             Expanded(
                 child: Column(
@@ -403,7 +420,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight),
           ),
-          child: const Icon(FontAwesomeIcons.bagShopping,
+          child: const FaIcon(FontAwesomeIcons.bagShopping,
               color: Colors.white, size: 15),
         ),
         const SizedBox(width: 10),
@@ -739,29 +756,34 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ── QUICK ACTIONS ─────────────────────────────────────────────────────────
   Widget _quickActions(BuildContext context, AppThemeProvider t) {
+    // ✅ iconWidget au lieu de IconData — évite le conflit FaIconData/IconData
     final actions = [
       {
-        "icon": FontAwesomeIcons.truckFast,
+        "iconWidget":
+            const FaIcon(FontAwesomeIcons.truckFast, color: _appBlue, size: 18),
         "label": "Nouveau\nTransport",
         "color": _appBlue,
         "onTap": () => Navigator.push(
             context, MaterialPageRoute(builder: (_) => TransportFormScreen()))
       },
       {
-        "icon": FontAwesomeIcons.bagShopping,
+        "iconWidget":
+            const FaIcon(FontAwesomeIcons.bagShopping, color: _amber, size: 18),
         "label": "Nouvelle\nCommande",
         "color": _amber,
         "onTap": () => Navigator.push(
             context, MaterialPageRoute(builder: (_) => CommandeFormScreen()))
       },
       {
-        "icon": FontAwesomeIcons.whatsapp,
+        "iconWidget":
+            const FaIcon(FontAwesomeIcons.whatsapp, color: _green, size: 18),
         "label": "WhatsApp\nFrance",
         "color": _green,
         "onTap": () => _wa(_waFrance)
       },
       {
-        "icon": FontAwesomeIcons.whatsapp,
+        "iconWidget":
+            const FaIcon(FontAwesomeIcons.whatsapp, color: _green, size: 18),
         "label": "WhatsApp\nDakar",
         "color": _green,
         "onTap": () => _wa(_waDakar)
@@ -799,8 +821,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     decoration: BoxDecoration(
                         color: (a['color'] as Color).withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(12)),
-                    child: Icon(a['icon'] as IconData,
-                        color: a['color'] as Color, size: 18)),
+                    child: a['iconWidget'] as Widget),
                 const SizedBox(height: 8),
                 Text(a['label'] as String,
                     textAlign: TextAlign.center,

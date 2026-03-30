@@ -211,15 +211,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: isUnread ? _appBlue.withValues(alpha: 0.12) : _bgCard,
+            color: isUnread ? _appBlue.withOpacity(0.12) : _bgCard,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-                color: isUnread ? _appBlue.withValues(alpha: 0.40) : _border),
+                color: isUnread ? _appBlue.withOpacity(0.40) : _border),
             boxShadow: [
               BoxShadow(
                   color: isUnread
-                      ? _appBlue.withValues(alpha: 0.10)
-                      : Colors.black.withValues(alpha: 0.06),
+                      ? _appBlue.withOpacity(0.10)
+                      : Colors.black.withOpacity(0.06),
                   blurRadius: 8,
                   offset: const Offset(0, 3))
             ],
@@ -230,8 +230,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               height: 40,
               decoration: BoxDecoration(
                 color: isUnread
-                    ? _appBlue.withValues(alpha: 0.20)
-                    : Colors.white.withValues(alpha: 0.05),
+                    ? _appBlue.withOpacity(0.20)
+                    : Colors.white.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -279,7 +279,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     if (isUnread)
                       Text("Appuyer pour marquer lu",
                           style: TextStyle(
-                              color: _appBlue.withValues(alpha: 0.7),
+                              color: _appBlue.withOpacity(0.7),
                               fontSize: 11,
                               fontWeight: FontWeight.w500)),
                     const Spacer(),
@@ -311,7 +311,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         width: 72,
         height: 72,
         decoration: BoxDecoration(
-            color: _appBlue.withValues(alpha: 0.10), shape: BoxShape.circle),
+            color: _appBlue.withOpacity(0.10), shape: BoxShape.circle),
         child: const Icon(Icons.notifications_none, color: _appBlue, size: 36),
       ),
       const SizedBox(height: 16),

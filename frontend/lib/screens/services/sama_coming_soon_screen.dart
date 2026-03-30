@@ -242,7 +242,7 @@ class SamaComingSoonScreen extends StatelessWidget {
                     alignment: WrapAlignment.center,
                     children: [
                       ElevatedButton.icon(
-                        icon: const Icon(FontAwesomeIcons.whatsapp, size: 16),
+                        icon: const FaIcon(FontAwesomeIcons.whatsapp, size: 16),
                         label: const Text("Je veux être averti — France",
                             style: TextStyle(fontWeight: FontWeight.w800)),
                         style: ElevatedButton.styleFrom(
@@ -256,7 +256,7 @@ class SamaComingSoonScreen extends StatelessWidget {
                         onPressed: () => _wa(_waFrance, context),
                       ),
                       ElevatedButton.icon(
-                        icon: const Icon(FontAwesomeIcons.whatsapp, size: 16),
+                        icon: const FaIcon(FontAwesomeIcons.whatsapp, size: 16),
                         label: const Text("Je veux être averti — Dakar",
                             style: TextStyle(fontWeight: FontWeight.w800)),
                         style: ElevatedButton.styleFrom(

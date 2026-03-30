@@ -287,7 +287,7 @@ class _TopBar extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight),
             ),
-            child: const Icon(FontAwesomeIcons.bagShopping,
+            child: const FaIcon(FontAwesomeIcons.bagShopping,
                 color: Colors.white, size: 16),
           ),
           const SizedBox(width: 10),
@@ -647,18 +647,37 @@ class _ContactBand extends StatelessWidget {
             runSpacing: 12,
             alignment: WrapAlignment.center,
             children: [
-              _contactChip(FontAwesomeIcons.whatsapp, AppThemeProvider.green,
-                  "WhatsApp France", "+33 76 891 30 74", onWaFrance, t),
-              _contactChip(FontAwesomeIcons.whatsapp, AppThemeProvider.green,
-                  "WhatsApp Dakar", "+221 78 304 28 38", onWaDakar, t),
-              _contactChip(Icons.email_outlined, AppThemeProvider.appBlue,
-                  "Email", "tech@ngom-holding.com", onEmail, t),
+              _contactChip(
+                  const FaIcon(FontAwesomeIcons.whatsapp,
+                      color: AppThemeProvider.green, size: 17),
+                  AppThemeProvider.green,
+                  "WhatsApp France",
+                  "+33 76 891 30 74",
+                  onWaFrance,
+                  t),
+              _contactChip(
+                  const FaIcon(FontAwesomeIcons.whatsapp,
+                      color: AppThemeProvider.green, size: 17),
+                  AppThemeProvider.green,
+                  "WhatsApp Dakar",
+                  "+221 78 304 28 38",
+                  onWaDakar,
+                  t),
+              _contactChip(
+                  const Icon(Icons.email_outlined,
+                      color: AppThemeProvider.appBlue, size: 17),
+                  AppThemeProvider.appBlue,
+                  "Email",
+                  "tech@ngom-holding.com",
+                  onEmail,
+                  t),
             ]),
       ]),
     );
   }
 
-  Widget _contactChip(IconData icon, Color color, String label, String sub,
+  // ✅ Widget icon au lieu de IconData — compatible FaIcon et Icon
+  Widget _contactChip(Widget icon, Color color, String label, String sub,
           VoidCallback onTap, AppThemeProvider t) =>
       GestureDetector(
         onTap: onTap,
@@ -676,7 +695,7 @@ class _ContactBand extends StatelessWidget {
                 decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(9)),
-                child: Icon(icon, color: color, size: 17)),
+                child: Center(child: icon)),
             const SizedBox(width: 10),
             Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(label,
@@ -718,7 +737,7 @@ class _Footer extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight),
               ),
-              child: const Icon(FontAwesomeIcons.bagShopping,
+              child: const FaIcon(FontAwesomeIcons.bagShopping,
                   color: Colors.white, size: 14)),
           const SizedBox(width: 10),
           const Text("SAMA SERVICES INTERNATIONAL",

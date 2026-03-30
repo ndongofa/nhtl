@@ -134,7 +134,7 @@ class SamaCommandeScreen extends StatelessWidget {
                   alignment: WrapAlignment.center,
                   children: [
                     ElevatedButton.icon(
-                      icon: const Icon(FontAwesomeIcons.whatsapp, size: 16),
+                      icon: const FaIcon(FontAwesomeIcons.whatsapp, size: 16),
                       label: const Text("Commander via WhatsApp",
                           style: TextStyle(fontWeight: FontWeight.w800)),
                       style: ElevatedButton.styleFrom(
@@ -352,7 +352,7 @@ class _CtaBand extends StatelessWidget {
             alignment: WrapAlignment.center,
             children: [
               ElevatedButton.icon(
-                icon: const Icon(FontAwesomeIcons.whatsapp, size: 16),
+                icon: const FaIcon(FontAwesomeIcons.whatsapp, size: 16),
                 label: const Text("WhatsApp France",
                     style: TextStyle(fontWeight: FontWeight.w800)),
                 style: ElevatedButton.styleFrom(
@@ -366,7 +366,7 @@ class _CtaBand extends StatelessWidget {
                 onPressed: onWaFrance,
               ),
               ElevatedButton.icon(
-                icon: const Icon(FontAwesomeIcons.whatsapp, size: 16),
+                icon: const FaIcon(FontAwesomeIcons.whatsapp, size: 16),
                 label: const Text("WhatsApp Dakar",
                     style: TextStyle(fontWeight: FontWeight.w800)),
                 style: ElevatedButton.styleFrom(

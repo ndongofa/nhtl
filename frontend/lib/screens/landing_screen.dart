@@ -32,27 +32,32 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
   static const String _waDakar = "221783042838";
   static const String _email = "tech@ngom-holding.com";
 
+  // ✅ iconWidget stocké directement — évite le conflit FaIconData/IconData
   static const List<Map<String, dynamic>> _services = [
     {
-      "icon": FontAwesomeIcons.truckFast,
+      "iconWidget":
+          FaIcon(FontAwesomeIcons.truckFast, color: _appBlue, size: 18),
       "title": "Transport GP",
       "desc": "Groupage, fret aérien & maritime",
       "color": _appBlue
     },
     {
-      "icon": FontAwesomeIcons.bagShopping,
+      "iconWidget":
+          FaIcon(FontAwesomeIcons.bagShopping, color: _amber, size: 18),
       "title": "Shopping",
       "desc": "Amazon, Temu, Shein, AliExpress",
       "color": _amber
     },
     {
-      "icon": FontAwesomeIcons.locationDot,
+      "iconWidget":
+          FaIcon(FontAwesomeIcons.locationDot, color: _teal, size: 18),
       "title": "Suivi GPS",
       "desc": "Tracking en temps réel 24/7",
       "color": _teal
     },
     {
-      "icon": FontAwesomeIcons.store,
+      "iconWidget":
+          FaIcon(FontAwesomeIcons.store, color: _blueBright, size: 18),
       "title": "Achats sur mesure",
       "desc": "Marchés & boutiques spécialisés",
       "color": _blueBright
@@ -162,20 +167,35 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
             const SizedBox(height: 16),
             Divider(color: t.border),
             const SizedBox(height: 12),
-            _modalContact(t, FontAwesomeIcons.whatsapp, _green,
-                "WhatsApp France", "+33 76 891 30 74", () {
+            _modalContact(
+                t,
+                const FaIcon(FontAwesomeIcons.whatsapp,
+                    color: AppThemeProvider.green, size: 17),
+                _green,
+                "WhatsApp France",
+                "+33 76 891 30 74", () {
               Navigator.pop(ctx);
               _wa(_waFrance);
             }),
             const SizedBox(height: 8),
-            _modalContact(t, FontAwesomeIcons.whatsapp, _green,
-                "WhatsApp Dakar", "+221 78 304 28 38", () {
+            _modalContact(
+                t,
+                const FaIcon(FontAwesomeIcons.whatsapp,
+                    color: AppThemeProvider.green, size: 17),
+                _green,
+                "WhatsApp Dakar",
+                "+221 78 304 28 38", () {
               Navigator.pop(ctx);
               _wa(_waDakar);
             }),
             const SizedBox(height: 8),
-            _modalContact(t, Icons.email_outlined, _appBlue, "Email", _email,
-                () {
+            _modalContact(
+                t,
+                const Icon(Icons.email_outlined,
+                    color: AppThemeProvider.appBlue, size: 17),
+                _appBlue,
+                "Email",
+                _email, () {
               Navigator.pop(ctx);
               _openEmail();
             }),
@@ -222,7 +242,8 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
     );
   }
 
-  Widget _modalContact(AppThemeProvider t, IconData icon, Color color,
+  // ✅ Widget icon — compatible FaIcon et Icon
+  Widget _modalContact(AppThemeProvider t, Widget icon, Color color,
           String label, String subtitle, VoidCallback onTap) =>
       GestureDetector(
         onTap: onTap,
@@ -239,7 +260,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
                 decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(9)),
-                child: Icon(icon, color: color, size: 17)),
+                child: Center(child: icon)),
             const SizedBox(width: 12),
             Expanded(
                 child: Column(
@@ -355,7 +376,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight),
           ),
-          child: const Icon(FontAwesomeIcons.bagShopping,
+          child: const FaIcon(FontAwesomeIcons.bagShopping,
               color: Colors.white, size: 16),
         ),
         const SizedBox(width: 10),
@@ -474,16 +495,36 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
           }
         },
         itemBuilder: (_) => [
-          _mi(t, 'tarifs', 'Tarifs', Icons.local_offer_outlined),
-          _mi(t, 'departs', 'Départs', Icons.event_available),
-          _mi(t, 'contact', 'Contact', Icons.support_agent),
+          _mi(
+              t,
+              'tarifs',
+              'Tarifs',
+              const Icon(Icons.local_offer_outlined,
+                  color: _appBlue, size: 16)),
+          _mi(t, 'departs', 'Départs',
+              const Icon(Icons.event_available, color: _appBlue, size: 16)),
+          _mi(t, 'contact', 'Contact',
+              const Icon(Icons.support_agent, color: _appBlue, size: 16)),
           const PopupMenuDivider(),
-          _mi(t, 'wa_fr', 'WhatsApp France', FontAwesomeIcons.whatsapp),
-          _mi(t, 'wa_sn', 'WhatsApp Dakar', FontAwesomeIcons.whatsapp),
-          _mi(t, 'email', 'Email', Icons.email_outlined),
+          _mi(
+              t,
+              'wa_fr',
+              'WhatsApp France',
+              const FaIcon(FontAwesomeIcons.whatsapp,
+                  color: _appBlue, size: 16)),
+          _mi(
+              t,
+              'wa_sn',
+              'WhatsApp Dakar',
+              const FaIcon(FontAwesomeIcons.whatsapp,
+                  color: _appBlue, size: 16)),
+          _mi(t, 'email', 'Email',
+              const Icon(Icons.email_outlined, color: _appBlue, size: 16)),
           const PopupMenuDivider(),
-          _mi(t, 'login', 'Connexion', Icons.login),
-          _mi(t, 'signup', 'Créer un compte', Icons.person_add_alt_1),
+          _mi(t, 'login', 'Connexion',
+              const Icon(Icons.login, color: _appBlue, size: 16)),
+          _mi(t, 'signup', 'Créer un compte',
+              const Icon(Icons.person_add_alt_1, color: _appBlue, size: 16)),
         ],
         child: Container(
           padding: const EdgeInsets.all(8),
@@ -495,12 +536,13 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
         ),
       );
 
+  // ✅ Widget icon — compatible FaIcon et Icon
   PopupMenuItem<String> _mi(
-          AppThemeProvider t, String v, String label, IconData icon) =>
+          AppThemeProvider t, String v, String label, Widget icon) =>
       PopupMenuItem(
         value: v,
         child: Row(children: [
-          Icon(icon, size: 16, color: _appBlue),
+          icon,
           const SizedBox(width: 10),
           Text(label,
               style:
@@ -996,7 +1038,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
             border: Border.all(color: _green.withValues(alpha: 0.22)),
           ),
           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Icon(FontAwesomeIcons.whatsapp, color: _green, size: 13),
+            FaIcon(FontAwesomeIcons.whatsapp, color: _green, size: 13),
             const SizedBox(width: 6),
             Text(label,
                 style: TextStyle(
@@ -1071,13 +1113,14 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
           children: _services
               .map((s) => _serviceCard(
                   t,
-                  s['icon'] as IconData,
+                  s['iconWidget'] as Widget,
                   s['title'] as String,
                   s['desc'] as String,
                   s['color'] as Color))
               .toList()));
 
-  Widget _serviceCard(AppThemeProvider t, IconData icon, String title,
+  // ✅ Widget icon — compatible FaIcon et Icon
+  Widget _serviceCard(AppThemeProvider t, Widget icon, String title,
           String desc, Color color) =>
       AnimatedContainer(
         duration: const Duration(milliseconds: 350),
@@ -1100,7 +1143,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
               decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.11),
                   borderRadius: BorderRadius.circular(12)),
-              child: Icon(icon, color: color, size: 18)),
+              child: Center(child: icon)),
           const SizedBox(height: 12),
           Text(title,
               style: TextStyle(
@@ -1314,15 +1357,34 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
           runSpacing: 12,
           alignment: WrapAlignment.center,
           children: [
-            _contactBtn(t, FontAwesomeIcons.whatsapp, "WhatsApp France",
-                "+33 76 891 30 74", _green, () => _wa(_waFrance)),
-            _contactBtn(t, FontAwesomeIcons.whatsapp, "WhatsApp Dakar",
-                "+221 78 304 28 38", _green, () => _wa(_waDakar)),
             _contactBtn(
-                t, Icons.email_outlined, "Email", _email, _appBlue, _openEmail),
+                t,
+                const FaIcon(FontAwesomeIcons.whatsapp,
+                    color: AppThemeProvider.green, size: 18),
+                "WhatsApp France",
+                "+33 76 891 30 74",
+                _green,
+                () => _wa(_waFrance)),
+            _contactBtn(
+                t,
+                const FaIcon(FontAwesomeIcons.whatsapp,
+                    color: AppThemeProvider.green, size: 18),
+                "WhatsApp Dakar",
+                "+221 78 304 28 38",
+                _green,
+                () => _wa(_waDakar)),
+            _contactBtn(
+                t,
+                const Icon(Icons.email_outlined,
+                    color: AppThemeProvider.appBlue, size: 18),
+                "Email",
+                _email,
+                _appBlue,
+                _openEmail),
           ]));
 
-  Widget _contactBtn(AppThemeProvider t, IconData icon, String title,
+  // ✅ Widget icon — compatible FaIcon et Icon
+  Widget _contactBtn(AppThemeProvider t, Widget icon, String title,
           String subtitle, Color color, VoidCallback onTap) =>
       GestureDetector(
         onTap: onTap,
@@ -1347,7 +1409,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
                 decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.10),
                     borderRadius: BorderRadius.circular(12)),
-                child: Icon(icon, color: color, size: 18)),
+                child: Center(child: icon)),
             const SizedBox(width: 12),
             Expanded(
                 child: Column(
