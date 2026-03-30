@@ -11,7 +11,7 @@ dependencies:
   flutter:
     sdk: flutter
 
-  font_awesome_flutter: ^10.7.0
+  font_awesome_flutter: ^11.0.0
   intl: ^0.20.2
   intl_phone_field: ^3.2.0
   http: ^1.1.0
@@ -19,11 +19,14 @@ dependencies:
   logger: ^2.0.1
   shared_preferences: ^2.2.0
   provider: ^6.1.2
-  go_router: ^10.0.0
+  go_router: ^17.1.0
   flutter_screenutil: ^5.8.0
   supabase_flutter: ^2.12.0
   flutter_svg: ^2.0.10
   url_launcher: ^6.3.0
+  # ✅ Suivi postal — upload photos + affichage
+  image_picker: ^1.1.2
+  cached_network_image: ^3.4.1
 
 dev_dependencies:
   flutter_test:

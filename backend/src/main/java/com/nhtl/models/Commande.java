@@ -162,4 +162,31 @@ public class Commande {
 
     public LocalDateTime getDateModification() { return dateModification; }
     public void setDateModification(LocalDateTime d) { this.dateModification = d; }
+
+    // ── Suivi postal ──────────────────────────────────────────────────────────
+    @Column(name = "photo_colis_url")
+    private String photoColisUrl;
+
+    @Column(name = "photo_bordereau_url")
+    private String photoBordereauUrl;
+
+    @Column(name = "numero_bordereau", length = 100)
+    private String numeroBordereau;
+
+    @Column(name = "depose_poste_at")
+    private LocalDateTime deposePosteAt;
+
+    public String getPhotoColisUrl() { return photoColisUrl; }
+    public void setPhotoColisUrl(String u) { this.photoColisUrl = u; }
+
+    public String getPhotoBordereauUrl() { return photoBordereauUrl; }
+    public void setPhotoBordereauUrl(String u) { this.photoBordereauUrl = u; }
+
+    public String getNumeroBordereau() { return numeroBordereau; }
+    public void setNumeroBordereau(String n) { this.numeroBordereau = n; }
+
+    public LocalDateTime getDeposePosteAt() { return deposePosteAt; }
+    public void setDeposePosteAt(LocalDateTime d) { this.deposePosteAt = d; }
+
+    public boolean isDeposePoste() { return deposePosteAt != null; }
 }

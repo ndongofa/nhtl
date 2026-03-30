@@ -38,6 +38,14 @@ class Transport {
   final String? gpNom;
   final String? gpPhoneNumber;
 
+  // ✅ Suivi postal
+  final String? photoColisUrl;
+  final String? photoBordereauUrl;
+  final String? numeroBordereau;
+  final DateTime? deposePosteAt;
+
+  bool get isDeposePoste => deposePosteAt != null;
+
   Transport({
     this.id,
     required this.nom,
@@ -65,6 +73,10 @@ class Transport {
     this.gpPrenom,
     this.gpNom,
     this.gpPhoneNumber,
+    this.photoColisUrl,
+    this.photoBordereauUrl,
+    this.numeroBordereau,
+    this.deposePosteAt,
   });
 
   Transport copyWith({
@@ -94,6 +106,10 @@ class Transport {
     String? gpPrenom,
     String? gpNom,
     String? gpPhoneNumber,
+    String? photoColisUrl,
+    String? photoBordereauUrl,
+    String? numeroBordereau,
+    DateTime? deposePosteAt,
   }) {
     return Transport(
       id: id ?? this.id,
@@ -122,6 +138,10 @@ class Transport {
       gpPrenom: gpPrenom ?? this.gpPrenom,
       gpNom: gpNom ?? this.gpNom,
       gpPhoneNumber: gpPhoneNumber ?? this.gpPhoneNumber,
+      photoColisUrl: photoColisUrl ?? this.photoColisUrl,
+      photoBordereauUrl: photoBordereauUrl ?? this.photoBordereauUrl,
+      numeroBordereau: numeroBordereau ?? this.numeroBordereau,
+      deposePosteAt: deposePosteAt ?? this.deposePosteAt,
     );
   }
 
@@ -164,6 +184,12 @@ class Transport {
       gpPrenom: json['gpPrenom'] as String?,
       gpNom: json['gpNom'] as String?,
       gpPhoneNumber: json['gpPhoneNumber'] as String?,
+      photoColisUrl: json['photoColisUrl'] as String?,
+      photoBordereauUrl: json['photoBordereauUrl'] as String?,
+      numeroBordereau: json['numeroBordereau'] as String?,
+      deposePosteAt: json['deposePosteAt'] != null
+          ? DateTime.tryParse(json['deposePosteAt'].toString())
+          : null,
     );
   }
 
