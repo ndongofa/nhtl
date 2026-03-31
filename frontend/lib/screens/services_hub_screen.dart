@@ -1,7 +1,4 @@
 // lib/screens/services_hub_screen.dart
-//
-// Page d'entrée publique — liste tous les services SAMA
-// Route '/' pour les non-connectés
 
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -9,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../providers/app_theme_provider.dart';
+import '../widgets/sama_logo_widget.dart';
 import '../services/auth_service.dart';
 import 'landing_screen.dart';
 import 'services/sama_achat_screen.dart';
@@ -24,62 +22,56 @@ class ServicesHubScreen extends StatelessWidget {
   static const String _waDakar = "221783042838";
   static const String _email = "tech@ngom-holding.com";
 
-  // ── Données des services ──────────────────────────────────────────────────
   static const List<_ServiceItem> _services = [
     _ServiceItem(
-      id: 'gp',
-      emoji: '✈️',
-      name: 'Sama GP',
-      tagline: 'Transport par GP',
-      desc: 'Groupage, fret aérien & maritime\nParis · Casablanca · Dakar',
-      color: AppThemeProvider.appBlue,
-      isLive: true,
-    ),
+        id: 'gp',
+        emoji: '✈️',
+        name: 'Sama GP',
+        tagline: 'Transport par GP',
+        desc: 'Groupage, fret aérien & maritime\nParis · Casablanca · Dakar',
+        color: AppThemeProvider.appBlue,
+        isLive: true),
     _ServiceItem(
-      id: 'commande',
-      emoji: '🛒',
-      name: 'Sama Commande',
-      tagline: 'Shopping en ligne',
-      desc: 'Amazon · Temu · Shein · AliExpress\nAchats livrés chez vous',
-      color: AppThemeProvider.amber,
-      isLive: true,
-    ),
+        id: 'commande',
+        emoji: '🛒',
+        name: 'Sama Commande',
+        tagline: 'Shopping en ligne',
+        desc: 'Amazon · Temu · Shein · AliExpress\nAchats livrés chez vous',
+        color: AppThemeProvider.amber,
+        isLive: true),
     _ServiceItem(
-      id: 'achat',
-      emoji: '🏪',
-      name: 'Sama Achat',
-      tagline: 'Achats sur mesure',
-      desc: 'Marchés & boutiques spécialisées\nProduits introuvables en ligne',
-      color: AppThemeProvider.teal,
-      isLive: true,
-    ),
+        id: 'achat',
+        emoji: '🏪',
+        name: 'Sama Achat',
+        tagline: 'Achats sur mesure',
+        desc:
+            'Marchés & boutiques spécialisées\nProduits introuvables en ligne',
+        color: AppThemeProvider.teal,
+        isLive: true),
     _ServiceItem(
-      id: 'maad',
-      emoji: '🌿',
-      name: 'Sama Maad',
-      tagline: 'Vente de Maad',
-      desc: 'Maad frais de qualité\ndirectement depuis le Sénégal',
-      color: Color(0xFF16A34A),
-      isLive: false,
-    ),
+        id: 'maad',
+        emoji: '🌿',
+        name: 'Sama Maad',
+        tagline: 'Vente de Maad',
+        desc: 'Maad frais de qualité\ndirectement depuis le Sénégal',
+        color: Color(0xFF16A34A),
+        isLive: false),
     _ServiceItem(
-      id: 'teranga',
-      emoji: '🥂',
-      name: 'Sama Téranga Apéro',
-      tagline: 'Apéro sénégalais',
-      desc: 'Bissap, Gnamakoudji, Ditax\net spécialités sénégalaises',
-      color: Color(0xFFDC2626),
-      isLive: false,
-    ),
+        id: 'teranga',
+        emoji: '🥂',
+        name: 'Sama Téranga Apéro',
+        tagline: 'Apéro sénégalais',
+        desc: 'Bissap, Gnamakoudji, Ditax\net spécialités sénégalaises',
+        color: Color(0xFFDC2626),
+        isLive: false),
     _ServiceItem(
-      id: 'bestseller',
-      emoji: '⭐',
-      name: 'Sama Best Seller',
-      tagline: 'Articles best seller',
-      desc: 'Sélection des articles\nles plus demandés du moment',
-      color: Color(0xFF7C3AED),
-      isLive: false,
-    ),
+        id: 'bestseller',
+        emoji: '⭐',
+        name: 'Sama Best Seller',
+        tagline: 'Articles best seller',
+        desc: 'Sélection des articles\nles plus demandés du moment',
+        color: Color(0xFF7C3AED),
+        isLive: false),
   ];
 
   Future<void> _wa(BuildContext context, String digits) async {
@@ -95,9 +87,9 @@ class ServicesHubScreen extends StatelessWidget {
     if (await canLaunchUrl(uri)) await launchUrl(uri);
   }
 
-  void _openService(BuildContext context, _ServiceItem service) {
+  void _openService(BuildContext context, _ServiceItem s) {
     Widget screen;
-    switch (service.id) {
+    switch (s.id) {
       case 'gp':
         screen = const LandingScreenSamaServicesInternational();
         break;
@@ -136,17 +128,11 @@ class ServicesHubScreen extends StatelessWidget {
         backgroundColor: Colors.transparent,
         body: SafeArea(
             child: Column(children: [
-          // ── Top bar ─────────────────────────────────────────────────────
           _TopBar(t: t, isLogged: isLogged, isDesktop: isDesktop),
-
-          // ── Corps ───────────────────────────────────────────────────────
           Expanded(
               child: SingleChildScrollView(
             child: Column(children: [
-              // Hero
               _HeroSection(t: t, isDesktop: isDesktop),
-
-              // Grille des services
               Padding(
                 padding: EdgeInsets.symmetric(
                     horizontal: isDesktop ? 48 : 16, vertical: 32),
@@ -162,15 +148,11 @@ class ServicesHubScreen extends StatelessWidget {
                   ]),
                 )),
               ),
-
-              // Bande contacts
               _ContactBand(
                   t: t,
                   onWaFrance: () => _wa(context, _waFrance),
                   onWaDakar: () => _wa(context, _waDakar),
                   onEmail: _openEmail),
-
-              // Footer
               _Footer(t: t),
             ]),
           )),
@@ -179,68 +161,59 @@ class ServicesHubScreen extends StatelessWidget {
     );
   }
 
-  // ── Grille desktop : 3 colonnes ──────────────────────────────────────────
-  Widget _gridDesktop(BuildContext context, AppThemeProvider t) {
-    return Column(children: [
-      Row(
-          children: _services
-              .sublist(0, 3)
-              .map((s) => Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 16, bottom: 16),
-                      child: _ServiceCard(
-                          service: s,
-                          t: t,
-                          onTap: () => _openService(context, s)),
-                    ),
-                  ))
-              .toList()),
-      Row(
-          children: _services
-              .sublist(3, 6)
-              .map((s) => Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 16, bottom: 16),
-                      child: _ServiceCard(
-                          service: s,
-                          t: t,
-                          onTap: () => _openService(context, s)),
-                    ),
-                  ))
-              .toList()),
-    ]);
-  }
+  Widget _gridDesktop(BuildContext context, AppThemeProvider t) =>
+      Column(children: [
+        Row(
+            children: _services
+                .sublist(0, 3)
+                .map((s) => Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 16, bottom: 16),
+                        child: _ServiceCard(
+                            service: s,
+                            t: t,
+                            onTap: () => _openService(context, s)),
+                      ),
+                    ))
+                .toList()),
+        Row(
+            children: _services
+                .sublist(3, 6)
+                .map((s) => Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 16, bottom: 16),
+                        child: _ServiceCard(
+                            service: s,
+                            t: t,
+                            onTap: () => _openService(context, s)),
+                      ),
+                    ))
+                .toList()),
+      ]);
 
-  // ── Grille mobile : 2 colonnes ───────────────────────────────────────────
-  Widget _gridMobile(BuildContext context, AppThemeProvider t) {
-    return Column(
-      children: List.generate((_services.length / 2).ceil(), (row) {
+  Widget _gridMobile(BuildContext context, AppThemeProvider t) => Column(
+          children: List.generate((_services.length / 2).ceil(), (row) {
         final a = _services[row * 2];
         final bIdx = row * 2 + 1;
         final b = bIdx < _services.length ? _services[bIdx] : null;
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-                child: Padding(
-              padding: const EdgeInsets.only(right: 8, bottom: 12),
-              child: _ServiceCard(
-                  service: a, t: t, onTap: () => _openService(context, a)),
-            )),
-            Expanded(
-                child: b != null
-                    ? Padding(
-                        padding: const EdgeInsets.only(left: 8, bottom: 12),
-                        child: _ServiceCard(
-                            service: b,
-                            t: t,
-                            onTap: () => _openService(context, b)))
-                    : const SizedBox()),
-          ],
-        );
-      }),
-    );
-  }
+        return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Expanded(
+              child: Padding(
+            padding: const EdgeInsets.only(right: 8, bottom: 12),
+            child: _ServiceCard(
+                service: a, t: t, onTap: () => _openService(context, a)),
+          )),
+          Expanded(
+              child: b != null
+                  ? Padding(
+                      padding: const EdgeInsets.only(left: 8, bottom: 12),
+                      child: _ServiceCard(
+                          service: b,
+                          t: t,
+                          onTap: () => _openService(context, b)))
+                  : const SizedBox()),
+        ]);
+      }));
 
   Widget _sectionLabel(AppThemeProvider t, String label) => Align(
         alignment: Alignment.centerLeft,
@@ -251,6 +224,112 @@ class ServicesHubScreen extends StatelessWidget {
                 fontSize: 11,
                 letterSpacing: 1.5)),
       );
+}
+
+// ── _ServiceCard ──────────────────────────────────────────────────────────────
+
+class _ServiceCard extends StatelessWidget {
+  final _ServiceItem service;
+  final AppThemeProvider t;
+  final VoidCallback onTap;
+  const _ServiceCard(
+      {required this.service, required this.t, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = service.color;
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+            color: t.bgCard,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: color.withValues(alpha: 0.22)),
+            boxShadow: [
+              BoxShadow(
+                  color: color.withValues(alpha: 0.07),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4))
+            ]),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          // Emoji + badge
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14)),
+              child: Center(
+                  child: Text(service.emoji,
+                      style: const TextStyle(fontSize: 26))),
+            ),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: service.isLive
+                    ? AppThemeProvider.green.withValues(alpha: 0.12)
+                    : color.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: service.isLive
+                      ? AppThemeProvider.green.withValues(alpha: 0.35)
+                      : color.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Text(
+                service.isLive ? "● Disponible" : "Bientôt",
+                style: TextStyle(
+                    color: service.isLive ? AppThemeProvider.green : color,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700),
+              ),
+            ),
+          ]),
+          const SizedBox(height: 14),
+          Text(service.name,
+              style: TextStyle(
+                  color: t.textPrimary,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16)),
+          const SizedBox(height: 3),
+          Text(service.tagline,
+              style: TextStyle(
+                  color: color, fontWeight: FontWeight.w700, fontSize: 12)),
+          const SizedBox(height: 8),
+          Text(service.desc,
+              style: TextStyle(
+                  color: t.textMuted,
+                  fontWeight: FontWeight.w400,
+                  fontSize: 12,
+                  height: 1.5)),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: onTap,
+              style: ElevatedButton.styleFrom(
+                  backgroundColor:
+                      service.isLive ? color : color.withValues(alpha: 0.15),
+                  foregroundColor: service.isLive ? Colors.white : color,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(vertical: 11)),
+              child: Text(
+                service.isLive ? "Découvrir →" : "En savoir plus",
+                style:
+                    const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+              ),
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
 }
 
 // ── Top Bar ───────────────────────────────────────────────────────────────────
@@ -267,7 +346,7 @@ class _TopBar extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 350),
       padding:
-          EdgeInsets.symmetric(horizontal: isDesktop ? 40 : 16, vertical: 12),
+          EdgeInsets.symmetric(horizontal: isDesktop ? 40 : 16, vertical: 10),
       decoration: BoxDecoration(
         color: t.topBarBg,
         border: Border(
@@ -275,88 +354,48 @@ class _TopBar extends StatelessWidget {
                 BorderSide(color: t.border.withValues(alpha: 0.4), width: 1)),
       ),
       child: Row(children: [
-        // ── Logo ──────────────────────────────────────────────────────
-        Row(mainAxisSize: MainAxisSize.min, children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(9),
-              gradient: const LinearGradient(
-                  colors: [AppThemeProvider.appBlue, AppThemeProvider.teal],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight),
-            ),
-            child: const Center(
-                child: FaIcon(FontAwesomeIcons.bagShopping,
-                    color: Colors.white, size: 15)),
-          ),
-          const SizedBox(width: 8),
-          Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: const [
-                Text("SAMA",
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 15,
-                        letterSpacing: 2.0,
-                        height: 1.0)),
-                Text("SERVICES",
-                    style: TextStyle(
-                        color: Colors.white54,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 8,
-                        letterSpacing: 0.8,
-                        height: 1.0)),
-              ]),
-        ]),
+        const SamaTopBarLogo(),
         const Spacer(),
         // Toggle thème
-        Tooltip(
-          message: t.isDark ? "Thème clair" : "Thème sombre",
-          child: GestureDetector(
-            onTap: () => context.read<AppThemeProvider>().toggleTheme(),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(9),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
-              ),
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 250),
-                transitionBuilder: (child, anim) => RotationTransition(
-                    turns: anim,
-                    child: FadeTransition(opacity: anim, child: child)),
-                child: Icon(
-                    t.isDark ? Icons.wb_sunny_outlined : Icons.nightlight_round,
-                    key: ValueKey(t.isDark),
-                    color: t.isDark ? AppThemeProvider.amber : Colors.white,
-                    size: 17),
-              ),
+        GestureDetector(
+          onTap: () => context.read<AppThemeProvider>().toggleTheme(),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
+            ),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              transitionBuilder: (child, anim) => RotationTransition(
+                  turns: anim,
+                  child: FadeTransition(opacity: anim, child: child)),
+              child: Icon(
+                  t.isDark ? Icons.wb_sunny_outlined : Icons.nightlight_round,
+                  key: ValueKey(t.isDark),
+                  color: t.isDark ? AppThemeProvider.amber : Colors.white,
+                  size: 16),
             ),
           ),
         ),
-        const SizedBox(width: 8),
-        // ── Actions compactes selon la largeur ────────────────────────
+        const SizedBox(width: 6),
+        // Boutons auth — compacts sur mobile
         if (isLogged) ...[
           if (!isDesktop)
-            // Mobile : icône seule
             IconButton(
               icon: const Icon(Icons.dashboard_outlined,
                   color: Colors.white, size: 20),
               tooltip: "Mon espace",
               onPressed: () => Navigator.pushNamed(context, '/home'),
               padding: const EdgeInsets.all(6),
-              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+              constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
             )
           else
             ElevatedButton.icon(
-              icon: const Icon(Icons.dashboard_outlined, size: 15),
+              icon: const Icon(Icons.dashboard_outlined, size: 14),
               label: const Text("Mon espace",
                   style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
               style: ElevatedButton.styleFrom(
@@ -364,20 +403,19 @@ class _TopBar extends StatelessWidget {
                   foregroundColor: Colors.white,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(9)),
+                      borderRadius: BorderRadius.circular(8)),
                   padding:
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 9)),
               onPressed: () => Navigator.pushNamed(context, '/home'),
             ),
         ] else ...[
           if (!isDesktop) ...[
-            // Mobile : icônes seules
             IconButton(
               icon: const Icon(Icons.login, color: Colors.white, size: 20),
               tooltip: "Connexion",
               onPressed: () => Navigator.pushNamed(context, '/login'),
               padding: const EdgeInsets.all(6),
-              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+              constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
             ),
             IconButton(
               icon: const Icon(Icons.person_add_alt_1_outlined,
@@ -385,7 +423,7 @@ class _TopBar extends StatelessWidget {
               tooltip: "Créer un compte",
               onPressed: () => Navigator.pushNamed(context, '/signup'),
               padding: const EdgeInsets.all(6),
-              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+              constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
             ),
           ] else ...[
             OutlinedButton(
@@ -396,7 +434,7 @@ class _TopBar extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(9)),
+                    borderRadius: BorderRadius.circular(8)),
               ),
               child: const Text("Connexion",
                   style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
@@ -411,7 +449,7 @@ class _TopBar extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(9)),
+                    borderRadius: BorderRadius.circular(8)),
               ),
               child: const Text("S'inscrire",
                   style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
@@ -490,161 +528,8 @@ class _HeroSection extends StatelessWidget {
                 fontSize: isDesktop ? 16 : 13,
                 height: 1.6),
           ),
-          const SizedBox(height: 24),
-          // Tarifs rapides
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
-                border:
-                    Border.all(color: Colors.white.withValues(alpha: 0.25))),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.local_offer_outlined,
-                    color: AppThemeProvider.amber, size: 14),
-                const SizedBox(width: 8),
-                Text(
-                  "Tarifs : 10€/kg · 65DH/kg · 6 500 FCFA/kg  —  ",
-                  style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.85),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600),
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                      color: AppThemeProvider.amberLight,
-                      borderRadius: BorderRadius.circular(8)),
-                  child: const Text("–50% WEB",
-                      style: TextStyle(
-                          color: Color(0xFF7A4F00),
-                          fontWeight: FontWeight.w800,
-                          fontSize: 11)),
-                ),
-              ],
-            ),
-          ),
         ]),
       )),
-    );
-  }
-}
-
-// ── Service Card ──────────────────────────────────────────────────────────────
-
-class _ServiceCard extends StatelessWidget {
-  final _ServiceItem service;
-  final AppThemeProvider t;
-  final VoidCallback onTap;
-  const _ServiceCard(
-      {required this.service, required this.t, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final color = service.color;
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: t.bgCard,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: color.withValues(alpha: 0.25), width: 1.5),
-          boxShadow: [
-            BoxShadow(
-                color: color.withValues(alpha: 0.08),
-                blurRadius: 16,
-                offset: const Offset(0, 6)),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Emoji + badge statut
-            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(14)),
-                child: Center(
-                  child:
-                      Text(service.emoji, style: const TextStyle(fontSize: 26)),
-                ),
-              ),
-              const Spacer(),
-              // Badge live / bientôt
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: service.isLive
-                      ? AppThemeProvider.green.withValues(alpha: 0.12)
-                      : color.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: service.isLive
-                        ? AppThemeProvider.green.withValues(alpha: 0.35)
-                        : color.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Text(
-                  service.isLive ? "● Disponible" : "Bientôt",
-                  style: TextStyle(
-                      color: service.isLive ? AppThemeProvider.green : color,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700),
-                ),
-              ),
-            ]),
-            const SizedBox(height: 14),
-            // Nom
-            Text(service.name,
-                style: TextStyle(
-                    color: t.textPrimary,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 16)),
-            const SizedBox(height: 3),
-            // Tagline
-            Text(service.tagline,
-                style: TextStyle(
-                    color: color, fontWeight: FontWeight.w700, fontSize: 12)),
-            const SizedBox(height: 8),
-            // Description
-            Text(service.desc,
-                style: TextStyle(
-                    color: t.textMuted,
-                    fontWeight: FontWeight.w400,
-                    fontSize: 12,
-                    height: 1.5)),
-            const SizedBox(height: 16),
-            // Bouton
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: onTap,
-                style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        service.isLive ? color : color.withValues(alpha: 0.15),
-                    foregroundColor: service.isLive ? Colors.white : color,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                    padding: const EdgeInsets.symmetric(vertical: 11)),
-                child: Text(
-                  service.isLive ? "Découvrir →" : "En savoir plus",
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w800, fontSize: 13),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -681,38 +566,78 @@ class _ContactBand extends StatelessWidget {
             runSpacing: 12,
             alignment: WrapAlignment.center,
             children: [
-              _contactChip(
+              _chip(
                   const FaIcon(FontAwesomeIcons.whatsapp,
                       color: AppThemeProvider.green, size: 17),
                   AppThemeProvider.green,
                   "WhatsApp France",
                   "+33 76 891 30 74",
-                  onWaFrance,
-                  t),
-              _contactChip(
+                  onWaFrance),
+              _chip(
                   const FaIcon(FontAwesomeIcons.whatsapp,
                       color: AppThemeProvider.green, size: 17),
                   AppThemeProvider.green,
                   "WhatsApp Dakar",
                   "+221 78 304 28 38",
-                  onWaDakar,
-                  t),
-              _contactChip(
+                  onWaDakar),
+              _chip(
                   const Icon(Icons.email_outlined,
                       color: AppThemeProvider.appBlue, size: 17),
                   AppThemeProvider.appBlue,
                   "Email",
                   "tech@ngom-holding.com",
-                  onEmail,
-                  t),
+                  onEmail),
+            ]),
+        const SizedBox(height: 20),
+        Divider(color: t.border.withValues(alpha: 0.5)),
+        const SizedBox(height: 16),
+        Text("Accédez à votre espace",
+            style: TextStyle(
+                color: t.textMuted,
+                fontWeight: FontWeight.w700,
+                fontSize: 11,
+                letterSpacing: 1.5)),
+        const SizedBox(height: 12),
+        Wrap(
+            spacing: 12,
+            runSpacing: 10,
+            alignment: WrapAlignment.center,
+            children: [
+              OutlinedButton.icon(
+                icon: const Icon(Icons.login_outlined, size: 15),
+                label: const Text("Connexion",
+                    style: TextStyle(fontWeight: FontWeight.w700)),
+                style: OutlinedButton.styleFrom(
+                    foregroundColor: AppThemeProvider.appBlue,
+                    side: BorderSide(
+                        color: AppThemeProvider.appBlue.withValues(alpha: 0.5)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 11)),
+                onPressed: () => Navigator.pushNamed(context, '/login'),
+              ),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.person_add_alt_1_outlined, size: 15),
+                label: const Text("Créer un compte",
+                    style: TextStyle(fontWeight: FontWeight.w800)),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: AppThemeProvider.appBlue,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 11)),
+                onPressed: () => Navigator.pushNamed(context, '/signup'),
+              ),
             ]),
       ]),
     );
   }
 
-  // ✅ Widget icon au lieu de IconData — compatible FaIcon et Icon
-  Widget _contactChip(Widget icon, Color color, String label, String sub,
-          VoidCallback onTap, AppThemeProvider t) =>
+  Widget _chip(Widget icon, Color color, String label, String sub,
+          VoidCallback onTap) =>
       GestureDetector(
         onTap: onTap,
         child: Container(
@@ -791,23 +716,18 @@ class _Footer extends StatelessWidget {
   }
 }
 
-// ── Modèle de données ─────────────────────────────────────────────────────────
+// ── Modèle ────────────────────────────────────────────────────────────────────
 
 class _ServiceItem {
-  final String id;
-  final String emoji;
-  final String name;
-  final String tagline;
-  final String desc;
+  final String id, emoji, name, tagline, desc;
   final Color color;
   final bool isLive;
-  const _ServiceItem({
-    required this.id,
-    required this.emoji,
-    required this.name,
-    required this.tagline,
-    required this.desc,
-    required this.color,
-    required this.isLive,
-  });
+  const _ServiceItem(
+      {required this.id,
+      required this.emoji,
+      required this.name,
+      required this.tagline,
+      required this.desc,
+      required this.color,
+      required this.isLive});
 }
