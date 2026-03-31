@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../providers/app_theme_provider.dart';
+import '../widgets/sama_logo_widget.dart';
 import '../services/auth_service.dart';
 import '../services/departure_countdown_service.dart';
 import '../models/logged_user.dart';
@@ -337,7 +338,7 @@ class _HomeScreenState extends State<HomeScreen> {
           bool isAdmin) =>
       AnimatedContainer(
         duration: const Duration(milliseconds: 350),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: t.topBarBg,
           border: Border(
@@ -345,106 +346,67 @@ class _HomeScreenState extends State<HomeScreen> {
                   BorderSide(color: t.border.withValues(alpha: 0.4), width: 1)),
         ),
         child: Row(children: [
+          // ✅ Logo SVG
           _logo(),
           const Spacer(),
-          IconButton(
-              icon: Icon(Icons.notifications_outlined,
-                  color: Colors.white.withValues(alpha: 0.90), size: 20),
-              onPressed: () => Navigator.push(
+          // Notifications
+          _topBtn(
+              Icons.notifications_outlined,
+              () => Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (_) => const NotificationsScreen())),
-              splashRadius: 20),
+                      builder: (_) => const NotificationsScreen()))),
+          // Debug (admin seulement)
           if (isAdmin)
-            IconButton(
-                icon: Icon(Icons.bug_report_outlined,
-                    color: Colors.white.withValues(alpha: 0.45), size: 20),
-                onPressed: () {
-                  printSupabaseTokens();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Token imprimé.")));
-                },
-                splashRadius: 20),
-          IconButton(
-              icon: Icon(Icons.person_outline,
-                  color: Colors.white.withValues(alpha: 0.90), size: 20),
-              onPressed: () => Navigator.of(context).pushNamed('/profile'),
-              splashRadius: 20),
-          Tooltip(
-            message: t.isDark ? "Thème clair" : "Thème sombre",
-            child: GestureDetector(
-              onTap: () => context.read<AppThemeProvider>().toggleTheme(),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(9),
-                  border:
-                      Border.all(color: Colors.white.withValues(alpha: 0.28)),
-                ),
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 250),
-                  transitionBuilder: (child, anim) => RotationTransition(
-                      turns: anim,
-                      child: FadeTransition(opacity: anim, child: child)),
-                  child: Icon(
-                      t.isDark
-                          ? Icons.wb_sunny_outlined
-                          : Icons.nightlight_round,
-                      key: ValueKey(t.isDark),
-                      color: t.isDark ? _amber : Colors.white,
-                      size: 16),
-                ),
+            _topBtn(Icons.bug_report_outlined, () {
+              printSupabaseTokens();
+              ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Token imprimé.")));
+            }, opacity: 0.45),
+          // Profil
+          _topBtn(Icons.person_outline,
+              () => Navigator.of(context).pushNamed('/profile')),
+          // Thème
+          GestureDetector(
+            onTap: () => context.read<AppThemeProvider>().toggleTheme(),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              width: 34,
+              height: 34,
+              margin: const EdgeInsets.only(left: 2),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
+              ),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                transitionBuilder: (child, anim) => RotationTransition(
+                    turns: anim,
+                    child: FadeTransition(opacity: anim, child: child)),
+                child: Icon(
+                    t.isDark ? Icons.wb_sunny_outlined : Icons.nightlight_round,
+                    key: ValueKey(t.isDark),
+                    color: t.isDark ? _amber : Colors.white,
+                    size: 16),
               ),
             ),
           ),
-          const SizedBox(width: 4),
-          IconButton(
-              icon: Icon(Icons.logout,
-                  color: Colors.white.withValues(alpha: 0.75), size: 20),
-              onPressed: () => _logout(context),
-              splashRadius: 20),
+          // Déconnexion
+          _topBtn(Icons.logout, () => _logout(context), opacity: 0.75),
         ]),
       );
 
-  Widget _logo() => Row(children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            gradient: const LinearGradient(
-                colors: [AppThemeProvider.appBlue, AppThemeProvider.teal],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight),
-          ),
-          child: const Center(
-              child: FaIcon(FontAwesomeIcons.bagShopping,
-                  color: Colors.white, size: 15)),
-        ),
-        const SizedBox(width: 10),
-        Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: const [
-              Text("SAMA",
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 15,
-                      letterSpacing: 2.2,
-                      height: 1.0)),
-              Text("SERVICES INTERNATIONAL",
-                  style: TextStyle(
-                      color: Colors.white54,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 8.5,
-                      letterSpacing: 1.0,
-                      height: 1.0)),
-            ]),
-      ]);
+  Widget _topBtn(IconData icon, VoidCallback onTap, {double opacity = 0.90}) =>
+      IconButton(
+        icon: Icon(icon,
+            color: Colors.white.withValues(alpha: opacity), size: 20),
+        onPressed: onTap,
+        padding: const EdgeInsets.all(6),
+        constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+      );
+
+  Widget _logo() => const SamaTopBarLogo();
 
   // ── TICKER ────────────────────────────────────────────────────────────────
   Widget _ticker(AppThemeProvider t, DepartureCountdownService svc) {

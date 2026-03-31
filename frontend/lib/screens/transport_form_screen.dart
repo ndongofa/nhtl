@@ -91,12 +91,12 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
       // ── Nouveau formulaire : auto-remplissage depuis le profil connecté ──
       _deviseController.text = 'EUR';
       final meta = AuthService.userMetadata;
-      if (meta != null) {
-        _nomController.text = meta['nom']?.toString().trim() ?? '';
-        _prenomController.text = meta['prenom']?.toString().trim() ?? '';
-        _emailController.text = meta['email']?.toString().trim() ?? '';
-        // phoneE164 sera géré via PhoneInputField — on stocke pour initialValue
-        _phoneE164 = meta['phone']?.toString().trim();
+      final user = AuthService.currentUser;
+      if (meta != null || user != null) {
+        _nomController.text = meta?['nom']?.toString().trim() ?? '';
+        _prenomController.text = meta?['prenom']?.toString().trim() ?? '';
+        _emailController.text = user?.email?.trim() ?? '';
+        _phoneE164 = user?.phone != null ? '+${user!.phone}' : null;
       }
     }
   }

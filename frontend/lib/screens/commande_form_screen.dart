@@ -124,11 +124,12 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
     } else {
       // ── Nouveau formulaire : auto-remplissage depuis le profil connecté ──
       final meta = AuthService.userMetadata;
-      if (meta != null) {
-        _nomController.text = meta['nom']?.toString().trim() ?? '';
-        _prenomController.text = meta['prenom']?.toString().trim() ?? '';
-        _emailController.text = meta['email']?.toString().trim() ?? '';
-        _phoneE164 = meta['phone']?.toString().trim();
+      final user = AuthService.currentUser;
+      if (meta != null || user != null) {
+        _nomController.text = meta?['nom']?.toString().trim() ?? '';
+        _prenomController.text = meta?['prenom']?.toString().trim() ?? '';
+        _emailController.text = user?.email?.trim() ?? '';
+        _phoneE164 = user?.phone != null ? '+${user!.phone}' : null;
       }
     }
 
