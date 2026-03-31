@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/logged_user.dart';
 import '../models/transport.dart';
@@ -70,36 +71,19 @@ class _TransportTrackingScreenState extends State<TransportTrackingScreen> {
     if (_transport.id == null) return;
     setState(() => _loading = true);
 
-    // 1. Charger depuis l'API
+    // Charger depuis le backend (admin = endpoint admin, sinon user)
     Transport? fresh;
     if (_isAdmin) {
       fresh = await _transportSvc.getTransportByIdAdmin(_transport.id!);
     } else {
       fresh = await _transportSvc.getTransportById(_transport.id!);
     }
-    if (fresh != null && mounted) {
-      setState(() => _transport = fresh!);
-    }
 
-    // 2. Si les champs postaux sont absents dans la réponse API,
-    //    les compléter depuis le cache local (SharedPreferences)
-    if (_transport.id != null && !_transport.isDeposePoste) {
-      final cached = await PostalCacheService.getTransport(_transport.id!);
-      if (cached != null && mounted) {
-        setState(() {
-          _transport = _transport.copyWith(
-            photoColisUrl: cached['photoColisUrl'] as String?,
-            photoBordereauUrl: cached['photoBordereauUrl'] as String?,
-            numeroBordereau: cached['numeroBordereau'] as String?,
-            deposePosteAt:
-                DateTime.tryParse(cached['deposePosteAt']?.toString() ?? ''),
-            statutSuivi: 'PRET_RECUPERATION',
-          );
-        });
-      }
-    }
-
-    if (mounted) setState(() => _loading = false);
+    if (mounted)
+      setState(() {
+        if (fresh != null) _transport = fresh!;
+        _loading = false;
+      });
   }
 
   // ── Bottom sheet upload postal ─────────────────────────────────────────────
@@ -354,7 +338,7 @@ class _PostalSection extends StatelessWidget {
           ),
         ]),
 
-        // ── Numéro de bordereau ────────────────────────────────────────
+        // ── Numéro de bordereau + bouton suivi La Poste ──────────────
         if (transport.numeroBordereau != null &&
             transport.numeroBordereau!.isNotEmpty) ...[
           const SizedBox(height: 14),
@@ -368,20 +352,49 @@ class _PostalSection extends StatelessWidget {
               Icon(Icons.local_post_office_outlined,
                   color: AppThemeProvider.appBlue, size: 18),
               const SizedBox(width: 10),
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Numéro de suivi postal',
-                    style: TextStyle(
-                        color: t.textMuted,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600)),
-                Text(transport.numeroBordereau!,
-                    style: TextStyle(
-                        color: t.textPrimary,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 15,
-                        letterSpacing: 1)),
-              ]),
+              Expanded(
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                    Text('Numéro de suivi postal',
+                        style: TextStyle(
+                            color: t.textMuted,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600)),
+                    Text(transport.numeroBordereau!,
+                        style: TextStyle(
+                            color: t.textPrimary,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15,
+                            letterSpacing: 1)),
+                  ])),
             ]),
+          ),
+          const SizedBox(height: 10),
+          // ✅ Bouton suivi La Poste — ouvre le tracking avec le numéro pré-rempli
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              icon: const Text('🇫🇷', style: TextStyle(fontSize: 16)),
+              label: const Text('Suivre sur laposte.fr',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppThemeProvider.appBlue,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+              onPressed: () async {
+                final numero = transport.numeroBordereau!.trim();
+                final uri = Uri.parse(
+                    'https://www.laposte.fr/outils/suivre-vos-envois?code=$numero');
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                }
+              },
+            ),
           ),
         ],
 
@@ -616,7 +629,8 @@ class _PostalUploadSheetState extends State<_PostalUploadSheet> {
     }
 
     setState(() => _status = 'Enregistrement…');
-    final ok = await widget.service.savePostalTransport(
+    // ✅ Le PATCH retourne le JSON backend avec deposePosteAt confirmé
+    final result = await widget.service.savePostalTransport(
       id: widget.transport.id!,
       photoColisUrl: colisUrl,
       photoBordereauUrl: bordereauUrl,
@@ -625,12 +639,17 @@ class _PostalUploadSheetState extends State<_PostalUploadSheet> {
 
     setState(() => _uploading = false);
 
-    if (ok) {
+    if (result != null) {
+      // Utiliser deposePosteAt retourné par le backend (source of truth)
+      final deposePosteAt = result['deposePosteAt'] != null
+          ? DateTime.tryParse(result['deposePosteAt'].toString()) ??
+              DateTime.now()
+          : DateTime.now();
       final updated = widget.transport.copyWith(
         photoColisUrl: colisUrl,
         photoBordereauUrl: bordereauUrl,
         numeroBordereau: _bordereauCtrl.text.trim(),
-        deposePosteAt: DateTime.now(),
+        deposePosteAt: deposePosteAt,
         statutSuivi: 'PRET_RECUPERATION',
       );
       if (mounted) Navigator.pop(context);
