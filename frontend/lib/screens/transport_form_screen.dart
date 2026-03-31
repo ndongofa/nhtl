@@ -1,9 +1,12 @@
+// lib/screens/transport_form_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
 import '../models/transport.dart';
 import '../services/transport_service.dart';
+import '../services/auth_service.dart';
 import '../widgets/phone_input_field.dart';
 
 class TransportFormScreen extends StatefulWidget {
@@ -15,7 +18,6 @@ class TransportFormScreen extends StatefulWidget {
 }
 
 class _TransportFormScreenState extends State<TransportFormScreen> {
-  // ── Palette style signup ──────────────────────────────────────────────────
   static const Color _appBlue = Color(0xFF2296F3);
   static const Color _bgLight = Color(0xFFF4F8FF);
   static const Color _surface = Colors.white;
@@ -68,6 +70,7 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
     super.initState();
     final t = widget.transport;
     if (t != null) {
+      // ── Mode édition : remplir depuis l'objet existant ──────────────
       _nomController.text = t.nom;
       _prenomController.text = t.prenom;
       _phoneE164 = t.numeroTelephone;
@@ -85,7 +88,16 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
       _deviseController.text = t.devise;
       _statut = t.statut;
     } else {
+      // ── Nouveau formulaire : auto-remplissage depuis le profil connecté ──
       _deviseController.text = 'EUR';
+      final meta = AuthService.userMetadata;
+      if (meta != null) {
+        _nomController.text = meta['nom']?.toString().trim() ?? '';
+        _prenomController.text = meta['prenom']?.toString().trim() ?? '';
+        _emailController.text = meta['email']?.toString().trim() ?? '';
+        // phoneE164 sera géré via PhoneInputField — on stocke pour initialValue
+        _phoneE164 = meta['phone']?.toString().trim();
+      }
     }
   }
 
@@ -137,8 +149,10 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
         description: _descriptionController.text.trim(),
         poids: _poidsController.text.trim().isEmpty
             ? null
-            : double.tryParse(_poidsController.text.trim()),
-        valeurEstimee: double.parse(_valeurEstimeeController.text.trim()),
+            : double.tryParse(
+                _poidsController.text.trim().replaceAll(',', '.')),
+        valeurEstimee: double.parse(
+            _valeurEstimeeController.text.trim().replaceAll(',', '.')),
         devise: _deviseController.text.trim().isEmpty
             ? 'EUR'
             : _deviseController.text.trim(),
@@ -188,7 +202,7 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
             child: Form(
               key: _formKey,
               child: Column(children: [
-                // ── Section 1 : Expéditeur ────────────────────────────────
+                // ── Section 1 : Expéditeur ──────────────────────────────────
                 _card(children: [
                   _sectionHeader(Icons.person_outline, _appBlue, "Expéditeur",
                       "Informations de la personne qui envoie"),
@@ -205,9 +219,11 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
                             hint: "Ex : Mamadou", required: true)),
                   ]),
                   const SizedBox(height: 14),
+                  // ✅ PhoneInputField avec initialValue depuis le profil
                   PhoneInputField(
                     label: 'Téléphone',
                     initialCountryCode: 'SN',
+                    initialValue: _phoneE164,
                     onChanged: (e164) => setState(() => _phoneE164 = e164),
                   ),
                   const SizedBox(height: 14),
@@ -242,7 +258,7 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
 
                 const SizedBox(height: 16),
 
-                // ── Section 2 : Destinataire ──────────────────────────────
+                // ── Section 2 : Destinataire ────────────────────────────────
                 _card(children: [
                   _sectionHeader(Icons.place_outlined, _teal, "Destinataire",
                       "Informations de livraison"),
@@ -268,7 +284,7 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
 
                 const SizedBox(height: 16),
 
-                // ── Section 3 : Marchandise ───────────────────────────────
+                // ── Section 3 : Marchandise ─────────────────────────────────
                 _card(children: [
                   _sectionHeader(
                       Icons.inventory_2_outlined,
@@ -295,7 +311,7 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
                     Expanded(
                         child: _field(_poidsController, "Poids estimé (kg)",
                             Icons.scale_outlined,
-                            hint: "Ex : 5.5",
+                            hint: "Ex : 5,5",
                             required: false,
                             keyboardType: const TextInputType.numberWithOptions(
                                 decimal: true))),
@@ -308,7 +324,8 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
                             keyboardType: const TextInputType.numberWithOptions(
                                 decimal: true), validator: (v) {
                       if (v == null || v.trim().isEmpty) return 'Requis';
-                      final val = double.tryParse(v.trim());
+                      final val =
+                          double.tryParse(v.trim().replaceAll(',', '.'));
                       return (val == null || val <= 0)
                           ? 'Valeur invalide'
                           : null;
@@ -328,7 +345,7 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
 
                 const SizedBox(height: 16),
 
-                // ── Section 4 : Statut (édition uniquement) ───────────────
+                // ── Section 4 : Statut (édition uniquement) ─────────────────
                 if (isEdit)
                   _card(children: [
                     _sectionHeader(Icons.track_changes_outlined, _green,
@@ -342,7 +359,7 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
 
                 if (isEdit) const SizedBox(height: 16),
 
-                // ── Bouton soumettre ──────────────────────────────────────
+                // ── Bouton soumettre ────────────────────────────────────────
                 SizedBox(
                   width: double.infinity,
                   height: 52,
@@ -384,49 +401,48 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
     );
   }
 
-  // ── Helpers UI ────────────────────────────────────────────────────────────
+  // ── Helpers UI ─────────────────────────────────────────────────────────────
 
-  Widget _card({required List<Widget> children}) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: _surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _border),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 4))
-        ],
-      ),
-      child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start, children: children),
-    );
-  }
+  Widget _card({required List<Widget> children}) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: _surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _border),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 4))
+          ],
+        ),
+        child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start, children: children),
+      );
 
   Widget _sectionHeader(
-      IconData icon, Color color, String title, String subtitle) {
-    return Row(children: [
-      Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(12)),
-          child: Icon(icon, color: color, size: 20)),
-      const SizedBox(width: 12),
-      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(title,
-            style: const TextStyle(
-                color: _textMain, fontWeight: FontWeight.w800, fontSize: 15)),
-        Text(subtitle,
-            style: const TextStyle(
-                color: _textMuted, fontWeight: FontWeight.w400, fontSize: 12)),
-      ]),
-    ]);
-  }
+          IconData icon, Color color, String title, String subtitle) =>
+      Row(children: [
+        Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(12)),
+            child: Icon(icon, color: color, size: 20)),
+        const SizedBox(width: 12),
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title,
+              style: const TextStyle(
+                  color: _textMain, fontWeight: FontWeight.w800, fontSize: 15)),
+          Text(subtitle,
+              style: const TextStyle(
+                  color: _textMuted,
+                  fontWeight: FontWeight.w400,
+                  fontSize: 12)),
+        ]),
+      ]);
 
   Widget _field(
     TextEditingController controller,

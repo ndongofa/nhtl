@@ -1,9 +1,13 @@
+// lib/screens/commande_form_screen.dart
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
 import '../models/commande.dart';
 import '../services/commande_service.dart';
+import '../services/auth_service.dart';
 import '../widgets/phone_input_field.dart';
 
 class CommandeFormScreen extends StatefulWidget {
@@ -15,7 +19,6 @@ class CommandeFormScreen extends StatefulWidget {
 }
 
 class _CommandeFormScreenState extends State<CommandeFormScreen> {
-  // ── Palette style signup ──────────────────────────────────────────────────
   static const Color _appBlue = Color(0xFF2296F3);
   static const Color _bgLight = Color(0xFFF4F8FF);
   static const Color _surface = Colors.white;
@@ -64,8 +67,6 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
     'XOF',
     'CAD'
   ];
-
-  // Labels user-friendly pour les plateformes
   static const Map<String, String> _plateformeLabels = {
     'AMAZON': '📦 Amazon',
     'TEMU': '🛍️ Temu',
@@ -76,11 +77,35 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
     'AUTRE': '🌐 Autre site',
   };
 
+  // ✅ Normalise virgule → point et parse en double
+  double? _parseDecimal(String raw) =>
+      double.tryParse(raw.trim().replaceAll(',', '.'));
+
+  // ✅ Recalcule le total dès que qté ou prix unitaire change
+  void _recalcTotal() {
+    final q = _parseDecimal(_quantiteController.text);
+    final p = _parseDecimal(_prixUnitaireController.text);
+    if (q != null && p != null && q > 0 && p > 0) {
+      final total = q * p;
+      // Affiche sans décimale inutile : 2 × 14.5 → "29.0" → "29" ; 2.5 × 4 → "10"
+      final formatted = total == total.truncateToDouble()
+          ? total.toInt().toString()
+          : total.toStringAsFixed(2);
+      if (_prixTotalController.text != formatted) {
+        _prixTotalController.text = formatted;
+        // Positionner le curseur à la fin
+        _prixTotalController.selection =
+            TextSelection.fromPosition(TextPosition(offset: formatted.length));
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     final c = widget.commande;
     if (c != null) {
+      // ── Mode édition : remplir depuis l'objet existant ──────────────
       _nomController.text = c.nom ?? '';
       _prenomController.text = c.prenom ?? '';
       _phoneE164 = c.numeroTelephone;
@@ -96,7 +121,20 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
       _notesSpecialesController.text = c.notesSpeciales ?? '';
       _plateforme = c.plateforme ?? 'AMAZON';
       _devise = c.devise ?? 'EUR';
+    } else {
+      // ── Nouveau formulaire : auto-remplissage depuis le profil connecté ──
+      final meta = AuthService.userMetadata;
+      if (meta != null) {
+        _nomController.text = meta['nom']?.toString().trim() ?? '';
+        _prenomController.text = meta['prenom']?.toString().trim() ?? '';
+        _emailController.text = meta['email']?.toString().trim() ?? '';
+        _phoneE164 = meta['phone']?.toString().trim();
+      }
     }
+
+    // ✅ Listeners calcul automatique du total
+    _quantiteController.addListener(_recalcTotal);
+    _prixUnitaireController.addListener(_recalcTotal);
   }
 
   @override
@@ -127,6 +165,10 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
     }
     setState(() => _isLoading = true);
     try {
+      final qte = int.parse(_quantiteController.text.trim());
+      final prix = _parseDecimal(_prixUnitaireController.text) ?? 0;
+      final total = _parseDecimal(_prixTotalController.text) ?? 0;
+
       final data = Commande(
         id: widget.commande?.id,
         nom: _nomController.text.trim(),
@@ -141,9 +183,9 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
         plateforme: _plateforme,
         lienProduit: _lienProduitController.text.trim(),
         descriptionCommande: _descriptionCommandeController.text.trim(),
-        quantite: int.parse(_quantiteController.text.trim()),
-        prixUnitaire: double.parse(_prixUnitaireController.text.trim()),
-        prixTotal: double.parse(_prixTotalController.text.trim()),
+        quantite: qte,
+        prixUnitaire: prix,
+        prixTotal: total,
         devise: _devise,
         notesSpeciales: _notesSpecialesController.text.trim().isEmpty
             ? null
@@ -210,9 +252,11 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
                             hint: "Ex : Fatou", required: true)),
                   ]),
                   const SizedBox(height: 14),
+                  // ✅ PhoneInputField avec initialValue depuis le profil
                   PhoneInputField(
                     label: 'Téléphone',
                     initialCountryCode: 'SN',
+                    initialValue: _phoneE164,
                     onChanged: (e164) => setState(() => _phoneE164 = e164),
                   ),
                   const SizedBox(height: 14),
@@ -317,27 +361,19 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
                   ]),
                   const SizedBox(height: 14),
                   Row(children: [
+                    // ✅ Prix unitaire — virgule acceptée
                     Expanded(
-                        child: _field(_prixUnitaireController, "Prix unitaire",
-                            Icons.sell_outlined,
-                            hint: "Ex : 29.99",
-                            keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true), validator: (v) {
-                      if (v == null || v.trim().isEmpty) return 'Requis';
-                      final p = double.tryParse(v.trim());
-                      return (p == null || p <= 0) ? 'Invalide' : null;
-                    })),
+                        child: _decimalField(_prixUnitaireController,
+                            "Prix unitaire", Icons.sell_outlined,
+                            hint: "Ex : 29,99")),
                     const SizedBox(width: 12),
+                    // ✅ Prix total — calculé automatiquement, toujours éditable
                     Expanded(
-                        child: _field(_prixTotalController, "Prix total",
+                        child: _decimalField(_prixTotalController, "Prix total",
                             Icons.calculate_outlined,
-                            hint: "Ex : 59.98",
-                            keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true), validator: (v) {
-                      if (v == null || v.trim().isEmpty) return 'Requis';
-                      final p = double.tryParse(v.trim());
-                      return (p == null || p <= 0) ? 'Invalide' : null;
-                    })),
+                            hint: "Calculé auto",
+                            suffix: const Icon(Icons.auto_fix_high,
+                                size: 14, color: Color(0xFF22C55E)))),
                   ]),
                 ]),
 
@@ -350,8 +386,7 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
                   const SizedBox(height: 16),
                   _field(_notesSpecialesController, "Notes spéciales",
                       Icons.notes_outlined,
-                      hint:
-                          "Ex : Emballage cadeau, livraison urgente, variante spécifique...",
+                      hint: "Ex : Emballage cadeau, livraison urgente...",
                       required: false,
                       maxLines: 3),
                 ]),
@@ -402,49 +437,48 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
     );
   }
 
-  // ── Helpers UI ────────────────────────────────────────────────────────────
+  // ── Helpers UI ─────────────────────────────────────────────────────────────
 
-  Widget _card({required List<Widget> children}) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: _surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _border),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 4))
-        ],
-      ),
-      child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start, children: children),
-    );
-  }
+  Widget _card({required List<Widget> children}) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: _surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _border),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 4))
+          ],
+        ),
+        child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start, children: children),
+      );
 
   Widget _sectionHeader(
-      IconData icon, Color color, String title, String subtitle) {
-    return Row(children: [
-      Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(12)),
-          child: Icon(icon, color: color, size: 20)),
-      const SizedBox(width: 12),
-      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(title,
-            style: const TextStyle(
-                color: _textMain, fontWeight: FontWeight.w800, fontSize: 15)),
-        Text(subtitle,
-            style: const TextStyle(
-                color: _textMuted, fontWeight: FontWeight.w400, fontSize: 12)),
-      ]),
-    ]);
-  }
+          IconData icon, Color color, String title, String subtitle) =>
+      Row(children: [
+        Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(12)),
+            child: Icon(icon, color: color, size: 20)),
+        const SizedBox(width: 12),
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title,
+              style: const TextStyle(
+                  color: _textMain, fontWeight: FontWeight.w800, fontSize: 15)),
+          Text(subtitle,
+              style: const TextStyle(
+                  color: _textMuted,
+                  fontWeight: FontWeight.w400,
+                  fontSize: 12)),
+        ]),
+      ]);
 
   Widget _field(
     TextEditingController controller,
@@ -491,6 +525,56 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
               ? (v) =>
                   (v == null || v.trim().isEmpty) ? 'Ce champ est requis' : null
               : null),
+    );
+  }
+
+  // ✅ Champ numérique décimal : accepte virgule ET point, valide les deux
+  Widget _decimalField(
+    TextEditingController controller,
+    String label,
+    IconData icon, {
+    String? hint,
+    Widget? suffix,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      // ✅ Autorise chiffres, point, virgule uniquement
+      inputFormatters: [
+        FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+      ],
+      style: const TextStyle(
+          color: _textMain, fontWeight: FontWeight.w500, fontSize: 14),
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        labelStyle: const TextStyle(
+            color: _textMuted, fontWeight: FontWeight.w500, fontSize: 14),
+        hintStyle: const TextStyle(color: Color(0xFFB0BBCC), fontSize: 13),
+        prefixIcon: Icon(icon, color: _appBlue, size: 18),
+        suffixIcon: suffix,
+        filled: true,
+        fillColor: _bgLight,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _border)),
+        enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _border)),
+        focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _appBlue, width: 1.8)),
+        errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.red)),
+      ),
+      validator: (v) {
+        if (v == null || v.trim().isEmpty) return 'Requis';
+        final p = _parseDecimal(v);
+        return (p == null || p <= 0) ? 'Invalide' : null;
+      },
     );
   }
 
