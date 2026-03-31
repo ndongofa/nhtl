@@ -100,7 +100,12 @@ public class CommandeService {
         return commandeRepo.findById(id).filter(c -> c.getUserId().equals(userId)).map(this::convertToDTO);
     }
 
-    public boolean deleteCommandeArchive(Long id, String userId) {
+    // ── GET par ID (admin) ───────────────────────────────────────────────────
+    public Optional<CommandeDTO> getCommandeByIdAndAdmin(Long id) {
+        return commandeRepo.findById(id).map(this::convertToDTO);
+    }
+
+        public boolean deleteCommandeArchive(Long id, String userId) {
         Optional<Commande> opt = commandeRepo.findById(id);
         if (opt.isPresent() && opt.get().getUserId().equals(userId) && Boolean.TRUE.equals(opt.get().getArchived())) {
             commandeRepo.deleteById(id);

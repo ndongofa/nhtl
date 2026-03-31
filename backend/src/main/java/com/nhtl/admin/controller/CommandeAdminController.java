@@ -1,7 +1,7 @@
 package com.nhtl.admin.controller;
 
-import com.nhtl.dto.TransportDTO;
-import com.nhtl.services.TransportService;
+import com.nhtl.dto.CommandeDTO;
+import com.nhtl.services.CommandeService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -11,33 +11,33 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Endpoints admin pour les transports.
- * GET /api/admin/transports        → tous les transports
- * GET /api/admin/transports/{id}   → un transport par ID (avec champs postaux)
- * PATCH /api/admin/transports/{id}/statut → statut administratif
+ * Endpoints admin pour les commandes.
+ * GET /api/admin/commandes        → toutes les commandes
+ * GET /api/admin/commandes/{id}   → une commande par ID (avec champs postaux)
+ * PATCH /api/admin/commandes/{id}/statut → statut administratif
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/admin/transports")
+@RequestMapping("/api/admin/commandes")
 @PreAuthorize("hasRole('ADMIN')")
-public class TransportAdminController {
+public class CommandeAdminController {
 
-    private final TransportService transportService;
+    private final CommandeService commandeService;
 
-    public TransportAdminController(TransportService transportService) {
-        this.transportService = transportService;
+    public CommandeAdminController(CommandeService commandeService) {
+        this.commandeService = commandeService;
     }
 
     // ── GET tous ──────────────────────────────────────────────────────────────
 
     @GetMapping
-    public ResponseEntity<List<TransportDTO>> getAll() {
-        return ResponseEntity.ok(transportService.getAllTransports());
+    public ResponseEntity<List<CommandeDTO>> getAll() {
+        return ResponseEntity.ok(commandeService.getAllCommandes());
     }
 
     @GetMapping("/all")
-    public ResponseEntity<List<TransportDTO>> getAllAlt() {
-        return ResponseEntity.ok(transportService.getAllTransports());
+    public ResponseEntity<List<CommandeDTO>> getAllAlt() {
+        return ResponseEntity.ok(commandeService.getAllCommandes());
     }
 
     // ── GET par ID ────────────────────────────────────────────────────────────
@@ -45,7 +45,7 @@ public class TransportAdminController {
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getById(@PathVariable Long id) {
-        return transportService.getTransportByIdAndAdmin(id)
+        return commandeService.getCommandeByIdAndAdmin(id)
                 .<ResponseEntity<?>>map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -53,8 +53,8 @@ public class TransportAdminController {
     // ── Archives ──────────────────────────────────────────────────────────────
 
     @GetMapping("/archives")
-    public ResponseEntity<List<TransportDTO>> getArchives() {
-        return ResponseEntity.ok(transportService.getTransportsArchives());
+    public ResponseEntity<List<CommandeDTO>> getArchives() {
+        return ResponseEntity.ok(commandeService.getCommandesArchives());
     }
 
     // ── PATCH statut administratif ────────────────────────────────────────────
@@ -64,7 +64,7 @@ public class TransportAdminController {
             @PathVariable Long id,
             @RequestBody Map<String, String> body) {
         String statut = body.get("statut");
-        TransportDTO updated = transportService.updateStatut(id, statut);
+        CommandeDTO updated = commandeService.updateStatut(id, statut);
         if (updated == null) return ResponseEntity.notFound().build();
         return ResponseEntity.ok(updated);
     }
@@ -73,32 +73,24 @@ public class TransportAdminController {
 
     @PatchMapping("/{id}/archive")
     public ResponseEntity<?> archive(@PathVariable Long id) {
-        boolean ok = transportService.archiveTransport(id);
-        return ok ? ResponseEntity.ok(Map.of("success", true))
-                  : ResponseEntity.badRequest().body(Map.of("error", "Déjà archivé ou introuvable"));
+        CommandeDTO dto = commandeService.archiverCommande(id);
+        return dto != null ? ResponseEntity.ok(dto)
+                : ResponseEntity.badRequest().body(Map.of("error", "Introuvable"));
     }
 
     @PatchMapping("/{id}/unarchive")
     public ResponseEntity<?> unarchive(@PathVariable Long id) {
-        boolean ok = transportService.unarchiveTransport(id);
-        return ok ? ResponseEntity.ok(Map.of("success", true))
-                  : ResponseEntity.badRequest().body(Map.of("error", "Non archivé ou introuvable"));
+        CommandeDTO dto = commandeService.desarchiverCommande(id);
+        return dto != null ? ResponseEntity.ok(dto)
+                : ResponseEntity.badRequest().body(Map.of("error", "Non archivée ou introuvable"));
     }
 
     // ── Suppression ───────────────────────────────────────────────────────────
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(@PathVariable Long id) {
-        boolean ok = transportService.deleteTransportAdmin(id);
+        boolean ok = commandeService.deleteCommandeAdmin(id);
         return ok ? ResponseEntity.ok(Map.of("success", true))
                   : ResponseEntity.notFound().build();
-    }
-
-    // ── Recherche par statut ──────────────────────────────────────────────────
-
-    @GetMapping("/search/statut")
-    public ResponseEntity<List<TransportDTO>> searchByStatut(
-            @RequestParam String statut) {
-        return ResponseEntity.ok(transportService.searchByStatut(statut));
     }
 }
