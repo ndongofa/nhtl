@@ -336,78 +336,83 @@ class CommandeTile extends StatelessWidget {
     final suiviColor = statutSuiviColors[suiviKey] ?? Colors.grey;
     final suiviIcon = statutSuiviIcons[suiviKey] ?? Icons.track_changes;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: _bgCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: adminColor.withValues(alpha: 0.25)),
-        boxShadow: [
-          BoxShadow(
-              color: adminColor.withValues(alpha: 0.06),
-              blurRadius: 10,
-              offset: const Offset(0, 3))
-        ],
-      ),
-      padding: const EdgeInsets.fromLTRB(16, 14, 12, 12),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // ── Infos client ─────────────────────────────────────────────────
-        Text("${commande.nom} ${commande.prenom}",
-            style: const TextStyle(
-                color: _textPrimary,
-                fontWeight: FontWeight.w800,
-                fontSize: 15)),
-        const SizedBox(height: 2),
-        Text(
-            "${commande.plateforme} — ${commande.quantite}x "
-            "${commande.prixTotal.toStringAsFixed(2)} ${commande.devise}",
-            style: const TextStyle(color: _textMuted, fontSize: 13)),
-        Text("→ ${commande.villeLivraison}, ${commande.paysLivraison}",
-            style: const TextStyle(color: _textMuted, fontSize: 12)),
-
-        const SizedBox(height: 10),
-
-        // ── Statut logistique (chip + dropdown) ──────────────────────────
-        _SuiviChip(
-          currentSuivi: suiviKey,
-          suiviColor: suiviColor,
-          suiviIcon: suiviIcon,
-          isAdmin: logged.role == "admin",
-          onSuiviChanged: onStatutSuiviChanged,
+    // ✅ Tap sur la carte → ouvre directement l'écran de suivi
+    return GestureDetector(
+      onTap: onTracking,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        decoration: BoxDecoration(
+          color: _bgCard,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: adminColor.withValues(alpha: 0.25)),
+          boxShadow: [
+            BoxShadow(
+                color: adminColor.withValues(alpha: 0.06),
+                blurRadius: 10,
+                offset: const Offset(0, 3))
+          ],
         ),
+        padding: const EdgeInsets.fromLTRB(16, 14, 12, 12),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          // ── Infos client ─────────────────────────────────────────────────
+          Text("${commande.nom} ${commande.prenom}",
+              style: const TextStyle(
+                  color: _textPrimary,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 15)),
+          const SizedBox(height: 2),
+          Text(
+              "${commande.plateforme} — ${commande.quantite}x "
+              "${commande.prixTotal.toStringAsFixed(2)} ${commande.devise}",
+              style: const TextStyle(color: _textMuted, fontSize: 13)),
+          Text("→ ${commande.villeLivraison}, ${commande.paysLivraison}",
+              style: const TextStyle(color: _textMuted, fontSize: 12)),
 
-        const SizedBox(height: 8),
+          const SizedBox(height: 10),
 
-        // ── Actions ──────────────────────────────────────────────────────
-        Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-          // Bouton suivi logistique
-          IconButton(
-              icon: const Icon(Icons.track_changes,
-                  color: Color(0xFF22C55E), size: 20),
-              tooltip: "Voir le suivi logistique",
-              onPressed: onTracking,
-              splashRadius: 18),
-
-          if ((logged.role == "admin") || (commande.userId == logged.userId))
-            _iconBtn(Icons.edit, _appBlue, "Modifier", onEdit),
-
-          if ((logged.role == "admin") || (commande.userId == logged.userId))
-            _iconBtn(Icons.delete, Colors.red.shade400, "Supprimer", onDelete),
-
-          if (logged.role == "admin" && onArchive != null)
-            _iconBtn(Icons.archive, _amber, "Archiver", onArchive!),
-
-          // ✅ Dropdown statut ADMINISTRATIF
-          _AdminStatusDropdown(
-            current: commande.statut,
-            possibleValues: possibleStatuses,
-            onChanged: onStatutAdminChanged,
+          // ── Statut logistique (chip + dropdown) ──────────────────────────
+          _SuiviChip(
+            currentSuivi: suiviKey,
+            suiviColor: suiviColor,
+            suiviIcon: suiviIcon,
             isAdmin: logged.role == "admin",
-            chipColor: adminColor,
-            chipIcon: adminIcon,
+            onSuiviChanged: onStatutSuiviChanged,
           ),
+
+          const SizedBox(height: 8),
+
+          // ── Actions ──────────────────────────────────────────────────────
+          Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+            // Bouton suivi logistique
+            IconButton(
+                icon: const Icon(Icons.track_changes,
+                    color: Color(0xFF22C55E), size: 20),
+                tooltip: "Voir le suivi logistique",
+                onPressed: onTracking,
+                splashRadius: 18),
+
+            if ((logged.role == "admin") || (commande.userId == logged.userId))
+              _iconBtn(Icons.edit, _appBlue, "Modifier", onEdit),
+
+            if ((logged.role == "admin") || (commande.userId == logged.userId))
+              _iconBtn(
+                  Icons.delete, Colors.red.shade400, "Supprimer", onDelete),
+
+            if (logged.role == "admin" && onArchive != null)
+              _iconBtn(Icons.archive, _amber, "Archiver", onArchive!),
+
+            // ✅ Dropdown statut ADMINISTRATIF
+            _AdminStatusDropdown(
+              current: commande.statut,
+              possibleValues: possibleStatuses,
+              onChanged: onStatutAdminChanged,
+              isAdmin: logged.role == "admin",
+              chipColor: adminColor,
+              chipIcon: adminIcon,
+            ),
+          ]),
         ]),
-      ]),
+      ), // ✅ fermeture GestureDetector
     );
   }
 
