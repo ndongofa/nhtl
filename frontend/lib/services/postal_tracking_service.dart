@@ -2,16 +2,20 @@
 //
 // Upload photos vers Supabase Storage (bucket: sama-postal)
 // puis PATCH /api/admin/transports/{id}/postal ou commandes/{id}/postal
+//
+// ✅ Correction Flutter Web :
+//    - Sur Web, file.path est une blob URL → on ne peut pas extraire l'extension
+//    - On utilise toujours readAsBytes() + content-type fixe image/jpeg
+//    - uploadBinary() utilisé systématiquement (fonctionne web et mobile)
 
-import 'dart:io';
-import 'dart:typed_data';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:logger/logger.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:sama/config/api_config.dart';
-import 'dart:convert';
+
+import '../config/api_config.dart';
 import 'auth_service.dart';
 
 class PostalTrackingService {
@@ -32,6 +36,10 @@ class PostalTrackingService {
   }
 
   // ── Upload vers Supabase Storage ──────────────────────────────────────────
+  //
+  // ✅ Toujours readAsBytes() — fonctionne sur Web ET mobile
+  // ✅ Content-type fixé à image/jpeg — évite le problème de blob URL sur Web
+  // ✅ Extension fixée à .jpg — idem
 
   Future<String?> uploadPhoto({
     required XFile file,
@@ -40,76 +48,96 @@ class PostalTrackingService {
     required String label, // 'colis' ou 'bordereau'
   }) async {
     try {
-      final ext = file.path.split('.').last.toLowerCase();
-      final path =
-          '$folder/$entityId/${label}_${DateTime.now().millisecondsSinceEpoch}.$ext';
+      // Lire les bytes — fonctionne sur Web (blob URL) et mobile (vrai chemin)
+      final bytes = await file.readAsBytes();
 
-      if (kIsWeb) {
-        final bytes = await file.readAsBytes();
-        await _supa.storage.from(_bucket).uploadBinary(
-              path,
-              bytes,
-              fileOptions: FileOptions(contentType: 'image/$ext', upsert: true),
-            );
-      } else {
-        await _supa.storage.from(_bucket).upload(
-              path,
-              File(file.path),
-              fileOptions: FileOptions(contentType: 'image/$ext', upsert: true),
-            );
-      }
+      // ✅ Extension : tenter de l'extraire du mimeType ou du nom,
+      //    sinon fallback jpg (safe sur Web où path = blob:...)
+      final ext = _resolveExtension(file);
+      final path = '$folder/$entityId/${label}_'
+          '${DateTime.now().millisecondsSinceEpoch}.$ext';
+
+      await _supa.storage.from(_bucket).uploadBinary(
+            path,
+            bytes,
+            fileOptions: FileOptions(
+              contentType: 'image/$ext',
+              upsert: true,
+            ),
+          );
 
       final url = _supa.storage.from(_bucket).getPublicUrl(path);
       _log.i('✅ Photo uploadée : $url');
       return url;
-    } catch (e) {
-      _log.e('❌ Upload photo $label : $e');
+    } catch (e, st) {
+      _log.e('❌ Upload photo $label : $e', error: e, stackTrace: st);
       return null;
     }
   }
 
-  // ── Enregistrer le dépôt postal (transport) ───────────────────────────────
+  // ── Résolution de l'extension ─────────────────────────────────────────────
+  //
+  // Sur Flutter Web, file.path = "blob:https://..." → split('.').last inutilisable
+  // On essaie dans l'ordre :
+  //   1. Extension du nom du fichier (file.name contient souvent "photo.jpg")
+  //   2. MimeType (image/jpeg → jpeg → jpg)
+  //   3. Fallback : jpg
+
+  String _resolveExtension(XFile file) {
+    // 1. Depuis le nom
+    final name = file.name;
+    if (name.contains('.')) {
+      final ext = name.split('.').last.toLowerCase();
+      if (['jpg', 'jpeg', 'png', 'webp', 'heic'].contains(ext)) {
+        return ext == 'jpeg' ? 'jpg' : ext;
+      }
+    }
+    // 2. Depuis le mimeType
+    final mime = file.mimeType ?? '';
+    if (mime.contains('jpeg') || mime.contains('jpg')) return 'jpg';
+    if (mime.contains('png')) return 'png';
+    if (mime.contains('webp')) return 'webp';
+    // 3. Fallback
+    return 'jpg';
+  }
+
+  // ── Enregistrer le dépôt postal — Transport ───────────────────────────────
 
   Future<bool> savePostalTransport({
     required int id,
     required String photoColisUrl,
     required String photoBordereauUrl,
     required String numeroBordereau,
-  }) async {
-    return _patch(
-      '/api/admin/transports/$id/postal',
-      {
+  }) =>
+      _patch('/api/admin/transports/$id/postal', {
         'photoColisUrl': photoColisUrl,
         'photoBordereauUrl': photoBordereauUrl,
         'numeroBordereau': numeroBordereau,
-      },
-    );
-  }
+      });
 
-  // ── Enregistrer le dépôt postal (commande) ────────────────────────────────
+  // ── Enregistrer le dépôt postal — Commande ────────────────────────────────
 
   Future<bool> savePostalCommande({
     required int id,
     required String photoColisUrl,
     required String photoBordereauUrl,
     required String numeroBordereau,
-  }) async {
-    return _patch(
-      '/api/admin/commandes/$id/postal',
-      {
+  }) =>
+      _patch('/api/admin/commandes/$id/postal', {
         'photoColisUrl': photoColisUrl,
         'photoBordereauUrl': photoBordereauUrl,
         'numeroBordereau': numeroBordereau,
-      },
-    );
-  }
+      });
 
   // ── Helper PATCH ──────────────────────────────────────────────────────────
 
   Future<bool> _patch(String endpoint, Map<String, String> body) async {
     try {
       final jwt = await AuthService.getJwt();
-      if (jwt == null) return false;
+      if (jwt == null) {
+        _log.e('❌ JWT absent — impossible d\'appeler $endpoint');
+        return false;
+      }
 
       final response = await http
           .patch(
@@ -127,10 +155,11 @@ class PostalTrackingService {
         return true;
       }
       _log.e(
-          '❌ Postal PATCH $endpoint : ${response.statusCode} ${response.body}');
+          '❌ Postal PATCH $endpoint : ${response.statusCode} — ${response.body}');
       return false;
-    } catch (e) {
-      _log.e('❌ Exception postal PATCH $endpoint : $e');
+    } catch (e, st) {
+      _log.e('❌ Exception postal PATCH $endpoint : $e',
+          error: e, stackTrace: st);
       return false;
     }
   }
