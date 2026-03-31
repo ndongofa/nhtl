@@ -342,58 +342,115 @@ class _PostalSection extends StatelessWidget {
         if (transport.numeroBordereau != null &&
             transport.numeroBordereau!.isNotEmpty) ...[
           const SizedBox(height: 14),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-                color: t.bgCard,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: t.border)),
-            child: Row(children: [
-              Icon(Icons.local_post_office_outlined,
-                  color: AppThemeProvider.appBlue, size: 18),
-              const SizedBox(width: 10),
-              Expanded(
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                    Text('Numéro de suivi postal',
-                        style: TextStyle(
-                            color: t.textMuted,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600)),
-                    Text(transport.numeroBordereau!,
-                        style: TextStyle(
-                            color: t.textPrimary,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 15,
-                            letterSpacing: 1)),
-                  ])),
-            ]),
+
+          // ── Option A : carte cliquable numéro ─────────────────────────
+          GestureDetector(
+            onTap: () async {
+              final numero = transport.numeroBordereau!.trim();
+              final uri = Uri.parse(
+                  'https://www.laposte.fr/outils/suivre-vos-envois?code=$numero');
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                  color: t.bgCard,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: t.border)),
+              child: Row(children: [
+                Icon(Icons.local_post_office_outlined,
+                    color: AppThemeProvider.appBlue, size: 18),
+                const SizedBox(width: 10),
+                Expanded(
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                      Text('Numéro de suivi postal',
+                          style: TextStyle(
+                              color: t.textMuted,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600)),
+                      Text(transport.numeroBordereau!,
+                          style: TextStyle(
+                              color: t.textPrimary,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15,
+                              letterSpacing: 1)),
+                      const SizedBox(height: 3),
+                      Text('Appuyer pour suivre sur laposte.fr',
+                          style: TextStyle(
+                              color: AppThemeProvider.appBlue,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500)),
+                    ])),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                      color: AppThemeProvider.appBlue.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(6)),
+                  child: const Text('La Poste',
+                      style: TextStyle(
+                          color: AppThemeProvider.appBlue,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700)),
+                ),
+                const SizedBox(width: 6),
+                Icon(Icons.chevron_right, color: t.textMuted, size: 18),
+              ]),
+            ),
           ),
+
           const SizedBox(height: 10),
-          // ✅ Bouton suivi La Poste — ouvre le tracking avec le numéro pré-rempli
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              icon: const Text('🇫🇷', style: TextStyle(fontSize: 16)),
-              label: const Text('Suivre sur laposte.fr',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppThemeProvider.appBlue,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
-                padding: const EdgeInsets.symmetric(vertical: 12),
+
+          // ── Option B : bouton grand format bleu ───────────────────────
+          GestureDetector(
+            onTap: () async {
+              final numero = transport.numeroBordereau!.trim();
+              final uri = Uri.parse(
+                  'https://www.laposte.fr/outils/suivre-vos-envois?code=$numero');
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
+            },
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0055A4),
+                borderRadius: BorderRadius.circular(12),
               ),
-              onPressed: () async {
-                final numero = transport.numeroBordereau!.trim();
-                final uri = Uri.parse(
-                    'https://www.laposte.fr/outils/suivre-vos-envois?code=$numero');
-                if (await canLaunchUrl(uri)) {
-                  await launchUrl(uri, mode: LaunchMode.externalApplication);
-                }
-              },
+              child: Row(children: [
+                const Text('🇫🇷', style: TextStyle(fontSize: 22)),
+                const SizedBox(width: 12),
+                Expanded(
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                      const Text('Suivre votre colis sur laposte.fr',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13)),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6)),
+                        child: Text(transport.numeroBordereau!,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.8)),
+                      ),
+                    ])),
+                const Icon(Icons.open_in_new, color: Colors.white70, size: 18),
+              ]),
             ),
           ),
         ],
