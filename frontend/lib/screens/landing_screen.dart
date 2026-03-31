@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../providers/app_theme_provider.dart';
+import '../widgets/sama_logo_widget.dart';
 import '../services/departure_countdown_service.dart';
 
 class LandingScreenSamaServicesInternational extends StatefulWidget {
@@ -344,13 +345,21 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
       child: Row(children: [
         _brandLogo(),
         const Spacer(),
-        if (!isDesktop)
-          Row(children: [
-            _themeToggle(t),
-            const SizedBox(width: 6),
-            _menuButton(t),
-          ])
-        else ...[
+        if (!isDesktop) ...[
+          // Mobile : thème + menu hamburger uniquement
+          _themeToggle(t),
+          const SizedBox(width: 4),
+          // Connexion rapide (icône)
+          IconButton(
+            icon:
+                const Icon(Icons.login_outlined, color: Colors.white, size: 20),
+            tooltip: "Connexion",
+            onPressed: () => _push('/login'),
+            padding: const EdgeInsets.all(6),
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+          ),
+          _menuButton(t),
+        ] else ...[
           _navLink("Tarifs", () => _scroll(_pricingKey)),
           _navLink("Départs", () => _scroll(_departuresKey)),
           _navLink("Contact", () => _scroll(_contactKey)),
@@ -365,41 +374,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
     );
   }
 
-  Widget _brandLogo() => Row(children: [
-        Container(
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            gradient: const LinearGradient(
-                colors: [AppThemeProvider.appBlue, AppThemeProvider.teal],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight),
-          ),
-          child: const FaIcon(FontAwesomeIcons.bagShopping,
-              color: Colors.white, size: 16),
-        ),
-        const SizedBox(width: 10),
-        Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: const [
-              Text("SAMA",
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 16,
-                      letterSpacing: 2.2,
-                      height: 1.0)),
-              Text("SERVICES INTERNATIONAL",
-                  style: TextStyle(
-                      color: Colors.white54,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 9,
-                      letterSpacing: 1.0,
-                      height: 1.0)),
-            ]),
-      ]);
+  Widget _brandLogo() => const SamaTopBarLogo();
 
   Widget _themeToggle(AppThemeProvider t) => Tooltip(
         message: t.isDark ? "Thème clair" : "Thème sombre",
