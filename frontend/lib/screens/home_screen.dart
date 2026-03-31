@@ -420,8 +420,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight),
           ),
-          child: const FaIcon(FontAwesomeIcons.bagShopping,
-              color: Colors.white, size: 15),
+          child: const Center(
+              child: FaIcon(FontAwesomeIcons.bagShopping,
+                  color: Colors.white, size: 15)),
         ),
         const SizedBox(width: 10),
         Column(
@@ -821,7 +822,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     decoration: BoxDecoration(
                         color: (a['color'] as Color).withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(12)),
-                    child: a['iconWidget'] as Widget),
+                    child: Center(child: a['iconWidget'] as Widget)),
                 const SizedBox(height: 8),
                 Text(a['label'] as String,
                     textAlign: TextAlign.center,

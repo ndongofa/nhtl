@@ -275,22 +275,23 @@ class _TopBar extends StatelessWidget {
                 BorderSide(color: t.border.withValues(alpha: 0.4), width: 1)),
       ),
       child: Row(children: [
-        // Logo
-        Row(children: [
+        // ── Logo ──────────────────────────────────────────────────────
+        Row(mainAxisSize: MainAxisSize.min, children: [
           Container(
-            width: 38,
-            height: 38,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(9),
               gradient: const LinearGradient(
                   colors: [AppThemeProvider.appBlue, AppThemeProvider.teal],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight),
             ),
-            child: const FaIcon(FontAwesomeIcons.bagShopping,
-                color: Colors.white, size: 16),
+            child: const Center(
+                child: FaIcon(FontAwesomeIcons.bagShopping,
+                    color: Colors.white, size: 15)),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -299,15 +300,15 @@ class _TopBar extends StatelessWidget {
                     style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w900,
-                        fontSize: 16,
-                        letterSpacing: 2.2,
+                        fontSize: 15,
+                        letterSpacing: 2.0,
                         height: 1.0)),
-                Text("SERVICES INTERNATIONAL",
+                Text("SERVICES",
                     style: TextStyle(
                         color: Colors.white54,
                         fontWeight: FontWeight.w600,
-                        fontSize: 9,
-                        letterSpacing: 1.0,
+                        fontSize: 8,
+                        letterSpacing: 0.8,
                         height: 1.0)),
               ]),
         ]),
@@ -340,49 +341,82 @@ class _TopBar extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 8),
+        // ── Actions compactes selon la largeur ────────────────────────
         if (isLogged) ...[
-          ElevatedButton.icon(
-            icon: const Icon(Icons.dashboard_outlined, size: 16),
-            label: const Text("Mon espace",
-                style: TextStyle(fontWeight: FontWeight.w700)),
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppThemeProvider.appBlue,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10)),
-            onPressed: () => Navigator.pushNamed(context, '/home'),
-          ),
+          if (!isDesktop)
+            // Mobile : icône seule
+            IconButton(
+              icon: const Icon(Icons.dashboard_outlined,
+                  color: Colors.white, size: 20),
+              tooltip: "Mon espace",
+              onPressed: () => Navigator.pushNamed(context, '/home'),
+              padding: const EdgeInsets.all(6),
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            )
+          else
+            ElevatedButton.icon(
+              icon: const Icon(Icons.dashboard_outlined, size: 15),
+              label: const Text("Mon espace",
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppThemeProvider.appBlue,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(9)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 9)),
+              onPressed: () => Navigator.pushNamed(context, '/home'),
+            ),
         ] else ...[
-          OutlinedButton(
-            onPressed: () => Navigator.pushNamed(context, '/login'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.white,
-              side: BorderSide(color: Colors.white.withValues(alpha: 0.5)),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+          if (!isDesktop) ...[
+            // Mobile : icônes seules
+            IconButton(
+              icon: const Icon(Icons.login, color: Colors.white, size: 20),
+              tooltip: "Connexion",
+              onPressed: () => Navigator.pushNamed(context, '/login'),
+              padding: const EdgeInsets.all(6),
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
             ),
-            child: const Text("Connexion",
-                style: TextStyle(fontWeight: FontWeight.w700)),
-          ),
-          const SizedBox(width: 8),
-          ElevatedButton(
-            onPressed: () => Navigator.pushNamed(context, '/signup'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: AppThemeProvider.appBlue,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+            IconButton(
+              icon: const Icon(Icons.person_add_alt_1_outlined,
+                  color: Colors.white, size: 20),
+              tooltip: "Créer un compte",
+              onPressed: () => Navigator.pushNamed(context, '/signup'),
+              padding: const EdgeInsets.all(6),
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
             ),
-            child: const Text("S'inscrire",
-                style: TextStyle(fontWeight: FontWeight.w800)),
-          ),
+          ] else ...[
+            OutlinedButton(
+              onPressed: () => Navigator.pushNamed(context, '/login'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white,
+                side: BorderSide(color: Colors.white.withValues(alpha: 0.5)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(9)),
+              ),
+              child: const Text("Connexion",
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+            ),
+            const SizedBox(width: 8),
+            ElevatedButton(
+              onPressed: () => Navigator.pushNamed(context, '/signup'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: AppThemeProvider.appBlue,
+                elevation: 0,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(9)),
+              ),
+              child: const Text("S'inscrire",
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+            ),
+          ],
         ],
       ]),
     );
@@ -737,8 +771,9 @@ class _Footer extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight),
               ),
-              child: const FaIcon(FontAwesomeIcons.bagShopping,
-                  color: Colors.white, size: 14)),
+              child: const Center(
+                  child: FaIcon(FontAwesomeIcons.bagShopping,
+                      color: Colors.white, size: 14))),
           const SizedBox(width: 10),
           const Text("SAMA SERVICES INTERNATIONAL",
               style: TextStyle(
