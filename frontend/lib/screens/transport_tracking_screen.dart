@@ -343,7 +343,7 @@ class _PostalSection extends StatelessWidget {
             transport.numeroBordereau!.isNotEmpty) ...[
           const SizedBox(height: 14),
 
-          // ── Option A : carte cliquable numéro ─────────────────────────
+          // ── A : carte cliquable numéro ──────────────────────────────
           GestureDetector(
             onTap: () async {
               final numero = transport.numeroBordereau!.trim();
@@ -353,16 +353,27 @@ class _PostalSection extends StatelessWidget {
                 await launchUrl(uri, mode: LaunchMode.externalApplication);
               }
             },
-            child: Container(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
                   color: t.bgCard,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: t.border)),
+                  border: Border.all(
+                      color: AppThemeProvider.appBlue.withValues(alpha: 0.35),
+                      width: 1.5)),
               child: Row(children: [
-                Icon(Icons.local_post_office_outlined,
-                    color: AppThemeProvider.appBlue, size: 18),
-                const SizedBox(width: 10),
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                      color: AppThemeProvider.appBlue.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(10)),
+                  child: const Center(
+                      child: Icon(Icons.local_post_office_outlined,
+                          color: AppThemeProvider.appBlue, size: 18)),
+                ),
+                const SizedBox(width: 12),
                 Expanded(
                     child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -377,27 +388,31 @@ class _PostalSection extends StatelessWidget {
                               color: t.textPrimary,
                               fontWeight: FontWeight.w800,
                               fontSize: 15,
-                              letterSpacing: 1)),
+                              letterSpacing: 1.2)),
                       const SizedBox(height: 3),
                       Text('Appuyer pour suivre sur laposte.fr',
-                          style: TextStyle(
+                          style: const TextStyle(
                               color: AppThemeProvider.appBlue,
                               fontSize: 11,
-                              fontWeight: FontWeight.w500)),
+                              fontWeight: FontWeight.w600)),
                     ])),
+                const SizedBox(width: 8),
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                       color: AppThemeProvider.appBlue.withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(6)),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                          color: AppThemeProvider.appBlue
+                              .withValues(alpha: 0.25))),
                   child: const Text('La Poste',
                       style: TextStyle(
                           color: AppThemeProvider.appBlue,
-                          fontSize: 11,
+                          fontSize: 10,
                           fontWeight: FontWeight.w700)),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 4),
                 Icon(Icons.chevron_right, color: t.textMuted, size: 18),
               ]),
             ),
@@ -405,7 +420,7 @@ class _PostalSection extends StatelessWidget {
 
           const SizedBox(height: 10),
 
-          // ── Option B : bouton grand format bleu ───────────────────────
+          // ── B : bouton grand format bleu app ────────────────────────
           GestureDetector(
             onTap: () async {
               final numero = transport.numeroBordereau!.trim();
@@ -415,11 +430,12 @@ class _PostalSection extends StatelessWidget {
                 await launchUrl(uri, mode: LaunchMode.externalApplication);
               }
             },
-            child: Container(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
-                color: const Color(0xFF0055A4),
+                color: AppThemeProvider.appBlue,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(children: [
@@ -434,7 +450,7 @@ class _PostalSection extends StatelessWidget {
                               color: Colors.white,
                               fontWeight: FontWeight.w700,
                               fontSize: 13)),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 5),
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 3),
@@ -445,8 +461,8 @@ class _PostalSection extends StatelessWidget {
                             style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.8)),
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 1.0)),
                       ),
                     ])),
                 const Icon(Icons.open_in_new, color: Colors.white70, size: 18),

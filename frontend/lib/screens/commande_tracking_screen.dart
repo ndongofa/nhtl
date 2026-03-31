@@ -342,71 +342,9 @@ class _PostalSection extends StatelessWidget {
         // ── Numéro de bordereau + bouton suivi La Poste ──────────────
         if (commande.numeroBordereau != null &&
             commande.numeroBordereau!.isNotEmpty) ...[
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
 
-          // ── Option A : carte cliquable numéro ─────────────────────────
-          GestureDetector(
-            onTap: () async {
-              final numero = commande.numeroBordereau!.trim();
-              final uri = Uri.parse(
-                  'https://www.laposte.fr/outils/suivre-vos-envois?code=$numero');
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-              }
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: BoxDecoration(
-                  color: t.bgCard,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: t.border)),
-              child: Row(children: [
-                Icon(Icons.local_post_office_outlined,
-                    color: AppThemeProvider.appBlue, size: 18),
-                const SizedBox(width: 10),
-                Expanded(
-                    child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                      Text('Numéro de suivi postal',
-                          style: TextStyle(
-                              color: t.textMuted,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600)),
-                      Text(commande.numeroBordereau!,
-                          style: TextStyle(
-                              color: t.textPrimary,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 15,
-                              letterSpacing: 1)),
-                      const SizedBox(height: 3),
-                      Text('Appuyer pour suivre sur laposte.fr',
-                          style: TextStyle(
-                              color: AppThemeProvider.appBlue,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500)),
-                    ])),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                      color: AppThemeProvider.appBlue.withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(6)),
-                  child: const Text('La Poste',
-                      style: TextStyle(
-                          color: AppThemeProvider.appBlue,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700)),
-                ),
-                const SizedBox(width: 6),
-                Icon(Icons.chevron_right, color: t.textMuted, size: 18),
-              ]),
-            ),
-          ),
-
-          const SizedBox(height: 10),
-
-          // ── Option B : bouton grand format bleu ───────────────────────
+          // Suivi La Poste
           GestureDetector(
             onTap: () async {
               final numero = commande.numeroBordereau!.trim();
@@ -418,39 +356,92 @@ class _PostalSection extends StatelessWidget {
             },
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
-                color: const Color(0xFF0055A4),
-                borderRadius: BorderRadius.circular(12),
+                color: t.bgCard,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                    color: const Color(0xFF0055A4).withValues(alpha: 0.25),
+                    width: 1.5),
               ),
-              child: Row(children: [
-                const Text('🇫🇷', style: TextStyle(fontSize: 22)),
-                const SizedBox(width: 12),
-                Expanded(
-                    child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                      const Text('Suivre votre colis sur laposte.fr',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13)),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(6)),
-                        child: Text(commande.numeroBordereau!,
-                            style: const TextStyle(
+              child: Column(children: [
+                // Bandeau bleu
+                Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF0055A4),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(14),
+                      topRight: Radius.circular(14),
+                    ),
+                  ),
+                  child: Row(children: [
+                    const Text('\u{1F4EE}', style: TextStyle(fontSize: 15)),
+                    const SizedBox(width: 8),
+                    const Text('Suivi La Poste',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13)),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.20),
+                          borderRadius: BorderRadius.circular(20)),
+                      child:
+                          const Row(mainAxisSize: MainAxisSize.min, children: [
+                        Text('Ouvrir',
+                            style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.8)),
-                      ),
-                    ])),
-                const Icon(Icons.open_in_new, color: Colors.white70, size: 18),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600)),
+                        SizedBox(width: 3),
+                        Icon(Icons.open_in_new, color: Colors.white, size: 11),
+                      ]),
+                    ),
+                  ]),
+                ),
+                // Corps
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  child: Row(children: [
+                    Expanded(
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                          Text('Numéro de suivi',
+                              style: TextStyle(
+                                  color: t.textMuted,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500)),
+                          const SizedBox(height: 4),
+                          Text(commande.numeroBordereau!,
+                              style: const TextStyle(
+                                  color: Color(0xFF0055A4),
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 18,
+                                  letterSpacing: 1.5)),
+                          const SizedBox(height: 4),
+                          Text('Touchez pour voir où est votre colis',
+                              style:
+                                  TextStyle(color: t.textMuted, fontSize: 11)),
+                        ])),
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                          color:
+                              const Color(0xFF0055A4).withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(12)),
+                      child: const Icon(Icons.chevron_right,
+                          color: Color(0xFF0055A4), size: 26),
+                    ),
+                  ]),
+                ),
               ]),
             ),
           ),
