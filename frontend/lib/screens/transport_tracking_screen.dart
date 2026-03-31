@@ -18,6 +18,7 @@ import '../models/transport.dart';
 import '../providers/app_theme_provider.dart';
 import '../services/postal_tracking_service.dart';
 import '../services/transport_service.dart';
+import '../services/postal_cache_service.dart';
 
 class TransportTrackingScreen extends StatefulWidget {
   final Transport transport;
@@ -68,12 +69,37 @@ class _TransportTrackingScreenState extends State<TransportTrackingScreen> {
   Future<void> _refresh() async {
     if (_transport.id == null) return;
     setState(() => _loading = true);
-    final fresh = await _transportSvc.getTransportById(_transport.id!);
-    if (mounted)
-      setState(() {
-        if (fresh != null) _transport = fresh;
-        _loading = false;
-      });
+
+    // 1. Charger depuis l'API
+    Transport? fresh;
+    if (_isAdmin) {
+      fresh = await _transportSvc.getTransportByIdAdmin(_transport.id!);
+    } else {
+      fresh = await _transportSvc.getTransportById(_transport.id!);
+    }
+    if (fresh != null && mounted) {
+      setState(() => _transport = fresh!);
+    }
+
+    // 2. Si les champs postaux sont absents dans la réponse API,
+    //    les compléter depuis le cache local (SharedPreferences)
+    if (_transport.id != null && !_transport.isDeposePoste) {
+      final cached = await PostalCacheService.getTransport(_transport.id!);
+      if (cached != null && mounted) {
+        setState(() {
+          _transport = _transport.copyWith(
+            photoColisUrl: cached['photoColisUrl'] as String?,
+            photoBordereauUrl: cached['photoBordereauUrl'] as String?,
+            numeroBordereau: cached['numeroBordereau'] as String?,
+            deposePosteAt:
+                DateTime.tryParse(cached['deposePosteAt']?.toString() ?? ''),
+            statutSuivi: 'PRET_RECUPERATION',
+          );
+        });
+      }
+    }
+
+    if (mounted) setState(() => _loading = false);
   }
 
   // ── Bottom sheet upload postal ─────────────────────────────────────────────
@@ -87,6 +113,16 @@ class _TransportTrackingScreenState extends State<TransportTrackingScreen> {
         service: _postalSvc,
         onSuccess: (updated) {
           if (mounted) setState(() => _transport = updated);
+          // ✅ Sauvegarder dans le cache local pour survivre aux rechargements
+          if (updated.id != null && updated.deposePosteAt != null) {
+            PostalCacheService.saveTransport(
+              id: updated.id!,
+              photoColisUrl: updated.photoColisUrl ?? '',
+              photoBordereauUrl: updated.photoBordereauUrl ?? '',
+              numeroBordereau: updated.numeroBordereau ?? '',
+              deposePosteAt: updated.deposePosteAt!,
+            );
+          }
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
               content: Text('✅ Dépôt postal enregistré — client notifié')));
         },

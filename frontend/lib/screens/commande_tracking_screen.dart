@@ -18,6 +18,7 @@ import '../models/logged_user.dart';
 import '../providers/app_theme_provider.dart';
 import '../services/postal_tracking_service.dart';
 import '../services/commande_service.dart';
+import '../services/postal_cache_service.dart';
 
 class CommandeTrackingScreen extends StatefulWidget {
   final Commande commande;
@@ -66,12 +67,35 @@ class _CommandeTrackingScreenState extends State<CommandeTrackingScreen> {
   Future<void> _refresh() async {
     if (_commande.id == null) return;
     setState(() => _loading = true);
-    final fresh = await _commandeSvc.getCommandeById(_commande.id!);
-    if (mounted)
-      setState(() {
-        if (fresh != null) _commande = fresh;
-        _loading = false;
-      });
+
+    Commande? fresh;
+    if (_isAdmin) {
+      fresh = await _commandeSvc.getCommandeByIdAdmin(_commande.id!);
+    } else {
+      fresh = await _commandeSvc.getCommandeById(_commande.id!);
+    }
+    if (fresh != null && mounted) {
+      setState(() => _commande = fresh!);
+    }
+
+    // Compléter depuis le cache si les champs postaux sont absents
+    if (_commande.id != null && !_commande.isDeposePoste) {
+      final cached = await PostalCacheService.getCommande(_commande.id!);
+      if (cached != null && mounted) {
+        setState(() {
+          _commande = _commande.copyWith(
+            photoColisUrl: cached['photoColisUrl'] as String?,
+            photoBordereauUrl: cached['photoBordereauUrl'] as String?,
+            numeroBordereau: cached['numeroBordereau'] as String?,
+            deposePosteAt:
+                DateTime.tryParse(cached['deposePosteAt']?.toString() ?? ''),
+            statutSuivi: 'PRET_LIVRAISON',
+          );
+        });
+      }
+    }
+
+    if (mounted) setState(() => _loading = false);
   }
 
   void _showPostalUploadSheet() {
@@ -84,6 +108,15 @@ class _CommandeTrackingScreenState extends State<CommandeTrackingScreen> {
         service: _postalSvc,
         onSuccess: (updated) {
           if (mounted) setState(() => _commande = updated);
+          if (updated.id != null && updated.deposePosteAt != null) {
+            PostalCacheService.saveCommande(
+              id: updated.id!,
+              photoColisUrl: updated.photoColisUrl ?? '',
+              photoBordereauUrl: updated.photoBordereauUrl ?? '',
+              numeroBordereau: updated.numeroBordereau ?? '',
+              deposePosteAt: updated.deposePosteAt!,
+            );
+          }
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
               content: Text('✅ Dépôt postal enregistré — client notifié')));
         },

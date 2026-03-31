@@ -135,6 +135,29 @@ class TransportService {
     }
   }
 
+  // ✅ Admin — récupère un transport par ID via l'endpoint admin
+  // (inclut tous les champs : photoColisUrl, deposePosteAt, etc.)
+  Future<Transport?> getTransportByIdAdmin(int id) async {
+    final url = '${ApiConfig.baseUrl}$adminEndpoint/$id';
+    try {
+      final headers = await _headers();
+      logger.i('GET [ADMIN] $url');
+      final response = await http
+          .get(Uri.parse(url), headers: headers)
+          .timeout(ApiConfig.receiveTimeout);
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        logger.i('✅ Transport admin $id récupéré');
+        return Transport.fromJson(json is Map<String, dynamic> ? json : {});
+      }
+      logger.e('❌ getTransportByIdAdmin ${response.statusCode}');
+      return null;
+    } catch (e) {
+      logger.e('❌ getTransportByIdAdmin exception: $e');
+      return null;
+    }
+  }
+
   Future<Transport?> updateTransport(int id, Transport transport) async {
     final url = isAdmin
         ? '${ApiConfig.baseUrl}$adminEndpoint/$id'

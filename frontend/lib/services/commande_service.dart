@@ -274,6 +274,28 @@ class CommandeService {
     }
   }
 
+  // ✅ Admin — récupère une commande par ID via l'endpoint admin
+  Future<Commande?> getCommandeByIdAdmin(int id) async {
+    try {
+      final jwt = await AuthService.getJwt();
+      if (jwt == null) return null;
+      final url = '${ApiConfig.baseUrl}/api/admin/commandes/$id';
+      final response = await http.get(Uri.parse(url), headers: {
+        'Authorization': 'Bearer $jwt',
+        'Content-Type': 'application/json',
+      }).timeout(ApiConfig.receiveTimeout);
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        return Commande.fromJson(json is Map<String, dynamic> ? json : {});
+      }
+      logger.e('❌ getCommandeByIdAdmin ${response.statusCode}');
+      return null;
+    } catch (e) {
+      logger.e('❌ getCommandeByIdAdmin exception: $e');
+      return null;
+    }
+  }
+
   Future<List<Commande>?> getCommandesArchivesUser() async {
     try {
       final url = '${ApiConfig.baseUrl}$userEndpoint/archives';
