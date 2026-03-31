@@ -4,232 +4,134 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public class CommandeDTO {
-	private Long id;
-	private String userId;
-	private String nom;
-	private String prenom;
-	private String numeroTelephone;
-	private String email;
-	private String paysLivraison;
-	private String villeLivraison;
-	private String adresseLivraison;
-	private String plateforme;
-	private String lienProduit;
-	private String descriptionCommande;
-	private Integer quantite;
-	private BigDecimal prixUnitaire;
-	private BigDecimal prixTotal;
-	private String devise;
-	private String notesSpeciales;
-	private String statut;
+    private Long id;
+    private String userId;
+    private String nom;
+    private String prenom;
+    private String numeroTelephone;
+    private String email;
+    private String paysLivraison;
+    private String villeLivraison;
+    private String adresseLivraison;
+    private String plateforme;
+    private String lienProduit;
+    private String descriptionCommande;
+    private Integer quantite;
+    private BigDecimal prixUnitaire;
+    private BigDecimal prixTotal;
+    private String devise;
+    private String notesSpeciales;
+    private String statut;
 
-	// --- GP (nouveau) ---
-	private Long gpId;
-	private String gpPrenom;
-	private String gpNom;
-	private String gpPhoneNumber;
+    // ✅ Statut logistique (suivi 7 étapes)
+    private String statutSuivi;
 
-	private Boolean archived;
-	private LocalDateTime dateCreation;
-	private LocalDateTime dateModification;
+    // GP
+    private Long gpId;
+    private String gpPrenom;
+    private String gpNom;
+    private String gpPhoneNumber;
 
-	public Long getId() {
-		return id;
-	}
+    private Boolean archived;
+    private LocalDateTime dateCreation;
+    private LocalDateTime dateModification;
 
-	public void setId(Long id) {
-		this.id = id;
-	}
+    // ✅ Suivi postal
+    private String photoColisUrl;
+    private String photoBordereauUrl;
+    private String numeroBordereau;
+    private LocalDateTime deposePosteAt;
 
-	public String getUserId() {
-		return userId;
-	}
+    // ── Getters & Setters ──────────────────────────────────────────────────────
 
-	public void setUserId(String userId) {
-		this.userId = userId;
-	}
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-	public String getNom() {
-		return nom;
-	}
+    public String getUserId() { return userId; }
+    public void setUserId(String userId) { this.userId = userId; }
 
-	public void setNom(String nom) {
-		this.nom = nom;
-	}
+    public String getNom() { return nom; }
+    public void setNom(String nom) { this.nom = nom; }
 
-	public String getPrenom() {
-		return prenom;
-	}
+    public String getPrenom() { return prenom; }
+    public void setPrenom(String prenom) { this.prenom = prenom; }
 
-	public void setPrenom(String prenom) {
-		this.prenom = prenom;
-	}
+    public String getNumeroTelephone() { return numeroTelephone; }
+    public void setNumeroTelephone(String numeroTelephone) { this.numeroTelephone = numeroTelephone; }
 
-	public String getNumeroTelephone() {
-		return numeroTelephone;
-	}
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-	public void setNumeroTelephone(String numeroTelephone) {
-		this.numeroTelephone = numeroTelephone;
-	}
+    public String getPaysLivraison() { return paysLivraison; }
+    public void setPaysLivraison(String paysLivraison) { this.paysLivraison = paysLivraison; }
 
-	public String getEmail() {
-		return email;
-	}
+    public String getVilleLivraison() { return villeLivraison; }
+    public void setVilleLivraison(String villeLivraison) { this.villeLivraison = villeLivraison; }
 
-	public void setEmail(String email) {
-		this.email = email;
-	}
+    public String getAdresseLivraison() { return adresseLivraison; }
+    public void setAdresseLivraison(String adresseLivraison) { this.adresseLivraison = adresseLivraison; }
 
-	public String getPaysLivraison() {
-		return paysLivraison;
-	}
+    public String getPlateforme() { return plateforme; }
+    public void setPlateforme(String plateforme) { this.plateforme = plateforme; }
 
-	public void setPaysLivraison(String paysLivraison) {
-		this.paysLivraison = paysLivraison;
-	}
+    public String getLienProduit() { return lienProduit; }
+    public void setLienProduit(String lienProduit) { this.lienProduit = lienProduit; }
 
-	public String getVilleLivraison() {
-		return villeLivraison;
-	}
+    public String getDescriptionCommande() { return descriptionCommande; }
+    public void setDescriptionCommande(String descriptionCommande) { this.descriptionCommande = descriptionCommande; }
 
-	public void setVilleLivraison(String villeLivraison) {
-		this.villeLivraison = villeLivraison;
-	}
+    public Integer getQuantite() { return quantite; }
+    public void setQuantite(Integer quantite) { this.quantite = quantite; }
 
-	public String getAdresseLivraison() {
-		return adresseLivraison;
-	}
+    public BigDecimal getPrixUnitaire() { return prixUnitaire; }
+    public void setPrixUnitaire(BigDecimal prixUnitaire) { this.prixUnitaire = prixUnitaire; }
 
-	public void setAdresseLivraison(String adresseLivraison) {
-		this.adresseLivraison = adresseLivraison;
-	}
+    public BigDecimal getPrixTotal() { return prixTotal; }
+    public void setPrixTotal(BigDecimal prixTotal) { this.prixTotal = prixTotal; }
 
-	public String getPlateforme() {
-		return plateforme;
-	}
+    public String getDevise() { return devise; }
+    public void setDevise(String devise) { this.devise = devise; }
 
-	public void setPlateforme(String plateforme) {
-		this.plateforme = plateforme;
-	}
+    public String getNotesSpeciales() { return notesSpeciales; }
+    public void setNotesSpeciales(String notesSpeciales) { this.notesSpeciales = notesSpeciales; }
 
-	public String getLienProduit() {
-		return lienProduit;
-	}
+    public String getStatut() { return statut; }
+    public void setStatut(String statut) { this.statut = statut; }
 
-	public void setLienProduit(String lienProduit) {
-		this.lienProduit = lienProduit;
-	}
+    public String getStatutSuivi() { return statutSuivi; }
+    public void setStatutSuivi(String statutSuivi) { this.statutSuivi = statutSuivi; }
 
-	public String getDescriptionCommande() {
-		return descriptionCommande;
-	}
+    public Long getGpId() { return gpId; }
+    public void setGpId(Long gpId) { this.gpId = gpId; }
 
-	public void setDescriptionCommande(String descriptionCommande) {
-		this.descriptionCommande = descriptionCommande;
-	}
+    public String getGpPrenom() { return gpPrenom; }
+    public void setGpPrenom(String gpPrenom) { this.gpPrenom = gpPrenom; }
 
-	public Integer getQuantite() {
-		return quantite;
-	}
+    public String getGpNom() { return gpNom; }
+    public void setGpNom(String gpNom) { this.gpNom = gpNom; }
 
-	public void setQuantite(Integer quantite) {
-		this.quantite = quantite;
-	}
+    public String getGpPhoneNumber() { return gpPhoneNumber; }
+    public void setGpPhoneNumber(String gpPhoneNumber) { this.gpPhoneNumber = gpPhoneNumber; }
 
-	public BigDecimal getPrixUnitaire() {
-		return prixUnitaire;
-	}
+    public Boolean getArchived() { return archived; }
+    public void setArchived(Boolean archived) { this.archived = archived; }
 
-	public void setPrixUnitaire(BigDecimal prixUnitaire) {
-		this.prixUnitaire = prixUnitaire;
-	}
+    public LocalDateTime getDateCreation() { return dateCreation; }
+    public void setDateCreation(LocalDateTime dateCreation) { this.dateCreation = dateCreation; }
 
-	public BigDecimal getPrixTotal() {
-		return prixTotal;
-	}
+    public LocalDateTime getDateModification() { return dateModification; }
+    public void setDateModification(LocalDateTime dateModification) { this.dateModification = dateModification; }
 
-	public void setPrixTotal(BigDecimal prixTotal) {
-		this.prixTotal = prixTotal;
-	}
+    // ✅ Suivi postal
+    public String getPhotoColisUrl() { return photoColisUrl; }
+    public void setPhotoColisUrl(String u) { this.photoColisUrl = u; }
 
-	public String getDevise() {
-		return devise;
-	}
+    public String getPhotoBordereauUrl() { return photoBordereauUrl; }
+    public void setPhotoBordereauUrl(String u) { this.photoBordereauUrl = u; }
 
-	public void setDevise(String devise) {
-		this.devise = devise;
-	}
+    public String getNumeroBordereau() { return numeroBordereau; }
+    public void setNumeroBordereau(String n) { this.numeroBordereau = n; }
 
-	public String getNotesSpeciales() {
-		return notesSpeciales;
-	}
-
-	public void setNotesSpeciales(String notesSpeciales) {
-		this.notesSpeciales = notesSpeciales;
-	}
-
-	public String getStatut() {
-		return statut;
-	}
-
-	public void setStatut(String statut) {
-		this.statut = statut;
-	}
-
-	public Long getGpId() {
-		return gpId;
-	}
-
-	public void setGpId(Long gpId) {
-		this.gpId = gpId;
-	}
-
-	public String getGpPrenom() {
-		return gpPrenom;
-	}
-
-	public void setGpPrenom(String gpPrenom) {
-		this.gpPrenom = gpPrenom;
-	}
-
-	public String getGpNom() {
-		return gpNom;
-	}
-
-	public void setGpNom(String gpNom) {
-		this.gpNom = gpNom;
-	}
-
-	public String getGpPhoneNumber() {
-		return gpPhoneNumber;
-	}
-
-	public void setGpPhoneNumber(String gpPhoneNumber) {
-		this.gpPhoneNumber = gpPhoneNumber;
-	}
-
-	public Boolean getArchived() {
-		return archived;
-	}
-
-	public void setArchived(Boolean archived) {
-		this.archived = archived;
-	}
-
-	public LocalDateTime getDateCreation() {
-		return dateCreation;
-	}
-
-	public void setDateCreation(LocalDateTime dateCreation) {
-		this.dateCreation = dateCreation;
-	}
-
-	public LocalDateTime getDateModification() {
-		return dateModification;
-	}
-
-	public void setDateModification(LocalDateTime dateModification) {
-		this.dateModification = dateModification;
-	}
+    public LocalDateTime getDeposePosteAt() { return deposePosteAt; }
+    public void setDeposePosteAt(LocalDateTime d) { this.deposePosteAt = d; }
 }

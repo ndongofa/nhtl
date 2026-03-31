@@ -4,263 +4,150 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public class TransportDTO {
-	private Long id;
-	private String userId;
-	private String nom;
-	private String prenom;
-	private String numeroTelephone;
-	private String email;
+    private Long id;
+    private String userId;
+    private String nom;
+    private String prenom;
+    private String numeroTelephone;
+    private String email;
 
-	private String pointDepart;
-	private String pointArrivee;
+    private String pointDepart;
+    private String pointArrivee;
 
-	private String paysExpediteur;
-	private String villeExpediteur;
-	private String adresseExpediteur;
+    private String paysExpediteur;
+    private String villeExpediteur;
+    private String adresseExpediteur;
 
-	private String paysDestinataire;
-	private String villeDestinataire;
-	private String adresseDestinataire;
+    private String paysDestinataire;
+    private String villeDestinataire;
+    private String adresseDestinataire;
 
-	private String typesMarchandise;
-	private String description;
-	private BigDecimal poids;
-	private BigDecimal valeurEstimee;
-	private String devise;
-	private String statut;
-	private String typeTransport;
+    private String typesMarchandise;
+    private String description;
+    private BigDecimal poids;
+    private BigDecimal valeurEstimee;
+    private String devise;
+    private String statut;
+    private String typeTransport;
 
-	// --- GP (nouveau) ---
-	private Long gpId;
-	private String gpPrenom;
-	private String gpNom;
-	private String gpPhoneNumber;
+    // ✅ Statut logistique (suivi 7 étapes)
+    private String statutSuivi;
 
-	private Boolean archived;
-	private LocalDateTime dateCreation;
-	private LocalDateTime dateModification;
+    // GP
+    private Long gpId;
+    private String gpPrenom;
+    private String gpNom;
+    private String gpPhoneNumber;
 
-	public Long getId() {
-		return id;
-	}
+    private Boolean archived;
+    private LocalDateTime dateCreation;
+    private LocalDateTime dateModification;
 
-	public void setId(Long id) {
-		this.id = id;
-	}
+    // ✅ Suivi postal
+    private String photoColisUrl;
+    private String photoBordereauUrl;
+    private String numeroBordereau;
+    private LocalDateTime deposePosteAt;
 
-	public String getUserId() {
-		return userId;
-	}
+    // ── Getters & Setters ──────────────────────────────────────────────────────
 
-	public void setUserId(String userId) {
-		this.userId = userId;
-	}
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-	public String getNom() {
-		return nom;
-	}
+    public String getUserId() { return userId; }
+    public void setUserId(String userId) { this.userId = userId; }
 
-	public void setNom(String nom) {
-		this.nom = nom;
-	}
+    public String getNom() { return nom; }
+    public void setNom(String nom) { this.nom = nom; }
 
-	public String getPrenom() {
-		return prenom;
-	}
+    public String getPrenom() { return prenom; }
+    public void setPrenom(String prenom) { this.prenom = prenom; }
 
-	public void setPrenom(String prenom) {
-		this.prenom = prenom;
-	}
+    public String getNumeroTelephone() { return numeroTelephone; }
+    public void setNumeroTelephone(String numeroTelephone) { this.numeroTelephone = numeroTelephone; }
 
-	public String getNumeroTelephone() {
-		return numeroTelephone;
-	}
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-	public void setNumeroTelephone(String numeroTelephone) {
-		this.numeroTelephone = numeroTelephone;
-	}
+    public String getPointDepart() { return pointDepart; }
+    public void setPointDepart(String pointDepart) { this.pointDepart = pointDepart; }
 
-	public String getEmail() {
-		return email;
-	}
+    public String getPointArrivee() { return pointArrivee; }
+    public void setPointArrivee(String pointArrivee) { this.pointArrivee = pointArrivee; }
 
-	public void setEmail(String email) {
-		this.email = email;
-	}
+    public String getPaysExpediteur() { return paysExpediteur; }
+    public void setPaysExpediteur(String paysExpediteur) { this.paysExpediteur = paysExpediteur; }
 
-	public String getPointDepart() {
-		return pointDepart;
-	}
+    public String getVilleExpediteur() { return villeExpediteur; }
+    public void setVilleExpediteur(String villeExpediteur) { this.villeExpediteur = villeExpediteur; }
 
-	public void setPointDepart(String pointDepart) {
-		this.pointDepart = pointDepart;
-	}
+    public String getAdresseExpediteur() { return adresseExpediteur; }
+    public void setAdresseExpediteur(String adresseExpediteur) { this.adresseExpediteur = adresseExpediteur; }
 
-	public String getPointArrivee() {
-		return pointArrivee;
-	}
+    public String getPaysDestinataire() { return paysDestinataire; }
+    public void setPaysDestinataire(String paysDestinataire) { this.paysDestinataire = paysDestinataire; }
 
-	public void setPointArrivee(String pointArrivee) {
-		this.pointArrivee = pointArrivee;
-	}
+    public String getVilleDestinataire() { return villeDestinataire; }
+    public void setVilleDestinataire(String villeDestinataire) { this.villeDestinataire = villeDestinataire; }
 
-	public String getPaysExpediteur() {
-		return paysExpediteur;
-	}
+    public String getAdresseDestinataire() { return adresseDestinataire; }
+    public void setAdresseDestinataire(String adresseDestinataire) { this.adresseDestinataire = adresseDestinataire; }
 
-	public void setPaysExpediteur(String paysExpediteur) {
-		this.paysExpediteur = paysExpediteur;
-	}
+    public String getTypesMarchandise() { return typesMarchandise; }
+    public void setTypesMarchandise(String typesMarchandise) { this.typesMarchandise = typesMarchandise; }
 
-	public String getVilleExpediteur() {
-		return villeExpediteur;
-	}
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 
-	public void setVilleExpediteur(String villeExpediteur) {
-		this.villeExpediteur = villeExpediteur;
-	}
+    public BigDecimal getPoids() { return poids; }
+    public void setPoids(BigDecimal poids) { this.poids = poids; }
 
-	public String getAdresseExpediteur() {
-		return adresseExpediteur;
-	}
+    public BigDecimal getValeurEstimee() { return valeurEstimee; }
+    public void setValeurEstimee(BigDecimal valeurEstimee) { this.valeurEstimee = valeurEstimee; }
 
-	public void setAdresseExpediteur(String adresseExpediteur) {
-		this.adresseExpediteur = adresseExpediteur;
-	}
+    public String getDevise() { return devise; }
+    public void setDevise(String devise) { this.devise = devise; }
 
-	public String getPaysDestinataire() {
-		return paysDestinataire;
-	}
+    public String getStatut() { return statut; }
+    public void setStatut(String statut) { this.statut = statut; }
 
-	public void setPaysDestinataire(String paysDestinataire) {
-		this.paysDestinataire = paysDestinataire;
-	}
+    public String getStatutSuivi() { return statutSuivi; }
+    public void setStatutSuivi(String statutSuivi) { this.statutSuivi = statutSuivi; }
 
-	public String getVilleDestinataire() {
-		return villeDestinataire;
-	}
+    public String getTypeTransport() { return typeTransport; }
+    public void setTypeTransport(String typeTransport) { this.typeTransport = typeTransport; }
 
-	public void setVilleDestinataire(String villeDestinataire) {
-		this.villeDestinataire = villeDestinataire;
-	}
+    public Long getGpId() { return gpId; }
+    public void setGpId(Long gpId) { this.gpId = gpId; }
 
-	public String getAdresseDestinataire() {
-		return adresseDestinataire;
-	}
+    public String getGpPrenom() { return gpPrenom; }
+    public void setGpPrenom(String gpPrenom) { this.gpPrenom = gpPrenom; }
 
-	public void setAdresseDestinataire(String adresseDestinataire) {
-		this.adresseDestinataire = adresseDestinataire;
-	}
+    public String getGpNom() { return gpNom; }
+    public void setGpNom(String gpNom) { this.gpNom = gpNom; }
 
-	public String getTypesMarchandise() {
-		return typesMarchandise;
-	}
+    public String getGpPhoneNumber() { return gpPhoneNumber; }
+    public void setGpPhoneNumber(String gpPhoneNumber) { this.gpPhoneNumber = gpPhoneNumber; }
 
-	public void setTypesMarchandise(String typesMarchandise) {
-		this.typesMarchandise = typesMarchandise;
-	}
+    public Boolean getArchived() { return archived; }
+    public void setArchived(Boolean archived) { this.archived = archived; }
 
-	public String getDescription() {
-		return description;
-	}
+    public LocalDateTime getDateCreation() { return dateCreation; }
+    public void setDateCreation(LocalDateTime dateCreation) { this.dateCreation = dateCreation; }
 
-	public void setDescription(String description) {
-		this.description = description;
-	}
+    public LocalDateTime getDateModification() { return dateModification; }
+    public void setDateModification(LocalDateTime dateModification) { this.dateModification = dateModification; }
 
-	public BigDecimal getPoids() {
-		return poids;
-	}
+    // ✅ Suivi postal
+    public String getPhotoColisUrl() { return photoColisUrl; }
+    public void setPhotoColisUrl(String u) { this.photoColisUrl = u; }
 
-	public void setPoids(BigDecimal poids) {
-		this.poids = poids;
-	}
+    public String getPhotoBordereauUrl() { return photoBordereauUrl; }
+    public void setPhotoBordereauUrl(String u) { this.photoBordereauUrl = u; }
 
-	public BigDecimal getValeurEstimee() {
-		return valeurEstimee;
-	}
+    public String getNumeroBordereau() { return numeroBordereau; }
+    public void setNumeroBordereau(String n) { this.numeroBordereau = n; }
 
-	public void setValeurEstimee(BigDecimal valeurEstimee) {
-		this.valeurEstimee = valeurEstimee;
-	}
-
-	public String getDevise() {
-		return devise;
-	}
-
-	public void setDevise(String devise) {
-		this.devise = devise;
-	}
-
-	public String getStatut() {
-		return statut;
-	}
-
-	public void setStatut(String statut) {
-		this.statut = statut;
-	}
-
-	public String getTypeTransport() {
-		return typeTransport;
-	}
-
-	public void setTypeTransport(String typeTransport) {
-		this.typeTransport = typeTransport;
-	}
-
-	public Long getGpId() {
-		return gpId;
-	}
-
-	public void setGpId(Long gpId) {
-		this.gpId = gpId;
-	}
-
-	public String getGpPrenom() {
-		return gpPrenom;
-	}
-
-	public void setGpPrenom(String gpPrenom) {
-		this.gpPrenom = gpPrenom;
-	}
-
-	public String getGpNom() {
-		return gpNom;
-	}
-
-	public void setGpNom(String gpNom) {
-		this.gpNom = gpNom;
-	}
-
-	public String getGpPhoneNumber() {
-		return gpPhoneNumber;
-	}
-
-	public void setGpPhoneNumber(String gpPhoneNumber) {
-		this.gpPhoneNumber = gpPhoneNumber;
-	}
-
-	public Boolean getArchived() {
-		return archived;
-	}
-
-	public void setArchived(Boolean archived) {
-		this.archived = archived;
-	}
-
-	public LocalDateTime getDateCreation() {
-		return dateCreation;
-	}
-
-	public void setDateCreation(LocalDateTime dateCreation) {
-		this.dateCreation = dateCreation;
-	}
-
-	public LocalDateTime getDateModification() {
-		return dateModification;
-	}
-
-	public void setDateModification(LocalDateTime dateModification) {
-		this.dateModification = dateModification;
-	}
+    public LocalDateTime getDeposePosteAt() { return deposePosteAt; }
+    public void setDeposePosteAt(LocalDateTime d) { this.deposePosteAt = d; }
 }

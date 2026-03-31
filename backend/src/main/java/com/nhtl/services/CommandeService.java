@@ -21,373 +21,294 @@ import com.nhtl.repositories.GpAgentRepository;
 @Service
 public class CommandeService {
 
-	@Autowired
-	private CommandeRepository commandeRepo;
+    @Autowired
+    private CommandeRepository commandeRepo;
 
-	@Autowired
-	private GpAgentRepository gpRepo;
+    @Autowired
+    private GpAgentRepository gpRepo;
 
-	// ✅ nouveau: dispatcher multi-canaux
-	@Autowired
-	private NotificationDispatcher notificationDispatcher;
+    @Autowired
+    private NotificationDispatcher notificationDispatcher;
 
-	// ✅ nouveau: templates
-	@Autowired
-	private NotificationTemplates templates;
+    @Autowired
+    private NotificationTemplates templates;
 
-	// ✅ conservé pour éviter toute régression ailleurs (mais plus utilisé dans
-	// assignGpAndValidate)
-	@Autowired
-	private NotificationService notificationService;
+    @Autowired
+    private NotificationService notificationService;
 
-	public CommandeDTO createCommande(CommandeDTO dto, String userId) {
-		Commande c = new Commande();
-		c.setUserId(userId);
-		c.setNom(dto.getNom());
-		c.setPrenom(dto.getPrenom());
-		c.setNumeroTelephone(dto.getNumeroTelephone());
-		c.setEmail(dto.getEmail());
-		c.setPaysLivraison(dto.getPaysLivraison());
-		c.setVilleLivraison(dto.getVilleLivraison());
-		c.setAdresseLivraison(dto.getAdresseLivraison());
-		c.setPlateforme(dto.getPlateforme());
-		c.setLienProduit(dto.getLienProduit());
-		c.setDescriptionCommande(dto.getDescriptionCommande());
-		c.setQuantite(dto.getQuantite());
-		c.setPrixUnitaire(dto.getPrixUnitaire());
-		c.setPrixTotal(dto.getPrixTotal());
-		c.setDevise(dto.getDevise());
-		c.setNotesSpeciales(dto.getNotesSpeciales());
+    public CommandeDTO createCommande(CommandeDTO dto, String userId) {
+        Commande c = new Commande();
+        c.setUserId(userId);
+        c.setNom(dto.getNom());
+        c.setPrenom(dto.getPrenom());
+        c.setNumeroTelephone(dto.getNumeroTelephone());
+        c.setEmail(dto.getEmail());
+        c.setPaysLivraison(dto.getPaysLivraison());
+        c.setVilleLivraison(dto.getVilleLivraison());
+        c.setAdresseLivraison(dto.getAdresseLivraison());
+        c.setPlateforme(dto.getPlateforme());
+        c.setLienProduit(dto.getLienProduit());
+        c.setDescriptionCommande(dto.getDescriptionCommande());
+        c.setQuantite(dto.getQuantite());
+        c.setPrixUnitaire(dto.getPrixUnitaire());
+        c.setPrixTotal(dto.getPrixTotal());
+        c.setDevise(dto.getDevise());
+        c.setNotesSpeciales(dto.getNotesSpeciales());
+        c.setStatut(parseOrDefault(dto.getStatut(), CommandeStatus.EN_ATTENTE).name());
+        c.setArchived(false);
+        c.setDateCreation(java.time.LocalDateTime.now());
+        c.setDateModification(java.time.LocalDateTime.now());
+        c.setGpId(null);
+        c.setGpPrenom(null);
+        c.setGpNom(null);
+        c.setGpPhoneNumber(null);
 
-		// ✅ statut normalisé + validé (fallback EN_ATTENTE)
-		c.setStatut(parseOrDefault(dto.getStatut(), CommandeStatus.EN_ATTENTE).name());
+        Commande saved = commandeRepo.save(c);
 
-		c.setArchived(false);
-		c.setDateCreation(java.time.LocalDateTime.now());
-		c.setDateModification(java.time.LocalDateTime.now());
+        try {
+            notificationDispatcher.dispatch(templates.commandeCreated(saved.getUserId(), saved.getEmail(),
+                    saved.getNumeroTelephone(), saved.getId()));
+        } catch (Exception e) {
+            System.out.println("⚠️ Notification commandeCreated échouée: " + e.getMessage());
+        }
 
-		// champs GP non définis à la création
-		c.setGpId(null);
-		c.setGpPrenom(null);
-		c.setGpNom(null);
-		c.setGpPhoneNumber(null);
+        return convertToDTO(saved);
+    }
 
-		Commande saved = commandeRepo.save(c);
+    public List<CommandeDTO> getAllCommandesForUser(String userId) {
+        return commandeRepo.findByUserId(userId).stream().map(this::convertToDTO).collect(Collectors.toList());
+    }
 
-		// ✅ Notification "commande reçue" (email/sms/in-app) - ne doit jamais casser
-		try {
-			notificationDispatcher.dispatch(templates.commandeCreated(saved.getUserId(), saved.getEmail(),
-					saved.getNumeroTelephone(), saved.getId()));
-		} catch (Exception e) {
-			System.out.println("⚠️ Notification commandeCreated échouée: " + e.getMessage());
-		}
+    public List<CommandeDTO> getAllCommandes() {
+        return commandeRepo.findAll().stream().map(this::convertToDTO).collect(Collectors.toList());
+    }
 
-		return convertToDTO(saved);
-	}
+    public List<CommandeDTO> getCommandesArchives() {
+        return commandeRepo.findByArchived(true).stream().map(this::convertToDTO).collect(Collectors.toList());
+    }
 
-	// Pour un utilisateur
-	public List<CommandeDTO> getAllCommandesForUser(String userId) {
-		return commandeRepo.findByUserId(userId).stream().map(this::convertToDTO).collect(Collectors.toList());
-	}
+    public List<CommandeDTO> getArchivées() {
+        return commandeRepo.findByArchivedTrue().stream().map(this::convertToDTO).collect(Collectors.toList());
+    }
 
-	// Pour l'admin : toutes les commandes
-	public List<CommandeDTO> getAllCommandes() {
-		return commandeRepo.findAll().stream().map(this::convertToDTO).collect(Collectors.toList());
-	}
+    public List<CommandeDTO> getCommandesArchivesForUser(String userId) {
+        return commandeRepo.findByUserIdAndArchived(userId, true).stream().map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
 
-	// Pour l'admin : commandes archivées uniquement
-	public List<CommandeDTO> getCommandesArchives() {
-		return commandeRepo.findByArchived(true).stream().map(this::convertToDTO).collect(Collectors.toList());
-	}
+    public Optional<CommandeDTO> getCommandeByIdAndUser(Long id, String userId) {
+        return commandeRepo.findById(id).filter(c -> c.getUserId().equals(userId)).map(this::convertToDTO);
+    }
 
-	// Pour l'admin : commandes archivées via findByArchivedTrue (optionnel)
-	public List<CommandeDTO> getArchivées() {
-		return commandeRepo.findByArchivedTrue().stream().map(this::convertToDTO).collect(Collectors.toList());
-	}
+    public boolean deleteCommandeArchive(Long id, String userId) {
+        Optional<Commande> opt = commandeRepo.findById(id);
+        if (opt.isPresent() && opt.get().getUserId().equals(userId) && Boolean.TRUE.equals(opt.get().getArchived())) {
+            commandeRepo.deleteById(id);
+            return true;
+        }
+        return false;
+    }
 
-	public List<CommandeDTO> getCommandesArchivesForUser(String userId) {
-		return commandeRepo.findByUserIdAndArchived(userId, true).stream().map(this::convertToDTO)
-				.collect(Collectors.toList());
-	}
+    public boolean deleteCommande(Long id, String userId) {
+        Optional<Commande> opt = commandeRepo.findById(id);
+        if (opt.isPresent() && opt.get().getUserId().equals(userId)) {
+            commandeRepo.deleteById(id);
+            return true;
+        }
+        return false;
+    }
 
-	public Optional<CommandeDTO> getCommandeByIdAndUser(Long id, String userId) {
-		return commandeRepo.findById(id).filter(c -> c.getUserId().equals(userId)).map(this::convertToDTO);
-	}
+    public CommandeDTO updateCommande(Long id, CommandeDTO dto, String userId) {
+        Optional<Commande> opt = commandeRepo.findById(id);
+        if (opt.isPresent() && opt.get().getUserId().equals(userId)) {
+            Commande c = opt.get();
+            updateFromDto(c, dto);
+            c.setDateModification(java.time.LocalDateTime.now());
+            Commande saved = commandeRepo.save(c);
+            return convertToDTO(saved);
+        }
+        return null;
+    }
 
-	// ✅ NEW: suppression commande archivée uniquement (user)
-	public boolean deleteCommandeArchive(Long id, String userId) {
-		Optional<Commande> opt = commandeRepo.findById(id);
-		if (opt.isPresent() && opt.get().getUserId().equals(userId) && Boolean.TRUE.equals(opt.get().getArchived())) {
-			commandeRepo.deleteById(id);
-			return true;
-		}
-		return false;
-	}
+    public boolean deleteCommandeAdmin(Long id) {
+        if (commandeRepo.existsById(id)) {
+            commandeRepo.deleteById(id);
+            return true;
+        }
+        return false;
+    }
 
-	// Suppression pour l'utilisateur
-	public boolean deleteCommande(Long id, String userId) {
-		Optional<Commande> opt = commandeRepo.findById(id);
-		if (opt.isPresent() && opt.get().getUserId().equals(userId)) {
-			commandeRepo.deleteById(id);
-			return true;
-		}
-		return false;
-	}
+    public CommandeDTO updateCommandeAdmin(Long id, CommandeDTO dto) {
+        Optional<Commande> opt = commandeRepo.findById(id);
+        if (opt.isPresent()) {
+            Commande c = opt.get();
+            updateFromDto(c, dto);
+            c.setDateModification(java.time.LocalDateTime.now());
+            Commande saved = commandeRepo.save(c);
+            return convertToDTO(saved);
+        }
+        return null;
+    }
 
-	// Modification pour l’utilisateur
-	public CommandeDTO updateCommande(Long id, CommandeDTO dto, String userId) {
-		Optional<Commande> opt = commandeRepo.findById(id);
-		if (opt.isPresent() && opt.get().getUserId().equals(userId)) {
-			Commande c = opt.get();
-			updateFromDto(c, dto);
-			c.setDateModification(java.time.LocalDateTime.now());
-			Commande saved = commandeRepo.save(c);
-			return convertToDTO(saved);
-		}
-		return null;
-	}
+    public CommandeDTO updateStatut(Long id, String nouveauStatut) {
+        Optional<Commande> opt = commandeRepo.findById(id);
+        if (opt.isEmpty()) return null;
 
-	// Suppression pour l’admin
-	public boolean deleteCommandeAdmin(Long id) {
-		if (commandeRepo.existsById(id)) {
-			commandeRepo.deleteById(id);
-			return true;
-		}
-		return false;
-	}
+        Commande c = opt.get();
+        CommandeStatus parsed = tryParseStatut(nouveauStatut);
+        boolean changed = false;
 
-	// Modification pour l’admin
-	public CommandeDTO updateCommandeAdmin(Long id, CommandeDTO dto) {
-		Optional<Commande> opt = commandeRepo.findById(id);
-		if (opt.isPresent()) {
-			Commande c = opt.get();
-			updateFromDto(c, dto);
-			c.setDateModification(java.time.LocalDateTime.now());
-			Commande saved = commandeRepo.save(c);
-			return convertToDTO(saved);
-		}
-		return null;
-	}
+        if (parsed != null) {
+            c.setStatut(parsed.name());
+            c.setDateModification(java.time.LocalDateTime.now());
+            c = commandeRepo.save(c);
+            changed = true;
+        }
 
-	/**
-	 * Statut pour l’admin - accepte aussi les anciennes valeurs accentuées - stocke
-	 * toujours la version standard (ASCII)
-	 *
-	 * Retour: - null uniquement si commande introuvable - si statut invalide => on
-	 * ne change rien, mais on renvoie la commande telle quelle
-	 */
-	public CommandeDTO updateStatut(Long id, String nouveauStatut) {
-		Optional<Commande> opt = commandeRepo.findById(id);
-		if (opt.isEmpty()) {
-			return null;
-		}
+        if (changed) {
+            try {
+                CommandeStatus statusEnum = CommandeStatus.valueOf(c.getStatut());
+                notificationDispatcher.dispatch(templates.commandeStatusUpdated(c.getUserId(), c.getEmail(),
+                        c.getNumeroTelephone(), c.getId(), statusEnum));
+                if (statusEnum == CommandeStatus.LIVREE) {
+                    notificationDispatcher.dispatch(templates.commandeCompleted(c.getUserId(), c.getEmail(),
+                            c.getNumeroTelephone(), c.getId()));
+                }
+            } catch (Exception e) {
+                System.out.println("⚠️ Notification updateStatut commande échouée: " + e.getMessage());
+            }
+        }
 
-		Commande c = opt.get();
+        return convertToDTO(c);
+    }
 
-		CommandeStatus parsed = tryParseStatut(nouveauStatut);
-		boolean changed = false;
+    public CommandeDTO archiverCommande(Long id) {
+        Optional<Commande> opt = commandeRepo.findById(id);
+        if (opt.isPresent()) {
+            Commande c = opt.get();
+            c.setArchived(true);
+            c.setDateModification(java.time.LocalDateTime.now());
+            return convertToDTO(commandeRepo.save(c));
+        }
+        return null;
+    }
 
-		if (parsed != null) {
-			c.setStatut(parsed.name());
-			c.setDateModification(java.time.LocalDateTime.now());
-			c = commandeRepo.save(c);
-			changed = true;
-		}
+    public CommandeDTO desarchiverCommande(Long id) {
+        Optional<Commande> opt = commandeRepo.findById(id);
+        if (opt.isPresent() && Boolean.TRUE.equals(opt.get().getArchived())) {
+            Commande c = opt.get();
+            c.setArchived(false);
+            c.setDateModification(java.time.LocalDateTime.now());
+            return convertToDTO(commandeRepo.save(c));
+        }
+        return null;
+    }
 
-		// ✅ Notifications statut (ne doit jamais casser)
-		if (changed) {
-			try {
-				CommandeStatus statusEnum = CommandeStatus.valueOf(c.getStatut());
+    public CommandeDTO assignGpAndValidate(Long commandeId, Long gpId, String statut) {
+        Optional<Commande> optC = commandeRepo.findById(commandeId);
+        if (optC.isEmpty()) return null;
 
-				notificationDispatcher.dispatch(templates.commandeStatusUpdated(c.getUserId(), c.getEmail(),
-						c.getNumeroTelephone(), c.getId(), statusEnum));
+        Optional<GpAgent> optGp = gpRepo.findById(gpId);
+        if (optGp.isEmpty()) return null;
 
-				// "accomplissement" commande
-				if (statusEnum == CommandeStatus.LIVREE) {
-					notificationDispatcher.dispatch(templates.commandeCompleted(c.getUserId(), c.getEmail(),
-							c.getNumeroTelephone(), c.getId()));
-				}
-			} catch (Exception e) {
-				System.out.println("⚠️ Notification updateStatut commande échouée: " + e.getMessage());
-			}
-		}
+        Commande c = optC.get();
+        GpAgent gp = optGp.get();
 
-		return convertToDTO(c);
-	}
+        c.setGpId(gp.getId());
+        c.setGpPrenom(gp.getPrenom());
+        c.setGpNom(gp.getNom());
+        c.setGpPhoneNumber(gp.getPhoneNumber());
 
-	// Archivage par l’admin
-	public CommandeDTO archiverCommande(Long id) {
-		Optional<Commande> opt = commandeRepo.findById(id);
-		if (opt.isPresent()) {
-			Commande c = opt.get();
-			c.setArchived(true);
-			c.setDateModification(java.time.LocalDateTime.now());
-			Commande saved = commandeRepo.save(c);
-			return convertToDTO(saved);
-		}
-		return null;
-	}
+        CommandeStatus parsed = tryParseStatut(statut);
+        if (parsed != null) c.setStatut(parsed.name());
 
-	// Désarchivage d'une commande (admin)
-	public CommandeDTO desarchiverCommande(Long id) {
-		Optional<Commande> opt = commandeRepo.findById(id);
-		if (opt.isPresent() && Boolean.TRUE.equals(opt.get().getArchived())) {
-			Commande c = opt.get();
-			c.setArchived(false);
-			c.setDateModification(java.time.LocalDateTime.now());
-			Commande saved = commandeRepo.save(c);
-			return convertToDTO(saved);
-		}
-		return null;
-	}
+        c.setDateModification(java.time.LocalDateTime.now());
+        Commande saved = commandeRepo.save(c);
 
-	/**
-	 * ADMIN: Assigner un GP + (optionnel) changer le statut, puis notifier
-	 * l'utilisateur. - si statut invalide => on n’écrase pas le statut existant
-	 *
-	 * ✅ FIX: éviter doublons in-app - On ne crée plus la notif via
-	 * notificationService.create(...) - Le dispatcher crée déjà l'in-app via
-	 * InAppProviderImpl
-	 */
-	public CommandeDTO assignGpAndValidate(Long commandeId, Long gpId, String statut) {
-		Optional<Commande> optC = commandeRepo.findById(commandeId);
-		if (optC.isEmpty()) {
-			return null;
-		}
+        try {
+            CommandeStatus newStatus = null;
+            try { newStatus = CommandeStatus.valueOf(saved.getStatut()); } catch (Exception ignored) {}
+            String gpFullName = (gp.getPrenom() + " " + gp.getNom()).trim();
+            notificationDispatcher.dispatch(templates.commandeGpAssigned(saved.getUserId(), saved.getEmail(),
+                    saved.getNumeroTelephone(), saved.getId(), gpFullName, gp.getPhoneNumber(), newStatus));
+        } catch (Exception e) {
+            System.out.println("⚠️ Notification commandeGpAssigned échouée: " + e.getMessage());
+        }
 
-		Optional<GpAgent> optGp = gpRepo.findById(gpId);
-		if (optGp.isEmpty()) {
-			return null;
-		}
+        return convertToDTO(saved);
+    }
 
-		Commande c = optC.get();
-		GpAgent gp = optGp.get();
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
-		c.setGpId(gp.getId());
-		c.setGpPrenom(gp.getPrenom());
-		c.setGpNom(gp.getNom());
-		c.setGpPhoneNumber(gp.getPhoneNumber());
+    private CommandeStatus parseOrDefault(String raw, CommandeStatus def) {
+        CommandeStatus parsed = tryParseStatut(raw);
+        return parsed != null ? parsed : def;
+    }
 
-		CommandeStatus parsed = tryParseStatut(statut);
-		if (parsed != null) {
-			c.setStatut(parsed.name());
-		}
+    private CommandeStatus tryParseStatut(String raw) {
+        if (raw == null || raw.trim().isEmpty()) return null;
+        String s = raw.trim().toUpperCase(Locale.ROOT);
+        s = Normalizer.normalize(s, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
+        s = s.replace(' ', '_').replace('-', '_');
+        if ("LIVRE".equals(s)) return CommandeStatus.LIVREE;
+        try { return CommandeStatus.valueOf(s); } catch (IllegalArgumentException ex) { return null; }
+    }
 
-		c.setDateModification(java.time.LocalDateTime.now());
-		Commande saved = commandeRepo.save(c);
+    // ✅ convertToDTO — inclut statutSuivi + champs postaux
+    private CommandeDTO convertToDTO(Commande c) {
+        CommandeDTO dto = new CommandeDTO();
+        dto.setId(c.getId());
+        dto.setUserId(c.getUserId());
+        dto.setNom(c.getNom());
+        dto.setPrenom(c.getPrenom());
+        dto.setNumeroTelephone(c.getNumeroTelephone());
+        dto.setEmail(c.getEmail());
+        dto.setPaysLivraison(c.getPaysLivraison());
+        dto.setVilleLivraison(c.getVilleLivraison());
+        dto.setAdresseLivraison(c.getAdresseLivraison());
+        dto.setPlateforme(c.getPlateforme());
+        dto.setLienProduit(c.getLienProduit());
+        dto.setDescriptionCommande(c.getDescriptionCommande());
+        dto.setQuantite(c.getQuantite());
+        dto.setPrixUnitaire(c.getPrixUnitaire());
+        dto.setPrixTotal(c.getPrixTotal());
+        dto.setDevise(c.getDevise());
+        dto.setNotesSpeciales(c.getNotesSpeciales());
+        dto.setStatut(c.getStatut());
+        dto.setArchived(c.getArchived());
+        dto.setDateCreation(c.getDateCreation());
+        dto.setDateModification(c.getDateModification());
+        dto.setGpId(c.getGpId());
+        dto.setGpPrenom(c.getGpPrenom());
+        dto.setGpNom(c.getGpNom());
+        dto.setGpPhoneNumber(c.getGpPhoneNumber());
+        // ✅ Statut logistique
+        dto.setStatutSuivi(c.getStatutSuivi() != null ? c.getStatutSuivi().name() : "EN_ATTENTE");
+        // ✅ Suivi postal
+        dto.setPhotoColisUrl(c.getPhotoColisUrl());
+        dto.setPhotoBordereauUrl(c.getPhotoBordereauUrl());
+        dto.setNumeroBordereau(c.getNumeroBordereau());
+        dto.setDeposePosteAt(c.getDeposePosteAt());
+        return dto;
+    }
 
-		// ✅ Notification multi-canaux (email/sms/in-app) - ne doit jamais casser
-		try {
-			CommandeStatus newStatus = null;
-			try {
-				newStatus = CommandeStatus.valueOf(saved.getStatut());
-			} catch (Exception ignored) {
-			}
-
-			String gpFullName = (gp.getPrenom() + " " + gp.getNom()).trim();
-
-			notificationDispatcher.dispatch(templates.commandeGpAssigned(saved.getUserId(), saved.getEmail(),
-					saved.getNumeroTelephone(), saved.getId(), gpFullName, gp.getPhoneNumber(), newStatus));
-		} catch (Exception e) {
-			System.out.println("⚠️ Notification commandeGpAssigned échouée: " + e.getMessage());
-		}
-
-		return convertToDTO(saved);
-	}
-
-	// ===================== Helpers =====================
-
-	private CommandeStatus parseOrDefault(String raw, CommandeStatus def) {
-		CommandeStatus parsed = tryParseStatut(raw);
-		return parsed != null ? parsed : def;
-	}
-
-	private CommandeStatus tryParseStatut(String raw) {
-		if (raw == null || raw.trim().isEmpty()) {
-			return null;
-		}
-
-		String normalized = normalizeStatut(raw);
-		try {
-			return CommandeStatus.valueOf(normalized);
-		} catch (IllegalArgumentException ex) {
-			return null;
-		}
-	}
-
-	private String normalizeStatut(String raw) {
-		String s = raw.trim().toUpperCase(Locale.ROOT);
-
-		// enlever accents: "É" -> "E"
-		s = Normalizer.normalize(s, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
-
-		// remplacer espaces/tirets par underscore
-		s = s.replace(' ', '_').replace('-', '_');
-
-		// compat ancienne habitude
-		if ("LIVRE".equals(s)) {
-			return "LIVREE";
-		}
-
-		return s;
-	}
-
-	// Conversion Entity => DTO
-	private CommandeDTO convertToDTO(Commande c) {
-		CommandeDTO dto = new CommandeDTO();
-		dto.setId(c.getId());
-		dto.setUserId(c.getUserId());
-		dto.setNom(c.getNom());
-		dto.setPrenom(c.getPrenom());
-		dto.setNumeroTelephone(c.getNumeroTelephone());
-		dto.setEmail(c.getEmail());
-		dto.setPaysLivraison(c.getPaysLivraison());
-		dto.setVilleLivraison(c.getVilleLivraison());
-		dto.setAdresseLivraison(c.getAdresseLivraison());
-		dto.setPlateforme(c.getPlateforme());
-		dto.setLienProduit(c.getLienProduit());
-		dto.setDescriptionCommande(c.getDescriptionCommande());
-		dto.setQuantite(c.getQuantite());
-		dto.setPrixUnitaire(c.getPrixUnitaire());
-		dto.setPrixTotal(c.getPrixTotal());
-		dto.setDevise(c.getDevise());
-		dto.setNotesSpeciales(c.getNotesSpeciales());
-		dto.setStatut(c.getStatut());
-		dto.setArchived(c.getArchived());
-		dto.setDateCreation(c.getDateCreation());
-		dto.setDateModification(c.getDateModification());
-
-		// GP mapping
-		dto.setGpId(c.getGpId());
-		dto.setGpPrenom(c.getGpPrenom());
-		dto.setGpNom(c.getGpNom());
-		dto.setGpPhoneNumber(c.getGpPhoneNumber());
-
-		return dto;
-	}
-
-	private void updateFromDto(Commande c, CommandeDTO dto) {
-		c.setNom(dto.getNom());
-		c.setPrenom(dto.getPrenom());
-		c.setNumeroTelephone(dto.getNumeroTelephone());
-		c.setEmail(dto.getEmail());
-		c.setPaysLivraison(dto.getPaysLivraison());
-		c.setVilleLivraison(dto.getVilleLivraison());
-		c.setAdresseLivraison(dto.getAdresseLivraison());
-		c.setPlateforme(dto.getPlateforme());
-		c.setLienProduit(dto.getLienProduit());
-		c.setDescriptionCommande(dto.getDescriptionCommande());
-		c.setQuantite(dto.getQuantite());
-		c.setPrixUnitaire(dto.getPrixUnitaire());
-		c.setPrixTotal(dto.getPrixTotal());
-		c.setDevise(dto.getDevise());
-		c.setNotesSpeciales(dto.getNotesSpeciales());
-
-		// ✅ on normalise ici aussi (sinon régression)
-		c.setStatut(parseOrDefault(dto.getStatut(), CommandeStatus.EN_ATTENTE).name());
-
-		c.setArchived(dto.getArchived());
-		// On ne modifie pas userId ni dateCreation sur update
-		// GP non modifié ici: assignation via assignGpAndValidate()
-	}
+    private void updateFromDto(Commande c, CommandeDTO dto) {
+        c.setNom(dto.getNom());
+        c.setPrenom(dto.getPrenom());
+        c.setNumeroTelephone(dto.getNumeroTelephone());
+        c.setEmail(dto.getEmail());
+        c.setPaysLivraison(dto.getPaysLivraison());
+        c.setVilleLivraison(dto.getVilleLivraison());
+        c.setAdresseLivraison(dto.getAdresseLivraison());
+        c.setPlateforme(dto.getPlateforme());
+        c.setLienProduit(dto.getLienProduit());
+        c.setDescriptionCommande(dto.getDescriptionCommande());
+        c.setQuantite(dto.getQuantite());
+        c.setPrixUnitaire(dto.getPrixUnitaire());
+        c.setPrixTotal(dto.getPrixTotal());
+        c.setDevise(dto.getDevise());
+        c.setNotesSpeciales(dto.getNotesSpeciales());
+        c.setStatut(parseOrDefault(dto.getStatut(), CommandeStatus.EN_ATTENTE).name());
+        c.setArchived(dto.getArchived());
+    }
 }
