@@ -17,6 +17,7 @@ import '../models/logged_user.dart';
 import '../models/transport.dart';
 import '../providers/app_theme_provider.dart';
 import '../services/postal_tracking_service.dart';
+import '../services/transport_service.dart';
 
 class TransportTrackingScreen extends StatefulWidget {
   final Transport transport;
@@ -50,13 +51,29 @@ class _TransportTrackingScreenState extends State<TransportTrackingScreen> {
 
   late Transport _transport;
   final _postalSvc = PostalTrackingService();
+  final _transportSvc = TransportService();
   bool _isAdmin = false;
+  bool _loading = false;
 
   @override
   void initState() {
     super.initState();
     _transport = widget.transport;
     _isAdmin = LoggedUser.fromSupabase().role == 'admin';
+    // ✅ Toujours recharger depuis l'API pour avoir les données fraîches
+    // (photos postales, statutSuivi, etc.)
+    _refresh();
+  }
+
+  Future<void> _refresh() async {
+    if (_transport.id == null) return;
+    setState(() => _loading = true);
+    final fresh = await _transportSvc.getTransportById(_transport.id!);
+    if (mounted)
+      setState(() {
+        if (fresh != null) _transport = fresh;
+        _loading = false;
+      });
   }
 
   // ── Bottom sheet upload postal ─────────────────────────────────────────────

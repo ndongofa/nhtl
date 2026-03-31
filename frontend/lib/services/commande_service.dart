@@ -252,6 +252,28 @@ class CommandeService {
   }
 
   // ── Archives utilisateur ──────────────────────────────────────────────────
+  // ── Récupérer une commande par ID ─────────────────────────────────────────
+  Future<Commande?> getCommandeById(int id) async {
+    try {
+      final jwt = await AuthService.getJwt();
+      if (jwt == null) return null;
+      final url = '${ApiConfig.baseUrl}/api/commandes/$id';
+      final response = await http.get(Uri.parse(url), headers: {
+        'Authorization': 'Bearer $jwt',
+        'Content-Type': 'application/json',
+      }).timeout(ApiConfig.receiveTimeout);
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        return Commande.fromJson(json is Map<String, dynamic> ? json : {});
+      }
+      logger.e('❌ getCommandeById $id : ${response.statusCode}');
+      return null;
+    } catch (e) {
+      logger.e('❌ getCommandeById exception: $e');
+      return null;
+    }
+  }
+
   Future<List<Commande>?> getCommandesArchivesUser() async {
     try {
       final url = '${ApiConfig.baseUrl}$userEndpoint/archives';

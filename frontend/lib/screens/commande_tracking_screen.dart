@@ -17,6 +17,7 @@ import '../models/commande.dart';
 import '../models/logged_user.dart';
 import '../providers/app_theme_provider.dart';
 import '../services/postal_tracking_service.dart';
+import '../services/commande_service.dart';
 
 class CommandeTrackingScreen extends StatefulWidget {
   final Commande commande;
@@ -49,13 +50,28 @@ class _CommandeTrackingScreenState extends State<CommandeTrackingScreen> {
 
   late Commande _commande;
   final _postalSvc = PostalTrackingService();
+  final _commandeSvc = CommandeService();
   bool _isAdmin = false;
+  bool _loading = false;
 
   @override
   void initState() {
     super.initState();
     _commande = widget.commande;
     _isAdmin = LoggedUser.fromSupabase().role == 'admin';
+    // ✅ Toujours recharger depuis l'API pour avoir les données fraîches
+    _refresh();
+  }
+
+  Future<void> _refresh() async {
+    if (_commande.id == null) return;
+    setState(() => _loading = true);
+    final fresh = await _commandeSvc.getCommandeById(_commande.id!);
+    if (mounted)
+      setState(() {
+        if (fresh != null) _commande = fresh;
+        _loading = false;
+      });
   }
 
   void _showPostalUploadSheet() {
