@@ -164,8 +164,8 @@ class _TransportArchivesScreenState extends State<TransportArchivesScreen> {
               final t = archives[index];
 
               final status = t.statut;
-              final color = statutColors[status] ?? Colors.grey.shade600;
-              final icon = statutIcons[status] ?? Icons.info;
+              final color = statutAdminColors[status] ?? Colors.grey.shade600;
+              final icon = statutAdminIcons[status] ?? Icons.info;
 
               return Card(
                 margin: const EdgeInsets.all(8),
