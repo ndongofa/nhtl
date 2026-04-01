@@ -388,7 +388,7 @@ class _TopBar extends StatelessWidget {
               icon: const Icon(Icons.dashboard_outlined,
                   color: Colors.white, size: 20),
               tooltip: "Mon espace",
-              onPressed: () => Navigator.pushNamed(context, '/home'),
+              onPressed: () => Navigator.pushNamed(context, '/'),
               padding: const EdgeInsets.all(6),
               constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
             )
@@ -405,7 +405,7 @@ class _TopBar extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8)),
                   padding:
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 9)),
-              onPressed: () => Navigator.pushNamed(context, '/home'),
+              onPressed: () => Navigator.pushNamed(context, '/'),
             ),
         ] else ...[
           if (!isDesktop) ...[

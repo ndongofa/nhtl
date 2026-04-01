@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:sama/screens/auth/signup_screen.dart';
+import 'package:sama/screens/services_hub_screen.dart';
 import '../../services/auth_service.dart';
 import '../../ui/app_brand.dart';
 import '../../widgets/phone_input_field.dart';
@@ -77,7 +78,10 @@ class _LoginScreenState extends State<LoginScreen> {
             (route) => false,
           );
         } else {
-          Navigator.of(context).pushReplacementNamed('/home');
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const ServicesHubScreen()),
+            (route) => false,
+          );
         }
       }
     } catch (e) {

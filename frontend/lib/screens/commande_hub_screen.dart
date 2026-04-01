@@ -79,9 +79,34 @@ class CommandeHubScreen extends StatelessWidget {
               style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
         ]),
         actions: [
+          // Profil
           IconButton(
             icon: const Icon(Icons.person_outline),
             onPressed: () => Navigator.pushNamed(context, '/profile'),
+            splashRadius: 20,
+          ),
+
+          // Toggle thème (dark/light)
+          GestureDetector(
+            onTap: () => context.read<AppThemeProvider>().toggleTheme(),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Icon(
+                t.isDark ? Icons.wb_sunny_outlined : Icons.nightlight_round,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+          ),
+
+          // Logout
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await AuthService.logout();
+              if (!context.mounted) return;
+              Navigator.of(context).pushNamedAndRemoveUntil('/', (_) => false);
+            },
             splashRadius: 20,
           ),
         ],
