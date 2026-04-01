@@ -1,13 +1,19 @@
+// lib/screens/auth/signup_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-
+import 'package:sama/screens/auth/phone_otp_screen.dart';
 import '../../services/auth_service.dart';
 import '../../ui/app_brand.dart';
 import '../../widgets/phone_input_field.dart';
-import 'phone_otp_screen.dart';
+import 'login_screen.dart';
 
 class SignupScreen extends StatefulWidget {
-  const SignupScreen({Key? key}) : super(key: key);
+  /// Si fourni, redirige vers ce widget après inscription/connexion réussie
+  /// au lieu de '/login' puis '/home'. Utilisé par les landings Transport/Commande.
+  final Widget? redirectTo;
+
+  const SignupScreen({Key? key, this.redirectTo}) : super(key: key);
 
   @override
   State<SignupScreen> createState() => _SignupScreenState();
@@ -23,12 +29,9 @@ class _SignupScreenState extends State<SignupScreen> {
   final _confirmPasswordController = TextEditingController();
 
   String? _phoneE164;
-
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
-
-  // ✅ Téléphone par défaut
   bool _usePhone = true;
 
   @override
@@ -47,56 +50,57 @@ class _SignupScreenState extends State<SignupScreen> {
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                shape: BoxShape.circle,
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+                color: Colors.blue.shade50, shape: BoxShape.circle),
+            child: Icon(Icons.mark_email_unread_outlined,
+                color: Colors.blue.shade600, size: 56),
+          ),
+          const SizedBox(height: 20),
+          const Text("Confirmez votre email",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center),
+          const SizedBox(height: 12),
+          Text(
+            "Un email de confirmation a été envoyé à :\n\n"
+            "$email\n\n"
+            "Cliquez sur le lien dans l'email pour activer votre compte, "
+            "puis revenez vous connecter.",
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 14, color: Colors.black54),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton.icon(
+              icon: const Icon(Icons.login),
+              label: const Text("Aller à la connexion",
+                  style: TextStyle(fontSize: 16)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue.shade600,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
               ),
-              child: Icon(Icons.mark_email_unread_outlined,
-                  color: Colors.blue.shade600, size: 56),
+              onPressed: () => Navigator.of(ctx).pop(),
             ),
-            const SizedBox(height: 20),
-            const Text("Confirmez votre email",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center),
-            const SizedBox(height: 12),
-            Text(
-              "Un email de confirmation a été envoyé à :\n\n"
-              "$email\n\n"
-              "Cliquez sur le lien dans l'email pour activer votre compte, "
-              "puis revenez vous connecter.",
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 14, color: Colors.black54),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.login),
-                label: const Text("Aller à la connexion",
-                    style: TextStyle(fontSize: 16)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.shade600,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                ),
-                onPressed: () => Navigator.of(ctx).pop(),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ]),
       ),
     );
 
     if (!mounted) return;
-    Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
+    // ✅ Après confirmation email → LoginScreen avec redirectTo préservé
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => LoginScreen(redirectTo: widget.redirectTo),
+      ),
+      (_) => false,
+    );
   }
 
   void _handleSignup() async {
@@ -129,9 +133,14 @@ class _SignupScreenState extends State<SignupScreen> {
       if (!mounted) return;
 
       if (_usePhone && outcome == SignupOutcome.confirmationRequired) {
+        // ✅ OTP SMS → PhoneOtpScreen avec redirectTo préservé
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-              builder: (_) => PhoneOtpScreen(phoneE164: identifier)),
+            builder: (_) => PhoneOtpScreen(
+              phoneE164: identifier,
+              redirectTo: widget.redirectTo,
+            ),
+          ),
         );
         return;
       }
@@ -141,12 +150,20 @@ class _SignupScreenState extends State<SignupScreen> {
         return;
       }
 
+      // ✅ Compte actif immédiatement (ex: auto-confirm activé)
       Fluttertoast.showToast(
         msg: "Inscription réussie. Votre compte est déjà actif.",
         backgroundColor: Colors.green,
         toastLength: Toast.LENGTH_LONG,
       );
-      Navigator.of(context).pushReplacementNamed('/login');
+
+      // ✅ Redirige vers LoginScreen avec redirectTo préservé
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (_) => LoginScreen(redirectTo: widget.redirectTo),
+        ),
+        (_) => false,
+      );
     } catch (e) {
       if (!mounted) return;
       Fluttertoast.showToast(
@@ -161,7 +178,6 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // ── Palette harmonisée avec l'app ──────────────────────────────────────
     const Color appBlue = Color(0xFF2296F3);
     const Color bgLight = Color(0xFFF4F8FF);
     const Color cardBg = Colors.white;
@@ -174,13 +190,11 @@ class _SignupScreenState extends State<SignupScreen> {
       appBar: AppBar(
         backgroundColor: appBlue,
         elevation: 0,
-        title: Text(
-          AppBrand.appName,
-          style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.3),
-        ),
+        title: Text(AppBrand.appName,
+            style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.3)),
         centerTitle: false,
       ),
       body: Center(
@@ -195,10 +209,9 @@ class _SignupScreenState extends State<SignupScreen> {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: appBlue.withValues(alpha: 0.07),
-                    blurRadius: 32,
-                    offset: const Offset(0, 8),
-                  ),
+                      color: appBlue.withValues(alpha: 0.07),
+                      blurRadius: 32,
+                      offset: const Offset(0, 8))
                 ],
               ),
               child: Form(
@@ -206,21 +219,19 @@ class _SignupScreenState extends State<SignupScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ── Header ──────────────────────────────────────────────
-                    Row(
-                      children: [
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
+                    // ── Header ────────────────────────────────────────────
+                    Row(children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
                             color: appBlue.withValues(alpha: 0.10),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(Icons.person_add_alt_1,
-                              color: appBlue, size: 20),
-                        ),
-                        const SizedBox(width: 12),
-                        Column(
+                            borderRadius: BorderRadius.circular(12)),
+                        child: const Icon(Icons.person_add_alt_1,
+                            color: appBlue, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text("Créer un compte",
@@ -233,33 +244,54 @@ class _SignupScreenState extends State<SignupScreen> {
                                     color: textMuted,
                                     fontWeight: FontWeight.w500,
                                     fontSize: 12)),
-                          ],
-                        ),
-                      ],
-                    ),
+                          ]),
+                    ]),
+
+                    // ✅ Bandeau contextuel si redirection spécifique
+                    if (widget.redirectTo != null) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                            color: appBlue.withValues(alpha: 0.07),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                                color: appBlue.withValues(alpha: 0.20))),
+                        child: const Row(children: [
+                          Icon(Icons.info_outline, color: appBlue, size: 16),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              "Créez un compte pour accéder à votre espace.",
+                              style: TextStyle(
+                                  color: appBlue,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ]),
+                      ),
+                    ],
 
                     const SizedBox(height: 24),
 
-                    // ── Toggle email / téléphone ─────────────────────────────
+                    // ── Toggle email / téléphone ──────────────────────────
                     Container(
                       decoration: BoxDecoration(
-                        color: bgLight,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: borderColor),
-                      ),
-                      child: Row(
-                        children: [
-                          _toggleTab(
-                              "Téléphone", Icons.phone, true, appBlue, bgLight),
-                          _toggleTab("Email", Icons.alternate_email, false,
-                              appBlue, bgLight),
-                        ],
-                      ),
+                          color: bgLight,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: borderColor)),
+                      child: Row(children: [
+                        _toggleTab(
+                            "Téléphone", Icons.phone, true, appBlue, bgLight),
+                        _toggleTab("Email", Icons.alternate_email, false,
+                            appBlue, bgLight),
+                      ]),
                     ),
 
                     const SizedBox(height: 20),
 
-                    // ── Champ identifiant ────────────────────────────────────
                     if (_usePhone)
                       PhoneInputField(
                         label: 'Téléphone',
@@ -285,36 +317,28 @@ class _SignupScreenState extends State<SignupScreen> {
 
                     const SizedBox(height: 14),
 
-                    // ── Prénom / Nom ─────────────────────────────────────────
-                    Row(
-                      children: [
-                        Expanded(
+                    Row(children: [
+                      Expanded(
                           child: _inputField(
-                            controller: _prenomController,
-                            label: 'Prénom',
-                            icon: Icons.person_outline,
-                            validator: (v) => (v == null || v.trim().isEmpty)
-                                ? 'Requis'
-                                : null,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
+                              controller: _prenomController,
+                              label: 'Prénom',
+                              icon: Icons.person_outline,
+                              validator: (v) => (v == null || v.trim().isEmpty)
+                                  ? 'Requis'
+                                  : null)),
+                      const SizedBox(width: 12),
+                      Expanded(
                           child: _inputField(
-                            controller: _nomController,
-                            label: 'Nom',
-                            icon: Icons.badge_outlined,
-                            validator: (v) => (v == null || v.trim().isEmpty)
-                                ? 'Requis'
-                                : null,
-                          ),
-                        ),
-                      ],
-                    ),
+                              controller: _nomController,
+                              label: 'Nom',
+                              icon: Icons.badge_outlined,
+                              validator: (v) => (v == null || v.trim().isEmpty)
+                                  ? 'Requis'
+                                  : null)),
+                    ]),
 
                     const SizedBox(height: 14),
 
-                    // ── Mot de passe ─────────────────────────────────────────
                     _inputField(
                       controller: _passwordController,
                       label: 'Mot de passe',
@@ -348,7 +372,6 @@ class _SignupScreenState extends State<SignupScreen> {
 
                     const SizedBox(height: 24),
 
-                    // ── Bouton S'inscrire ────────────────────────────────────
                     SizedBox(
                       width: double.infinity,
                       height: 50,
@@ -376,22 +399,24 @@ class _SignupScreenState extends State<SignupScreen> {
                     const SizedBox(height: 16),
 
                     Center(
-                      child: TextButton(
-                        onPressed: () => Navigator.of(context)
-                            .pushReplacementNamed('/login'),
-                        child: const Text("Déjà inscrit ? Se connecter",
-                            style: TextStyle(
-                                color: appBlue, fontWeight: FontWeight.w600)),
+                        child: TextButton(
+                      // ✅ Retour vers login avec redirectTo préservé
+                      onPressed: () => Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              LoginScreen(redirectTo: widget.redirectTo),
+                        ),
                       ),
-                    ),
+                      child: const Text("Déjà inscrit ? Se connecter",
+                          style: TextStyle(
+                              color: appBlue, fontWeight: FontWeight.w600)),
+                    )),
 
                     const SizedBox(height: 8),
                     Center(
-                      child: Text(
-                        "Support : ${AppBrand.supportEmail}",
-                        style: const TextStyle(color: textMuted, fontSize: 11),
-                      ),
-                    ),
+                        child: Text("Support : ${AppBrand.supportEmail}",
+                            style: const TextStyle(
+                                color: textMuted, fontSize: 11))),
                   ],
                 ),
               ),
@@ -402,7 +427,6 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  // ── Toggle tab custom ────────────────────────────────────────────────────
   Widget _toggleTab(
       String label, IconData icon, bool isPhone, Color appBlue, Color bgLight) {
     final isSelected = _usePhone == isPhone;
@@ -417,30 +441,24 @@ class _SignupScreenState extends State<SignupScreen> {
           margin: const EdgeInsets.all(4),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected ? appBlue : Colors.transparent,
-            borderRadius: BorderRadius.circular(9),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon,
-                  size: 15,
-                  color: isSelected ? Colors.white : const Color(0xFF6B7A99)),
-              const SizedBox(width: 6),
-              Text(label,
-                  style: TextStyle(
-                      color:
-                          isSelected ? Colors.white : const Color(0xFF6B7A99),
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13)),
-            ],
-          ),
+              color: isSelected ? appBlue : Colors.transparent,
+              borderRadius: BorderRadius.circular(9)),
+          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(icon,
+                size: 15,
+                color: isSelected ? Colors.white : const Color(0xFF6B7A99)),
+            const SizedBox(width: 6),
+            Text(label,
+                style: TextStyle(
+                    color: isSelected ? Colors.white : const Color(0xFF6B7A99),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13)),
+          ]),
         ),
       ),
     );
   }
 
-  // ── Champ de saisie réutilisable ──────────────────────────────────────────
   Widget _inputField({
     required TextEditingController controller,
     required String label,
@@ -467,29 +485,24 @@ class _SignupScreenState extends State<SignupScreen> {
             ? IconButton(
                 icon: Icon(obscure ? Icons.visibility_off : Icons.visibility,
                     color: const Color(0xFF6B7A99), size: 18),
-                onPressed: toggleObscure,
-              )
+                onPressed: toggleObscure)
             : null,
         filled: true,
         fillColor: const Color(0xFFF4F8FF),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFDDE3EF)),
-        ),
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFFDDE3EF))),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFDDE3EF)),
-        ),
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFFDDE3EF))),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF2296F3), width: 1.8),
-        ),
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFF2296F3), width: 1.8)),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.red),
-        ),
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.red)),
       ),
       validator: validator,
     );

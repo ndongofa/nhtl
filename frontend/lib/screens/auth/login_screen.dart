@@ -1,12 +1,18 @@
+// lib/screens/auth/login_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-
+import 'package:sama/screens/auth/signup_screen.dart';
 import '../../services/auth_service.dart';
 import '../../ui/app_brand.dart';
 import '../../widgets/phone_input_field.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  /// Si fourni, redirige vers ce widget après connexion réussie
+  /// au lieu de '/home'. Utilisé par les landings Transport/Commande.
+  final Widget? redirectTo;
+
+  const LoginScreen({Key? key, this.redirectTo}) : super(key: key);
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -20,7 +26,6 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _phoneE164;
   bool _isLoading = false;
   bool _obscurePassword = true;
-  // ✅ TÉLÉPHONE PAR DÉFAUT
   bool _usePhone = true;
 
   static const Color _appBlue = Color(0xFF2296F3);
@@ -62,7 +67,18 @@ class _LoginScreenState extends State<LoginScreen> {
           backgroundColor: Colors.green,
           toastLength: Toast.LENGTH_LONG,
         );
-        Navigator.of(context).pushReplacementNamed('/home');
+
+        // ✅ Si un redirectTo est fourni (depuis une landing spécifique),
+        //    on remplace la stack par ce widget.
+        //    Sinon comportement par défaut → /home.
+        if (widget.redirectTo != null) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => widget.redirectTo!),
+            (route) => false,
+          );
+        } else {
+          Navigator.of(context).pushReplacementNamed('/home');
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -138,8 +154,38 @@ class _LoginScreenState extends State<LoginScreen> {
                                     fontSize: 12)),
                           ]),
                     ]),
+
+                    // ✅ Bandeau contextuel si redirection spécifique
+                    if (widget.redirectTo != null) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                            color: _appBlue.withValues(alpha: 0.07),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                                color: _appBlue.withValues(alpha: 0.20))),
+                        child: Row(children: [
+                          const Icon(Icons.info_outline,
+                              color: _appBlue, size: 16),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Text(
+                              "Connectez-vous pour accéder à votre espace.",
+                              style: TextStyle(
+                                  color: _appBlue,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ]),
+                      ),
+                    ],
+
                     const SizedBox(height: 24),
-                    // ✅ Toggle — Téléphone en premier et sélectionné par défaut
+
+                    // Toggle téléphone / email
                     Container(
                       decoration: BoxDecoration(
                         color: _bgLight,
@@ -153,6 +199,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ]),
                     ),
                     const SizedBox(height: 20),
+
                     if (_usePhone)
                       PhoneInputField(
                         label: 'Téléphone',
@@ -175,7 +222,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           return null;
                         },
                       ),
+
                     const SizedBox(height: 14),
+
                     _inputField(
                       controller: _passwordController,
                       label: 'Mot de passe',
@@ -189,6 +238,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ? 'Minimum 8 caractères'
                               : null,
                     ),
+
                     const SizedBox(height: 8),
                     Align(
                       alignment: Alignment.centerRight,
@@ -206,7 +256,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 fontSize: 13)),
                       ),
                     ),
+
                     const SizedBox(height: 20),
+
                     SizedBox(
                       width: double.infinity,
                       height: 50,
@@ -230,22 +282,33 @@ class _LoginScreenState extends State<LoginScreen> {
                                     fontWeight: FontWeight.w800, fontSize: 15)),
                       ),
                     ),
+
                     const SizedBox(height: 16),
+
                     Center(
-                        child: TextButton(
-                      onPressed: () =>
-                          Navigator.of(context).pushReplacementNamed('/signup'),
-                      child: const Text("Pas encore inscrit ? Créer un compte",
-                          style: TextStyle(
-                              color: _appBlue,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13)),
-                    )),
+                      child: TextButton(
+                        // ✅ Transmet redirectTo au signup pour conserver le contexte
+                        onPressed: () => Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(
+                            builder: (_) => SignupScreenWithRedirect(
+                                redirectTo: widget.redirectTo),
+                          ),
+                        ),
+                        child: const Text(
+                            "Pas encore inscrit ? Créer un compte",
+                            style: TextStyle(
+                                color: _appBlue,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13)),
+                      ),
+                    ),
+
                     const SizedBox(height: 8),
                     Center(
-                        child: Text("Support : ${AppBrand.supportEmail}",
-                            style: const TextStyle(
-                                color: _textMuted, fontSize: 11))),
+                      child: Text("Support : ${AppBrand.supportEmail}",
+                          style:
+                              const TextStyle(color: _textMuted, fontSize: 11)),
+                    ),
                   ],
                 ),
               ),
@@ -336,4 +399,11 @@ class _LoginScreenState extends State<LoginScreen> {
       validator: validator,
     );
   }
+}
+
+/// Alias pour passer redirectTo depuis login → signup
+/// sans modifier le constructeur de SignupScreen existant
+class SignupScreenWithRedirect extends SignupScreen {
+  const SignupScreenWithRedirect({Key? key, Widget? redirectTo})
+      : super(key: key, redirectTo: redirectTo);
 }

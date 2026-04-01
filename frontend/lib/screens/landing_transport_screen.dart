@@ -5,11 +5,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:sama/providers/app_theme_provider.dart';
-import 'package:sama/screens/transport_hub_screen.dart';
-import 'package:sama/services/auth_service.dart';
-import 'package:sama/services/departure_countdown_service.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+import '../providers/app_theme_provider.dart';
+import '../services/auth_service.dart';
+import '../services/departure_countdown_service.dart';
+import 'transport_hub_screen.dart';
+import 'auth/login_screen.dart';
 
 class LandingTransportScreen extends StatefulWidget {
   const LandingTransportScreen({Key? key}) : super(key: key);
@@ -105,12 +107,11 @@ class _LandingTransportScreenState extends State<LandingTransportScreen> {
       Navigator.push(context,
           MaterialPageRoute(builder: (_) => const TransportHubScreen()));
     } else {
-      Navigator.pushNamed(context, '/login').then((_) {
-        if (AuthService.isLoggedIn() && mounted) {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const TransportHubScreen()));
-        }
-      });
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => LoginScreen(redirectTo: const TransportHubScreen()),
+          ));
     }
   }
 

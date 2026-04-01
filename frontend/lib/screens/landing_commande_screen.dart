@@ -4,10 +4,12 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:sama/providers/app_theme_provider.dart';
-import 'package:sama/screens/commande_hub_screen.dart';
-import 'package:sama/services/auth_service.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+import '../providers/app_theme_provider.dart';
+import '../services/auth_service.dart';
+import 'commande_hub_screen.dart';
+import 'auth/login_screen.dart';
 
 class LandingCommandeScreen extends StatelessWidget {
   const LandingCommandeScreen({Key? key}) : super(key: key);
@@ -87,12 +89,11 @@ class LandingCommandeScreen extends StatelessWidget {
       Navigator.push(context,
           MaterialPageRoute(builder: (_) => const CommandeHubScreen()));
     } else {
-      Navigator.pushNamed(context, '/login').then((_) {
-        if (AuthService.isLoggedIn()) {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const CommandeHubScreen()));
-        }
-      });
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => LoginScreen(redirectTo: const CommandeHubScreen()),
+          ));
     }
   }
 

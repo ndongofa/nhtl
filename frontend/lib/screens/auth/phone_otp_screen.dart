@@ -8,11 +8,13 @@ import '../../ui/app_brand.dart';
 
 class PhoneOtpScreen extends StatefulWidget {
   final String phoneE164;
+  final Widget? redirectTo;
 
   const PhoneOtpScreen({
-    super.key,
+    Key? key,
     required this.phoneE164,
-  });
+    this.redirectTo,
+  }) : super(key: key);
 
   @override
   State<PhoneOtpScreen> createState() => _PhoneOtpScreenState();

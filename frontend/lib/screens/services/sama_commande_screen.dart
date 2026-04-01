@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:sama/screens/auth/login_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../providers/app_theme_provider.dart';
@@ -61,14 +62,12 @@ class SamaCommandeScreen extends StatelessWidget {
       Navigator.push(context,
           MaterialPageRoute(builder: (_) => const CommandesListScreen()));
     } else {
-      // On pousse /login, puis à la connexion l'utilisateur revient ici
-      // et on redirige vers CommandesListScreen
-      Navigator.pushNamed(context, '/login').then((_) {
-        if (AuthService.isLoggedIn()) {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const CommandesListScreen()));
-        }
-      });
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                LoginScreen(redirectTo: const CommandesListScreen()),
+          ));
     }
   }
 
