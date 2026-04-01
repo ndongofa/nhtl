@@ -7,6 +7,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../widgets/sama_logo_widget.dart';
+import '../widgets/sama_account_menu.dart';
 import '../providers/app_theme_provider.dart';
 import '../services/auth_service.dart';
 import 'commande_form_screen.dart';
@@ -29,9 +31,11 @@ class CommandeHubScreen extends StatelessWidget {
 
   Future<void> _wa(BuildContext context, String digits) async {
     final uri = Uri.parse(
-        "https://wa.me/$digits?text=${Uri.encodeComponent("Bonjour SAMA, je souhaite passer une commande en ligne.")}");
-    if (await canLaunchUrl(uri))
+      "https://wa.me/$digits?text=${Uri.encodeComponent("Bonjour SAMA, je souhaite passer une commande en ligne.")}",
+    );
+    if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 
   String _greeting() {
@@ -55,6 +59,67 @@ class CommandeHubScreen extends StatelessWidget {
     return "$salut${prenom.isNotEmpty ? ', $prenom' : ''} 👋";
   }
 
+  // ── TopBar brand icon (simple, moderne, inspiré du logo) ────────────────
+  Widget _brandMark(AppThemeProvider t) => Container(
+        width: 34,
+        height: 34,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF0D2B6B), Color(0xFF1A7ED4)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Container(
+              width: 24,
+              height: 10,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(99),
+                border: Border.all(
+                  color: const Color(0xFF7EC8F7).withValues(alpha: 0.95),
+                  width: 2,
+                ),
+              ),
+            ),
+            Container(
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF0A2040).withValues(alpha: 0.55),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.35),
+                  width: 1,
+                ),
+              ),
+            ),
+            Positioned(
+              right: 7,
+              top: 7,
+              child: Container(
+                width: 6,
+                height: 6,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0xFFFFD700),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
     final t = context.watch<AppThemeProvider>();
@@ -71,36 +136,33 @@ class CommandeHubScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Row(children: [
-          const FaIcon(FontAwesomeIcons.bagShopping,
-              size: 15, color: Colors.white),
-          const SizedBox(width: 10),
-          const Text("Sama Commande",
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
-        ]),
+        titleSpacing: 0,
+        title: const Padding(
+          padding: EdgeInsets.only(left: 6),
+          child: SamaTopBarLogo(),
+        ),
         actions: [
-          // Profil
           IconButton(
+            tooltip: "Mon espace",
+            icon: const Icon(Icons.dashboard_outlined),
+            onPressed: () => SamaAccountMenu.open(context),
+            splashRadius: 20,
+          ),
+          IconButton(
+            tooltip: "Profil",
             icon: const Icon(Icons.person_outline),
             onPressed: () => Navigator.pushNamed(context, '/profile'),
             splashRadius: 20,
           ),
-
-          // Toggle thème (dark/light)
-          GestureDetector(
-            onTap: () => context.read<AppThemeProvider>().toggleTheme(),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Icon(
-                t.isDark ? Icons.wb_sunny_outlined : Icons.nightlight_round,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-          ),
-
-          // Logout
           IconButton(
+            tooltip: t.isDark ? "Thème clair" : "Thème sombre",
+            onPressed: () => context.read<AppThemeProvider>().toggleTheme(),
+            icon: Icon(
+                t.isDark ? Icons.wb_sunny_outlined : Icons.nightlight_round),
+            splashRadius: 20,
+          ),
+          IconButton(
+            tooltip: "Déconnexion",
             icon: const Icon(Icons.logout),
             onPressed: () async {
               await AuthService.logout();
@@ -112,114 +174,136 @@ class CommandeHubScreen extends StatelessWidget {
         ],
       ),
       body: SingleChildScrollView(
-        padding:
-            EdgeInsets.symmetric(horizontal: isDesktop ? 40 : 16, vertical: 24),
+        padding: EdgeInsets.symmetric(
+          horizontal: isDesktop ? 40 : 16,
+          vertical: 24,
+        ),
         child: Center(
-            child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 900),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── Greeting ───────────────────────────────────────────────
-              Text(_greeting(),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 900),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _greeting(),
                   style: TextStyle(
-                      color: t.textPrimary,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 22,
-                      letterSpacing: -0.3)),
-              const SizedBox(height: 4),
-              Text("Que souhaitez-vous faire ?",
-                  style: TextStyle(color: t.textMuted, fontSize: 14)),
-              const SizedBox(height: 24),
+                    color: t.textPrimary,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 22,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "Que souhaitez-vous faire ?",
+                  style: TextStyle(color: t.textMuted, fontSize: 14),
+                ),
+                const SizedBox(height: 24),
 
-              // ── Actions principales ────────────────────────────────────
-              isDesktop
-                  ? Row(children: [
-                      Expanded(
-                          child: _actionCard(t,
-                              icon: FontAwesomeIcons.bagShopping,
-                              color: AppThemeProvider.amber,
-                              title: "Nouvelle commande",
-                              subtitle: "Commander un article en ligne",
-                              onTap: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) => CommandeFormScreen())))),
-                      const SizedBox(width: 14),
-                      Expanded(
-                          child: _actionCard(t,
-                              icon: Icons.receipt_long_outlined,
-                              color: AppThemeProvider.appBlue,
-                              title: "Mes commandes",
-                              subtitle: "Suivre mes achats en cours",
-                              onTap: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) =>
-                                          const CommandesListScreen())))),
-                    ])
-                  : Column(children: [
-                      _actionCard(t,
+                // ── Actions principales ────────────────────────────────────
+                isDesktop
+                    ? Row(children: [
+                        Expanded(
+                          child: _actionCard(
+                            t,
+                            icon: FontAwesomeIcons.bagShopping,
+                            color: AppThemeProvider.amber,
+                            title: "Nouvelle commande",
+                            subtitle: "Commander un article en ligne",
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => CommandeFormScreen(),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: _actionCard(
+                            t,
+                            icon: Icons.receipt_long_outlined,
+                            color: AppThemeProvider.appBlue,
+                            title: "Mes commandes",
+                            subtitle: "Suivre mes achats en cours",
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const CommandesListScreen(),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ])
+                    : Column(children: [
+                        _actionCard(
+                          t,
                           icon: FontAwesomeIcons.bagShopping,
                           color: AppThemeProvider.amber,
                           title: "Nouvelle commande",
                           subtitle: "Commander un article en ligne",
                           onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => CommandeFormScreen()))),
-                      const SizedBox(height: 12),
-                      _actionCard(t,
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => CommandeFormScreen(),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _actionCard(
+                          t,
                           icon: Icons.receipt_long_outlined,
                           color: AppThemeProvider.appBlue,
                           title: "Mes commandes",
                           subtitle: "Suivre mes achats en cours",
                           onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) =>
-                                      const CommandesListScreen()))),
-                    ]),
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const CommandesListScreen(),
+                            ),
+                          ),
+                        ),
+                      ]),
 
-              const SizedBox(height: 28),
+                const SizedBox(height: 28),
 
-              // ── Tarifs ─────────────────────────────────────────────────
-              _buildTarifs(t),
+                _buildTarifs(t),
 
-              const SizedBox(height: 28),
+                const SizedBox(height: 28),
 
-              // ── Plateformes ────────────────────────────────────────────
-              _buildPlateformes(t),
+                _buildPlateformes(t),
 
-              const SizedBox(height: 28),
+                const SizedBox(height: 28),
 
-              // ── Contact ────────────────────────────────────────────────
-              _buildContact(t, context),
+                _buildContact(t, context),
 
-              const SizedBox(height: 32),
-            ],
+                const SizedBox(height: 32),
+              ],
+            ),
           ),
-        )),
+        ),
       ),
     );
   }
 
-  // ── Tarifs ────────────────────────────────────────────────────────────────
+  // ── Tarifs ───────────────────────────────────────────────────────────────
   Widget _buildTarifs(AppThemeProvider t) => Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-              colors: t.isDark
-                  ? [const Color(0xFF1A1200), const Color(0xFF2A1E00)]
-                  : [const Color(0xFFFFB300), const Color(0xFFFF8C00)],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight),
+            colors: t.isDark
+                ? [const Color(0xFF1A1200), const Color(0xFF2A1E00)]
+                : [const Color(0xFFFFB300), const Color(0xFFFF8C00)],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-                color: AppThemeProvider.amber.withValues(alpha: 0.20),
-                blurRadius: 16,
-                offset: const Offset(0, 6))
+              color: AppThemeProvider.amber.withValues(alpha: 0.20),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            )
           ],
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -227,24 +311,31 @@ class CommandeHubScreen extends StatelessWidget {
             const Icon(Icons.local_offer_outlined,
                 color: Colors.white, size: 16),
             const SizedBox(width: 8),
-            const Text("Tarifs Commande en ligne",
-                style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 14)),
+            const Text(
+              "Tarifs Commande en ligne",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                fontSize: 14,
+              ),
+            ),
             const Spacer(),
             Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(20)),
-                child: const Text("−50% WEB",
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 10,
-                        letterSpacing: 0.5))),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Text(
+                "−50% WEB",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 10,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
           ]),
           const SizedBox(height: 16),
           Row(children: [
@@ -255,70 +346,91 @@ class CommandeHubScreen extends StatelessWidget {
             _tarif("🇸🇳", "Vers Dakar", "6500 FCFA"),
           ]),
           const SizedBox(height: 12),
-          Text("+ Frais de service 5% · Paiement à la livraison disponible",
-              style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.65), fontSize: 11)),
+          Text(
+            "+ Frais de service 5% · Paiement à la livraison disponible",
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.65),
+              fontSize: 11,
+            ),
+          ),
         ]),
       );
 
   Widget _tarif(String flag, String city, String price) => Expanded(
-          child: Column(children: [
-        Text("$flag $city",
+        child: Column(children: [
+          Text(
+            "$flag $city",
             textAlign: TextAlign.center,
             style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.80),
-                fontWeight: FontWeight.w600,
-                fontSize: 11)),
-        const SizedBox(height: 4),
-        Text(price,
+              color: Colors.white.withValues(alpha: 0.80),
+              fontWeight: FontWeight.w600,
+              fontSize: 11,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            price,
             textAlign: TextAlign.center,
             style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-                fontSize: 14)),
-      ]));
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              fontSize: 14,
+            ),
+          ),
+        ]),
+      );
 
   Widget _tarifDiv() => Container(
-      width: 1,
-      height: 32,
-      color: Colors.white.withValues(alpha: 0.20),
-      margin: const EdgeInsets.symmetric(horizontal: 4));
+        width: 1,
+        height: 32,
+        color: Colors.white.withValues(alpha: 0.20),
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+      );
 
   // ── Plateformes ───────────────────────────────────────────────────────────
   Widget _buildPlateformes(AppThemeProvider t) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("PLATEFORMES SUPPORTÉES",
-              style: TextStyle(
-                  color: t.textMuted,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 11,
-                  letterSpacing: 1.2)),
+          Text(
+            "PLATEFORMES SUPPORTÉES",
+            style: TextStyle(
+              color: t.textMuted,
+              fontWeight: FontWeight.w700,
+              fontSize: 11,
+              letterSpacing: 1.2,
+            ),
+          ),
           const SizedBox(height: 12),
           Wrap(
             spacing: 10,
             runSpacing: 10,
             children: _plateformes
-                .map((p) => Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 10),
-                      decoration: BoxDecoration(
-                          color: t.bgCard,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                              color: (p['color'] as Color)
-                                  .withValues(alpha: 0.25))),
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        Text(p['emoji'] as String,
-                            style: const TextStyle(fontSize: 18)),
-                        const SizedBox(width: 7),
-                        Text(p['name'] as String,
-                            style: TextStyle(
-                                color: t.textPrimary,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 13)),
-                      ]),
-                    ))
+                .map(
+                  (p) => Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: t.bgCard,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: (p['color'] as Color).withValues(alpha: 0.25),
+                      ),
+                    ),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Text(p['emoji'] as String,
+                          style: const TextStyle(fontSize: 18)),
+                      const SizedBox(width: 7),
+                      Text(
+                        p['name'] as String,
+                        style: TextStyle(
+                          color: t.textPrimary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ]),
+                  ),
+                )
                 .toList(),
           ),
         ],
@@ -328,12 +440,15 @@ class CommandeHubScreen extends StatelessWidget {
   Widget _buildContact(AppThemeProvider t, BuildContext context) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("BESOIN D'AIDE ?",
-              style: TextStyle(
-                  color: t.textMuted,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 11,
-                  letterSpacing: 1.2)),
+          Text(
+            "BESOIN D'AIDE ?",
+            style: TextStyle(
+              color: t.textMuted,
+              fontWeight: FontWeight.w700,
+              fontSize: 11,
+              letterSpacing: 1.2,
+            ),
+          ),
           const SizedBox(height: 12),
           Row(children: [
             Expanded(child: _waBtn(t, context, "WhatsApp France", _waFrance)),
@@ -343,26 +458,35 @@ class CommandeHubScreen extends StatelessWidget {
         ],
       );
 
-  Widget _waBtn(AppThemeProvider t, BuildContext context, String label,
-          String digits) =>
+  Widget _waBtn(
+    AppThemeProvider t,
+    BuildContext context,
+    String label,
+    String digits,
+  ) =>
       GestureDetector(
         onTap: () => _wa(context, digits),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           decoration: BoxDecoration(
-              color: AppThemeProvider.green.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                  color: AppThemeProvider.green.withValues(alpha: 0.25))),
+            color: AppThemeProvider.green.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: AppThemeProvider.green.withValues(alpha: 0.25),
+            ),
+          ),
           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
             const FaIcon(FontAwesomeIcons.whatsapp,
                 color: AppThemeProvider.green, size: 16),
             const SizedBox(width: 8),
-            Text(label,
-                style: TextStyle(
-                    color: t.textPrimary,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13)),
+            Text(
+              label,
+              style: TextStyle(
+                color: t.textPrimary,
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
+            ),
           ]),
         ),
       );
@@ -381,39 +505,50 @@ class CommandeHubScreen extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-              color: t.bgCard,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: color.withValues(alpha: 0.22)),
-              boxShadow: [
-                BoxShadow(
-                    color: color.withValues(alpha: 0.08),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4))
-              ]),
+            color: t.bgCard,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: color.withValues(alpha: 0.22)),
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: 0.08),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              )
+            ],
+          ),
           child: Row(children: [
             Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(14)),
-                child: icon is IconData
-                    ? Icon(icon, color: color, size: 22)
-                    : FaIcon(icon, color: color, size: 20)),
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: icon is IconData
+                  ? Icon(icon, color: color, size: 22)
+                  : FaIcon(icon, color: color, size: 20),
+            ),
             const SizedBox(width: 14),
             Expanded(
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                  Text(title,
-                      style: TextStyle(
-                          color: t.textPrimary,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 15)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: t.textPrimary,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15,
+                    ),
+                  ),
                   const SizedBox(height: 3),
-                  Text(subtitle,
-                      style: TextStyle(color: t.textMuted, fontSize: 13)),
-                ])),
+                  Text(
+                    subtitle,
+                    style: TextStyle(color: t.textMuted, fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
             Icon(Icons.chevron_right, color: t.textMuted, size: 22),
           ]),
         ),

@@ -6,10 +6,12 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../widgets/sama_logo_widget.dart';
+import '../widgets/sama_account_menu.dart';
 import '../providers/app_theme_provider.dart';
 import '../services/auth_service.dart';
-import 'commande_hub_screen.dart';
 import 'auth/login_screen.dart';
+import 'commande_hub_screen.dart';
 
 class LandingCommandeScreen extends StatelessWidget {
   const LandingCommandeScreen({Key? key}) : super(key: key);
@@ -79,23 +81,89 @@ class LandingCommandeScreen extends StatelessWidget {
 
   Future<void> _wa(String digits) async {
     final uri = Uri.parse(
-        "https://wa.me/$digits?text=${Uri.encodeComponent("Bonjour SAMA, je souhaite passer une commande en ligne.")}");
-    if (await canLaunchUrl(uri))
+      "https://wa.me/$digits?text=${Uri.encodeComponent("Bonjour SAMA, je souhaite passer une commande en ligne.")}",
+    );
+    if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 
   void _handleCTA(BuildContext context) {
     if (AuthService.isLoggedIn()) {
-      Navigator.push(context,
-          MaterialPageRoute(builder: (_) => const CommandeHubScreen()));
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const CommandeHubScreen()),
+      );
     } else {
       Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => LoginScreen(redirectTo: const CommandeHubScreen()),
-          ));
+        context,
+        MaterialPageRoute(
+          builder: (_) => LoginScreen(redirectTo: const CommandeHubScreen()),
+        ),
+      );
     }
   }
+
+  // ── TopBar brand icon (simple, moderne, inspiré du logo) ────────────────
+  Widget _brandMark(AppThemeProvider t) => Container(
+        width: 34,
+        height: 34,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF0D2B6B), Color(0xFF1A7ED4)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Container(
+              width: 24,
+              height: 10,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(99),
+                border: Border.all(
+                  color: const Color(0xFF7EC8F7).withValues(alpha: 0.95),
+                  width: 2,
+                ),
+              ),
+            ),
+            Container(
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF0A2040).withValues(alpha: 0.55),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.35),
+                  width: 1,
+                ),
+              ),
+            ),
+            Positioned(
+              right: 7,
+              top: 7,
+              child: Container(
+                width: 6,
+                height: 6,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0xFFFFD700),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -110,83 +178,71 @@ class LandingCommandeScreen extends StatelessWidget {
         backgroundColor: t.topBarBg,
         foregroundColor: Colors.white,
         elevation: 0,
-        title: Row(children: [
-          const FaIcon(FontAwesomeIcons.bagShopping,
-              size: 15, color: Colors.white),
-          const SizedBox(width: 10),
-          const Text("Sama Commande",
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
-        ]),
+        titleSpacing: 0,
+        title: const Padding(
+          padding: EdgeInsets.only(left: 12),
+          child: SamaTopBarLogo(),
+        ),
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: isLoggedIn
-                ? TextButton.icon(
-                    icon: const Icon(Icons.dashboard_outlined,
-                        color: Colors.white, size: 16),
-                    label: const Text("Mon espace",
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13)),
-                    onPressed: () => _handleCTA(context),
-                  )
-                : TextButton.icon(
-                    icon: const Icon(Icons.login_outlined,
-                        color: Colors.white, size: 16),
-                    label: const Text("Connexion",
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13)),
-                    onPressed: () => _handleCTA(context),
-                  ),
+          TextButton.icon(
+            icon: const Icon(Icons.dashboard_outlined,
+                color: Colors.white, size: 16),
+            label: const Text(
+              "Mon espace",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
+            ),
+            onPressed: () => SamaAccountMenu.open(context),
+          ),
+          IconButton(
+            tooltip: t.isDark ? "Thème clair" : "Thème sombre",
+            onPressed: () => context.read<AppThemeProvider>().toggleTheme(),
+            icon: Icon(
+              t.isDark ? Icons.wb_sunny_outlined : Icons.nightlight_round,
+              color: Colors.white,
+            ),
           ),
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                  color: AppThemeProvider.green.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                      color: AppThemeProvider.green.withValues(alpha: 0.5))),
-              child: const Text("● Disponible",
-                  style: TextStyle(
-                      color: AppThemeProvider.green,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700)),
+                color: AppThemeProvider.green.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: AppThemeProvider.green.withValues(alpha: 0.5),
+                ),
+              ),
+              child: const Text(
+                "● Disponible",
+                style: TextStyle(
+                  color: AppThemeProvider.green,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
           ),
         ],
       ),
       body: SingleChildScrollView(
         child: Column(children: [
-          // ── Hero ──────────────────────────────────────────────────────
           _buildHero(t, isDesktop, isLoggedIn, context),
-
-          // ── Plateformes ───────────────────────────────────────────────
           _buildPlateformes(t, isDesktop),
-
-          // ── Comment ça marche ─────────────────────────────────────────
           _buildEtapes(t, isDesktop, context),
-
-          // ── Avantages ─────────────────────────────────────────────────
           _buildAvantages(t, isDesktop, context),
-
-          // ── Tarifs ────────────────────────────────────────────────────
           _buildTarifs(t, isDesktop),
-
-          // ── CTA final ─────────────────────────────────────────────────
           _buildCtaFinal(t, isDesktop, isLoggedIn, context),
-
           const SizedBox(height: 40),
         ]),
       ),
     );
   }
 
-  // ── Hero ──────────────────────────────────────────────────────────────────
+  // --- le reste inchangé (tes méthodes existantes) ---
   Widget _buildHero(AppThemeProvider t, bool isDesktop, bool isLoggedIn,
           BuildContext context) =>
       Container(
@@ -283,7 +339,6 @@ class LandingCommandeScreen extends StatelessWidget {
         ]),
       );
 
-  // ── Plateformes ───────────────────────────────────────────────────────────
   Widget _buildPlateformes(AppThemeProvider t, bool isDesktop) => Container(
         color: t.bgSection,
         padding:
@@ -334,7 +389,6 @@ class LandingCommandeScreen extends StatelessWidget {
         )),
       );
 
-  // ── Étapes ────────────────────────────────────────────────────────────────
   Widget _buildEtapes(
           AppThemeProvider t, bool isDesktop, BuildContext context) =>
       Container(
@@ -395,28 +449,10 @@ class LandingCommandeScreen extends StatelessWidget {
                         ])),
                   ]),
                 )),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.shopping_cart_checkout, size: 16),
-                label: const Text("Passer une commande maintenant",
-                    style: TextStyle(fontWeight: FontWeight.w800)),
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: AppThemeProvider.amber,
-                    foregroundColor: AppThemeProvider.textDark,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 14)),
-                onPressed: () => _handleCTA(context),
-              ),
-            ),
           ]),
         )),
       );
 
-  // ── Avantages ─────────────────────────────────────────────────────────────
   Widget _buildAvantages(
           AppThemeProvider t, bool isDesktop, BuildContext context) =>
       Container(
@@ -466,7 +502,6 @@ class LandingCommandeScreen extends StatelessWidget {
         )),
       );
 
-  // ── Tarifs ────────────────────────────────────────────────────────────────
   Widget _buildTarifs(AppThemeProvider t, bool isDesktop) => Container(
         padding:
             EdgeInsets.symmetric(horizontal: isDesktop ? 64 : 20, vertical: 36),
@@ -509,26 +544,6 @@ class LandingCommandeScreen extends StatelessWidget {
                       _tarifCard("🇲🇦", "Vers Casablanca", "65 DH", "/kg"),
                       _tarifCard("🇸🇳", "Vers Dakar", "6 500", "FCFA/kg"),
                     ]),
-                const SizedBox(height: 16),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(10)),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.info_outline, color: Colors.white, size: 14),
-                      SizedBox(width: 6),
-                      Text("Tarifs web : −50% sur le prix comptoir",
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 12)),
-                    ],
-                  ),
-                ),
               ]),
             ),
           ]),
@@ -555,7 +570,6 @@ class LandingCommandeScreen extends StatelessWidget {
                 color: Colors.white.withValues(alpha: 0.65), fontSize: 11)),
       ]);
 
-  // ── CTA final ─────────────────────────────────────────────────────────────
   Widget _buildCtaFinal(AppThemeProvider t, bool isDesktop, bool isLoggedIn,
           BuildContext context) =>
       Container(
@@ -585,59 +599,22 @@ class LandingCommandeScreen extends StatelessWidget {
                 color: Colors.white.withValues(alpha: 0.7), fontSize: 14),
           ),
           const SizedBox(height: 24),
-          Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              alignment: WrapAlignment.center,
-              children: [
-                ElevatedButton.icon(
-                  icon: Icon(
-                      isLoggedIn
-                          ? Icons.dashboard_outlined
-                          : Icons.login_outlined,
-                      size: 16),
-                  label: Text(
-                      isLoggedIn ? "Mon espace Commande" : "Se connecter",
-                      style: const TextStyle(fontWeight: FontWeight.w800)),
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: AppThemeProvider.amber,
-                      foregroundColor: AppThemeProvider.textDark,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 13)),
-                  onPressed: () => _handleCTA(context),
-                ),
-                ElevatedButton.icon(
-                  icon: const FaIcon(FontAwesomeIcons.whatsapp, size: 16),
-                  label: const Text("WhatsApp France",
-                      style: TextStyle(fontWeight: FontWeight.w800)),
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: AppThemeProvider.green,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 13)),
-                  onPressed: () => _wa(_waFrance),
-                ),
-                ElevatedButton.icon(
-                  icon: const FaIcon(FontAwesomeIcons.whatsapp, size: 16),
-                  label: const Text("WhatsApp Dakar",
-                      style: TextStyle(fontWeight: FontWeight.w800)),
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: AppThemeProvider.green,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 13)),
-                  onPressed: () => _wa(_waDakar),
-                ),
-              ]),
+          ElevatedButton.icon(
+            icon: Icon(
+                isLoggedIn ? Icons.dashboard_outlined : Icons.login_outlined,
+                size: 16),
+            label: Text(isLoggedIn ? "Mon espace Commande" : "Se connecter",
+                style: const TextStyle(fontWeight: FontWeight.w800)),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: AppThemeProvider.amber,
+                foregroundColor: AppThemeProvider.textDark,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 13)),
+            onPressed: () => _handleCTA(context),
+          ),
         ]),
       );
 }

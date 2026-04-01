@@ -3,21 +3,18 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'providers/app_theme_provider.dart';
-
 import 'screens/admin/admin_user_screen.dart';
 import 'screens/auth/auth_callback_screen.dart';
 import 'screens/auth/forgot_password_screen.dart';
 import 'screens/auth/login_screen.dart';
+import 'screens/auth/profile_screen.dart';
 import 'screens/auth/reset_password_screen.dart';
 import 'screens/auth/signup_screen.dart';
-import 'screens/auth/profile_screen.dart';
-
-import 'screens/services_hub_screen.dart';
-import 'screens/landing_transport_screen.dart';
-import 'screens/landing_commande_screen.dart';
-import 'screens/transport_hub_screen.dart';
 import 'screens/commande_hub_screen.dart';
-
+import 'screens/landing_commande_screen.dart';
+import 'screens/landing_transport_screen.dart';
+import 'screens/services_hub_screen.dart';
+import 'screens/transport_hub_screen.dart';
 import 'services/departure_countdown_service.dart';
 import 'ui/app_brand.dart';
 
@@ -73,33 +70,21 @@ class MyApp extends StatelessWidget {
           style: TextButton.styleFrom(foregroundColor: primary),
         ),
       ),
-
-      // ✅ Point d'entrée UNIQUE (même si connecté)
       initialRoute: '/',
-
       routes: {
-        // ✅ Home supprimé : '/' mène toujours vers ServicesHubScreen
         '/': (context) => const ServicesHubScreen(),
-
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignupScreen(),
         '/forgot-password': (context) => const ForgotPasswordScreen(),
-
         '/admin': (context) => AdminUserScreen(),
-        '/profile': (context) => ProfileScreen(),
-
+        '/profile': (context) => const ProfileScreen(),
         '/auth/callback': (context) => const AuthCallbackScreen(),
         '/reset-password': (context) => const ResetPasswordScreen(),
-
-        // Landings services
         '/transport': (context) => const LandingTransportScreen(),
         '/commande': (context) => const LandingCommandeScreen(),
-
-        // Accès direct hubs (si tu veux les garder)
         '/transport/hub': (context) => const TransportHubScreen(),
         '/commande/hub': (context) => const CommandeHubScreen(),
       },
-
       debugShowCheckedModeBanner: false,
     );
   }
