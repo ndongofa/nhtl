@@ -11,8 +11,10 @@ import 'screens/auth/reset_password_screen.dart';
 import 'screens/auth/signup_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/services_hub_screen.dart';
-import 'screens/services/landing_commande_screen.dart';
-import 'screens/services/landing_transport_screen.dart';
+import 'screens/landing_transport_screen.dart';
+import 'screens/landing_commande_screen.dart';
+import 'screens/transport_hub_screen.dart';
+import 'screens/commande_hub_screen.dart';
 import 'services/auth_service.dart';
 import 'services/departure_countdown_service.dart';
 import 'ui/app_brand.dart';
@@ -83,8 +85,11 @@ class MyApp extends StatelessWidget {
         '/profile': (context) => ProfileScreen(),
         '/auth/callback': (context) => const AuthCallbackScreen(),
         '/reset-password': (context) => const ResetPasswordScreen(),
-        '/commande': (context) => const LandingCommandeScreen(),
         '/transport': (context) => const LandingTransportScreen(),
+        '/commande': (context) => const LandingCommandeScreen(),
+//accès direct aux hubs pour utilisateurs déjà connectés
+        '/transport/hub': (context) => const TransportHubScreen(),
+        '/commande/hub': (context) => const CommandeHubScreen(),
       },
       debugShowCheckedModeBanner: false,
     );
