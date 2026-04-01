@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sama/screens/auth/profile_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
 import 'providers/app_theme_provider.dart';
 import 'screens/admin/admin_user_screen.dart';
 import 'screens/auth/auth_callback_screen.dart';
@@ -12,6 +11,8 @@ import 'screens/auth/reset_password_screen.dart';
 import 'screens/auth/signup_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/services_hub_screen.dart';
+import 'screens/services/landing_commande_screen.dart';
+import 'screens/services/landing_transport_screen.dart';
 import 'services/auth_service.dart';
 import 'services/departure_countdown_service.dart';
 import 'ui/app_brand.dart';
@@ -82,6 +83,8 @@ class MyApp extends StatelessWidget {
         '/profile': (context) => ProfileScreen(),
         '/auth/callback': (context) => const AuthCallbackScreen(),
         '/reset-password': (context) => const ResetPasswordScreen(),
+        '/commande': (context) => const LandingCommandeScreen(),
+        '/transport': (context) => const LandingTransportScreen(),
       },
       debugShowCheckedModeBanner: false,
     );

@@ -3,15 +3,14 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:sama/screens/services/landing_commande_screen.dart';
+import 'package:sama/screens/services/landing_transport_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
-
 import '../providers/app_theme_provider.dart';
 import '../widgets/sama_logo_widget.dart';
 import '../services/auth_service.dart';
-import 'landing_screen.dart';
 import 'services/sama_achat_screen.dart';
 import 'services/sama_best_seller_screen.dart';
-import 'services/sama_commande_screen.dart';
 import 'services/sama_maad_screen.dart';
 import 'services/sama_teranga_screen.dart';
 
@@ -91,10 +90,10 @@ class ServicesHubScreen extends StatelessWidget {
     Widget screen;
     switch (s.id) {
       case 'gp':
-        screen = const LandingScreenSamaServicesInternational();
+        screen = const LandingTransportScreen();
         break;
       case 'commande':
-        screen = const SamaCommandeScreen();
+        screen = const LandingCommandeScreen();
         break;
       case 'achat':
         screen = const SamaAchatScreen();
