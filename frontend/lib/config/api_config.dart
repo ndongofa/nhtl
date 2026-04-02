@@ -35,14 +35,23 @@ class ApiConfig {
 
   static const String transportEndpoint = '/api/transports';
   static const String commandeEndpoint = '/api/commandes';
+  static const String achatEndpoint = '/api/achats';
   static const String userEndpoint = '/api/users';
 
   // admin users (nouveau controller Spring)
   static const String adminUserEndpoint = '/api/admin/users';
 
-  // admin commandes/transports (AdminController existant)
+  // admin commandes/transports/achats
   static const String adminCommandeEndpoint = '/admin/commandes/all';
   static const String adminTransportEndpoint = '/admin/transports/all';
+  static const String adminAchatEndpoint = '/api/admin/achats';
+
+  // E-commerce services (maad / teranga / bestseller)
+  static String ecommerceProduits(String service) => '/api/$service/produits';
+  static String ecommercePanier(String service) => '/api/$service/panier';
+  static String ecommerceCommandes(String service) => '/api/$service/commandes';
+  static String adminEcommerceProduits(String service) => '/api/admin/$service/produits';
+  static String adminEcommerceCommandes(String service) => '/api/admin/$service/commandes';
 
   static const String commandeStatutSearchEndpoint =
       '/api/commandes/search/statut';

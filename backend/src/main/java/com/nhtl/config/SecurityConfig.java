@@ -46,7 +46,11 @@ public class SecurityConfig {
 						.requestMatchers("/", "/index.html").permitAll()
 						.requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
 						.requestMatchers("/api/admin/**").hasRole("ADMIN")
-						.requestMatchers("/api/commandes/**", "/api/transports/**").authenticated().anyRequest()
+						.requestMatchers("/api/commandes/**", "/api/transports/**", "/api/achats/**").authenticated()
+						.requestMatchers("/api/maad/panier/**", "/api/teranga/panier/**", "/api/bestseller/panier/**").authenticated()
+						.requestMatchers("/api/maad/commandes/**", "/api/teranga/commandes/**", "/api/bestseller/commandes/**").authenticated()
+						.requestMatchers(org.springframework.http.HttpMethod.GET, "/api/maad/produits/**", "/api/teranga/produits/**", "/api/bestseller/produits/**").permitAll()
+						.anyRequest()
 						.permitAll())
 
 				// JWT filter

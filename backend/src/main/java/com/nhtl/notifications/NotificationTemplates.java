@@ -2,6 +2,7 @@ package com.nhtl.notifications;
 
 import org.springframework.stereotype.Component;
 
+import com.nhtl.models.AchatStatus;
 import com.nhtl.models.CommandeStatus;
 import com.nhtl.models.TransportStatus;
 
@@ -34,6 +35,12 @@ public class NotificationTemplates {
 				"Votre demande de transport a été reçue. Référence: #" + transportId + ".");
 	}
 
+	public NotificationEvent achatCreated(String userId, String email, String phone, Long achatId) {
+		return new NotificationEvent(userId, email, phone, NotificationEventType.ACHAT_CREATED,
+				"Demande d'achat reçue",
+				"Votre demande d'achat sur mesure a été reçue. Référence: #" + achatId + ".");
+	}
+
 	public NotificationEvent commandeGpAssigned(String userId, String email, String phone, Long commandeId,
 			String gpFullName, String gpPhone, CommandeStatus newStatus) {
 		String msg = "Votre commande #" + commandeId + " est prise en charge par " + gpFullName
@@ -52,6 +59,15 @@ public class NotificationTemplates {
 				"Transport pris en charge", msg);
 	}
 
+	public NotificationEvent achatGpAssigned(String userId, String email, String phone, Long achatId,
+			String gpFullName, String gpPhone, AchatStatus newStatus) {
+		String msg = "Votre achat #" + achatId + " est pris en charge par " + gpFullName
+				+ (gpPhone != null && !gpPhone.isBlank() ? " (Tél: " + gpPhone + ")" : "")
+				+ (newStatus != null ? ". Statut: " + newStatus.name() : ".");
+		return new NotificationEvent(userId, email, phone, NotificationEventType.ACHAT_GP_ASSIGNED,
+				"Achat pris en charge", msg);
+	}
+
 	public NotificationEvent commandeStatusUpdated(String userId, String email, String phone, Long commandeId,
 			CommandeStatus status) {
 		return new NotificationEvent(userId, email, phone, NotificationEventType.COMMANDE_STATUS_UPDATED,
@@ -64,6 +80,12 @@ public class NotificationTemplates {
 				"Statut transport mis à jour", "Transport #" + transportId + " : nouveau statut = " + status.name());
 	}
 
+	public NotificationEvent achatStatusUpdated(String userId, String email, String phone, Long achatId,
+			AchatStatus status) {
+		return new NotificationEvent(userId, email, phone, NotificationEventType.ACHAT_STATUS_UPDATED,
+				"Statut achat mis à jour", "Achat #" + achatId + " : nouveau statut = " + status.name());
+	}
+
 	public NotificationEvent commandeCompleted(String userId, String email, String phone, Long commandeId) {
 		return new NotificationEvent(userId, email, phone, NotificationEventType.COMMANDE_COMPLETED,
 				"Commande terminée", "Votre commande #" + commandeId + " est terminée. Merci !");
@@ -72,5 +94,10 @@ public class NotificationTemplates {
 	public NotificationEvent transportCompleted(String userId, String email, String phone, Long transportId) {
 		return new NotificationEvent(userId, email, phone, NotificationEventType.TRANSPORT_COMPLETED,
 				"Transport terminé", "Votre transport #" + transportId + " est terminé. Merci !");
+	}
+
+	public NotificationEvent achatCompleted(String userId, String email, String phone, Long achatId) {
+		return new NotificationEvent(userId, email, phone, NotificationEventType.ACHAT_COMPLETED,
+				"Achat terminé", "Votre achat #" + achatId + " est terminé. Merci !");
 	}
 }
