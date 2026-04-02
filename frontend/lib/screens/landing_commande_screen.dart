@@ -6,7 +6,6 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../widgets/sama_logo_widget.dart';
 import '../widgets/sama_account_menu.dart';
 import '../providers/app_theme_provider.dart';
 import '../services/auth_service.dart';
@@ -104,67 +103,6 @@ class LandingCommandeScreen extends StatelessWidget {
     }
   }
 
-  // ── TopBar brand icon (simple, moderne, inspiré du logo) ────────────────
-  Widget _brandMark(AppThemeProvider t) => Container(
-        width: 34,
-        height: 34,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
-          gradient: const LinearGradient(
-            colors: [Color(0xFF0D2B6B), Color(0xFF1A7ED4)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 14,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Container(
-              width: 24,
-              height: 10,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(99),
-                border: Border.all(
-                  color: const Color(0xFF7EC8F7).withValues(alpha: 0.95),
-                  width: 2,
-                ),
-              ),
-            ),
-            Container(
-              width: 14,
-              height: 14,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFF0A2040).withValues(alpha: 0.55),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.35),
-                  width: 1,
-                ),
-              ),
-            ),
-            Positioned(
-              right: 7,
-              top: 7,
-              child: Container(
-                width: 6,
-                height: 6,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Color(0xFFFFD700),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-
   @override
   Widget build(BuildContext context) {
     final t = context.watch<AppThemeProvider>();
@@ -181,52 +119,83 @@ class LandingCommandeScreen extends StatelessWidget {
         titleSpacing: 0,
         title: const Padding(
           padding: EdgeInsets.only(left: 12),
-          child: SamaTopBarLogo(),
-        ),
-        actions: [
-          TextButton.icon(
-            icon: const Icon(Icons.dashboard_outlined,
-                color: Colors.white, size: 16),
-            label: const Text(
-              "Mon espace",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-                fontSize: 13,
-              ),
-            ),
-            onPressed: () => SamaAccountMenu.open(context),
-          ),
-          IconButton(
-            tooltip: t.isDark ? "Thème clair" : "Thème sombre",
-            onPressed: () => context.read<AppThemeProvider>().toggleTheme(),
-            icon: Icon(
-              t.isDark ? Icons.wb_sunny_outlined : Icons.nightlight_round,
-              color: Colors.white,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppThemeProvider.green.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: AppThemeProvider.green.withValues(alpha: 0.5),
-                ),
-              ),
-              child: const Text(
-                "● Disponible",
+          child: Row(
+            children: [
+              Text("🛒", style: TextStyle(fontSize: 20)),
+              SizedBox(width: 8),
+              Text(
+                "Sama Commande",
                 style: TextStyle(
-                  color: AppThemeProvider.green,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16,
+                  letterSpacing: -0.2,
                 ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
+        actions: isDesktop
+            ? [
+                TextButton.icon(
+                  icon: const Icon(Icons.dashboard_outlined,
+                      color: Colors.white, size: 16),
+                  label: const Text(
+                    "Mon espace",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
+                  onPressed: () => SamaAccountMenu.open(context),
+                ),
+                IconButton(
+                  tooltip: t.isDark ? "Thème clair" : "Thème sombre",
+                  onPressed: () =>
+                      context.read<AppThemeProvider>().toggleTheme(),
+                  icon: Icon(
+                    t.isDark
+                        ? Icons.wb_sunny_outlined
+                        : Icons.nightlight_round,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 6),
+              ]
+            : [
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.menu, color: Colors.white),
+                  tooltip: "Menu",
+                  onSelected: (value) {
+                    if (value == 'account') SamaAccountMenu.open(context);
+                    if (value == 'theme')
+                      context.read<AppThemeProvider>().toggleTheme();
+                  },
+                  itemBuilder: (ctx) => [
+                    const PopupMenuItem<String>(
+                      value: 'account',
+                      child: Row(children: [
+                        Icon(Icons.dashboard_outlined, size: 18),
+                        SizedBox(width: 10),
+                        Text("Mon espace"),
+                      ]),
+                    ),
+                    PopupMenuItem<String>(
+                      value: 'theme',
+                      child: Row(children: [
+                        Icon(
+                          t.isDark
+                              ? Icons.wb_sunny_outlined
+                              : Icons.nightlight_round,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(t.isDark ? "Thème clair" : "Thème sombre"),
+                      ]),
+                    ),
+                  ],
+                ),
+              ],
       ),
       body: SingleChildScrollView(
         child: Column(children: [
