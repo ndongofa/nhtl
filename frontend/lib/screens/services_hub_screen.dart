@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../widgets/sama_account_menu.dart';
+import '../widgets/sama_logo_widget.dart';
 import '../widgets/sama_service_icon.dart';
 import '../providers/app_theme_provider.dart';
 import '../services/auth_service.dart';
