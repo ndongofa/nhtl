@@ -1415,7 +1415,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight)),
         child: Column(children: [
-          _brandLogo(),
+          const SamaLogoWidget(size: 100, lightText: true),
           const SizedBox(height: 12),
           Text(
               "© 2026 SAMA · Services International · Paris · Casablanca · Dakar",

@@ -4,11 +4,13 @@ import 'package:flutter_svg/flutter_svg.dart';
 class SamaLogoWidget extends StatelessWidget {
   final double size;
   final bool showText;
+  final bool lightText;
 
   const SamaLogoWidget({
     super.key,
     this.size = 78,
     this.showText = true,
+    this.lightText = false,
   });
 
   static const String _svgFull = r'''
@@ -65,7 +67,7 @@ class SamaLogoWidget extends StatelessWidget {
         Text(
           'SAMA',
           style: TextStyle(
-            color: const Color(0xFF0D2B6B),
+            color: lightText ? Colors.white : const Color(0xFF0D2B6B),
             fontWeight: FontWeight.w900,
             fontSize: size * 0.28,
             letterSpacing: 2.6,
@@ -76,7 +78,9 @@ class SamaLogoWidget extends StatelessWidget {
         Text(
           'Services International',
           style: TextStyle(
-            color: const Color(0xFF6B7A99),
+            color: lightText
+                ? Colors.white.withValues(alpha: 0.70)
+                : const Color(0xFF6B7A99),
             fontWeight: FontWeight.w600,
             fontSize: size * 0.12,
             letterSpacing: 0.6,
