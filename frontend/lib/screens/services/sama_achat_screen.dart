@@ -6,9 +6,12 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../providers/app_theme_provider.dart';
+import '../../achat_hub_screen.dart';
+import '../../auth/login_screen.dart';
 
 class SamaAchatScreen extends StatelessWidget {
   const SamaAchatScreen({Key? key}) : super(key: key);
@@ -54,6 +57,23 @@ class SamaAchatScreen extends StatelessWidget {
         "https://wa.me/$digits?text=${Uri.encodeComponent("Bonjour SAMA, je souhaite un achat sur mesure.")}");
     if (await canLaunchUrl(uri))
       await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  void _goToHub(BuildContext context) {
+    final session = Supabase.instance.client.auth.currentSession;
+    if (session != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const AchatHubScreen()),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const LoginScreen(redirectTo: AchatHubScreen()),
+        ),
+      );
+    }
   }
 
   @override
@@ -134,8 +154,9 @@ class SamaAchatScreen extends StatelessWidget {
                   alignment: WrapAlignment.center,
                   children: [
                     ElevatedButton.icon(
-                      icon: const FaIcon(FontAwesomeIcons.whatsapp, size: 16),
-                      label: const Text("Faire une demande",
+                      icon: const Icon(Icons.add_shopping_cart_outlined,
+                          size: 16),
+                      label: const Text("Faire une demande en ligne",
                           style: TextStyle(fontWeight: FontWeight.w800)),
                       style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
@@ -143,6 +164,23 @@ class SamaAchatScreen extends StatelessWidget {
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 13)),
+                      onPressed: () => _goToHub(context),
+                    ),
+                    ElevatedButton.icon(
+                      icon: const FaIcon(FontAwesomeIcons.whatsapp, size: 16),
+                      label: const Text("Via WhatsApp",
+                          style: TextStyle(fontWeight: FontWeight.w800)),
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              Colors.white.withValues(alpha: 0.2),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          side: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.4)),
                           padding: const EdgeInsets.symmetric(
                               horizontal: 20, vertical: 13)),
                       onPressed: () => _wa(_waFrance),
@@ -285,6 +323,22 @@ class SamaAchatScreen extends StatelessWidget {
                   runSpacing: 12,
                   alignment: WrapAlignment.center,
                   children: [
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.add_shopping_cart_outlined,
+                          size: 16),
+                      label: const Text("Faire une demande en ligne",
+                          style:
+                              TextStyle(fontWeight: FontWeight.w800)),
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: AppThemeProvider.teal,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10)),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 18, vertical: 12)),
+                      onPressed: () => _goToHub(context),
+                    ),
                     _waBtn("WhatsApp France", () => _wa(_waFrance)),
                     _waBtn("WhatsApp Dakar", () => _wa(_waDakar)),
                   ]),

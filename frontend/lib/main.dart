@@ -15,6 +15,8 @@ import 'screens/landing_commande_screen.dart';
 import 'screens/landing_transport_screen.dart';
 import 'screens/services_hub_screen.dart';
 import 'screens/transport_hub_screen.dart';
+import 'screens/achat_hub_screen.dart';
+import 'screens/services/sama_achat_screen.dart';
 import 'services/departure_countdown_service.dart';
 import 'ui/app_brand.dart';
 
@@ -84,6 +86,8 @@ class MyApp extends StatelessWidget {
         '/commande': (context) => const LandingCommandeScreen(),
         '/transport/hub': (context) => const TransportHubScreen(),
         '/commande/hub': (context) => const CommandeHubScreen(),
+        '/achat': (context) => const SamaAchatScreen(),
+        '/achat/hub': (context) => const AchatHubScreen(),
       },
       debugShowCheckedModeBanner: false,
     );

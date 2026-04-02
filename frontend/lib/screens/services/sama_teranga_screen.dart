@@ -1,27 +1,26 @@
 // lib/screens/services/sama_teranga_screen.dart
 
 import 'package:flutter/material.dart';
-import 'sama_coming_soon_screen.dart';
+import 'package:provider/provider.dart';
+import '../ecommerce/catalogue_screen.dart';
+import '../../providers/panier_provider.dart';
 
 class SamaTerangaScreen extends StatelessWidget {
   const SamaTerangaScreen({Key? key}) : super(key: key);
 
+  static const Color _red = Color(0xFFDC2626);
+
   @override
-  Widget build(BuildContext context) => const SamaComingSoonScreen(
-        emoji: '🥂',
-        name: 'Sama Téranga Apéro',
-        tagline: 'L\'apéro sénégalais authentique à Paris',
-        description: 'Bissap, Gnamakoudji, Ditax, Bouye, Jus de Baobab, '
-            'et toutes les boissons & snacks sénégalais pour sublimer '
-            'vos apéros avec la chaleur de la téranga.',
-        accentColor: Color(0xFFDC2626),
-        teaser: [
-          'Bissap, Gnamakoudji, Ditax et jus de fruits exotiques',
-          'Snacks & biscuits sénégalais traditionnels',
-          'Boxes apéro thématiques à commander pour vos événements',
-          'Livraison à Paris et en Île-de-France',
-        ],
-        whatsappMessage:
-            "Bonjour SAMA, je suis intéressé par le service Sama Téranga Apéro. Pouvez-vous m'avertir à l'ouverture ?",
-      );
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => PanierProvider(serviceType: 'teranga'),
+      child: const CatalogueScreen(
+        serviceType: 'teranga',
+        serviceLabel: 'Sama Téranga Apéro',
+        serviceEmoji: '🥂',
+        accentColor: _red,
+      ),
+    );
+  }
 }
+
