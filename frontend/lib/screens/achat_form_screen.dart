@@ -82,6 +82,7 @@ class _AchatFormScreenState extends State<AchatFormScreen> {
   static const Color _teal = Color(0xFF00BCD4);
   static const Color _green = Color(0xFF22C55E);
   static const Color _red = Color(0xFFEF4444);
+  static const int _maxArticleQuantity = 9999;
 
   final _formKey = GlobalKey<FormState>();
   final _service = AchatService();
@@ -149,7 +150,7 @@ class _AchatFormScreenState extends State<AchatFormScreen> {
     int count = 0;
     for (final art in _articles) {
       if (art.type == 'lien') {
-        count += (int.tryParse(art.quantiteCtrl.text.trim()) ?? 0).clamp(0, 9999);
+        count += (int.tryParse(art.quantiteCtrl.text.trim()) ?? 0).clamp(0, _maxArticleQuantity);
       } else {
         count += 1;
       }
@@ -433,7 +434,7 @@ class _AchatFormScreenState extends State<AchatFormScreen> {
         liensProduits: allLinks,
         photosProduits: allPhotos,
         articlesJson: articlesJson,
-        quantite: totalQte > 0 ? totalQte : finalArticles.length,
+        quantite: _totalArticlesCount > 0 ? _totalArticlesCount : finalArticles.length,
         prixEstime: prixEstime,
         prixTotal: totalPrice,
         devise: _devise,
