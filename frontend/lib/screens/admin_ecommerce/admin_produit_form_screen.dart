@@ -1,9 +1,13 @@
 // lib/screens/admin_ecommerce/admin_produit_form_screen.dart
 
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../models/produit.dart';
 import '../../providers/app_theme_provider.dart';
@@ -33,12 +37,21 @@ class _AdminProduitFormScreenState extends State<AdminProduitFormScreen> {
   final _prixController = TextEditingController();
   final _stockController = TextEditingController();
   final _categorieController = TextEditingController();
-  final _imageUrlController = TextEditingController();
   final _uniteController = TextEditingController();
 
   String _devise = 'EUR';
   bool _actif = true;
   bool _loading = false;
+
+  // Image state
+  XFile? _pickedImage;
+  Uint8List? _pickedImageBytes;
+  String? _currentImageUrl;
+  bool _uploadingImage = false;
+
+  static const _imageBucket = 'sama-produits';
+  static const _allowedMimes = {'image/jpeg', 'image/png', 'image/webp'};
+  static const _allowedExts = {'jpg', 'jpeg', 'png', 'webp'};
 
   late EcommerceService _service;
 
@@ -57,7 +70,7 @@ class _AdminProduitFormScreenState extends State<AdminProduitFormScreen> {
       _prixController.text = p.prix.toString();
       _stockController.text = p.stock.toString();
       _categorieController.text = p.categorie ?? '';
-      _imageUrlController.text = p.imageUrl ?? '';
+      _currentImageUrl = p.imageUrl;
       _uniteController.text = p.unite ?? '';
       _devise = p.devise;
       _actif = p.actif;
@@ -71,9 +84,75 @@ class _AdminProduitFormScreenState extends State<AdminProduitFormScreen> {
     _prixController.dispose();
     _stockController.dispose();
     _categorieController.dispose();
-    _imageUrlController.dispose();
     _uniteController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+      maxWidth: 1920,
+    );
+    if (picked == null) return;
+
+    // Validate MIME type / extension
+    final mime = (picked.mimeType ?? '').toLowerCase();
+    final ext = _resolveExt(picked);
+    if (!_allowedMimes.contains(mime) && !_allowedExts.contains(ext)) {
+      Fluttertoast.showToast(
+          msg: '❌ Format non supporté. Utilisez JPEG, PNG ou WebP.',
+          backgroundColor: Colors.red);
+      return;
+    }
+
+    final bytes = await picked.readAsBytes();
+    setState(() {
+      _pickedImage = picked;
+      _pickedImageBytes = bytes;
+      _currentImageUrl = null;
+    });
+  }
+
+  Future<String?> _uploadImage(XFile file) async {
+    try {
+      setState(() => _uploadingImage = true);
+      final supa = Supabase.instance.client;
+      final bytes = _pickedImageBytes ?? await file.readAsBytes();
+      final ext = _resolveExt(file);
+      final rnd = Random.secure();
+      final randomSuffix = List.generate(
+              8, (_) => rnd.nextInt(256).toRadixString(16).padLeft(2, '0'))
+          .join();
+      final path =
+          '${widget.serviceType.toLowerCase()}/${DateTime.now().millisecondsSinceEpoch}_$randomSuffix.$ext';
+      await supa.storage.from(_imageBucket).uploadBinary(
+            path,
+            bytes,
+            fileOptions: FileOptions(
+                contentType: 'image/$ext', upsert: false),
+          );
+      return supa.storage.from(_imageBucket).getPublicUrl(path);
+    } catch (e) {
+      Fluttertoast.showToast(
+          msg: '❌ Erreur upload image : $e', backgroundColor: Colors.red);
+      return null;
+    } finally {
+      if (mounted) setState(() => _uploadingImage = false);
+    }
+  }
+
+  String _resolveExt(XFile file) {
+    final name = file.name.toLowerCase();
+    if (name.endsWith('.jpg') || name.endsWith('.jpeg')) return 'jpg';
+    if (name.endsWith('.png')) return 'png';
+    if (name.endsWith('.webp')) return 'webp';
+    final mime = file.mimeType ?? '';
+    if (mime.contains('jpeg') || mime.contains('jpg')) return 'jpg';
+    if (mime.contains('png')) return 'png';
+    if (mime.contains('webp')) return 'webp';
+    return 'jpg';
   }
 
   Future<void> _submit() async {
@@ -81,6 +160,15 @@ class _AdminProduitFormScreenState extends State<AdminProduitFormScreen> {
     setState(() => _loading = true);
 
     try {
+      // Upload image if a new one was picked
+      String? imageUrl = _currentImageUrl;
+      if (_pickedImage != null) {
+        imageUrl = await _uploadImage(_pickedImage!);
+        if (imageUrl == null) {
+          // Upload failed; error already shown — abort
+          return;
+        }
+      }
       final prix = double.tryParse(
               _prixController.text.trim().replaceAll(',', '.')) ??
           0.0;
@@ -99,9 +187,7 @@ class _AdminProduitFormScreenState extends State<AdminProduitFormScreen> {
         categorie: _categorieController.text.trim().isEmpty
             ? null
             : _categorieController.text.trim(),
-        imageUrl: _imageUrlController.text.trim().isEmpty
-            ? null
-            : _imageUrlController.text.trim(),
+        imageUrl: imageUrl,
         stock: stock,
         unite: _uniteController.text.trim().isEmpty
             ? null
@@ -229,9 +315,7 @@ class _AdminProduitFormScreenState extends State<AdminProduitFormScreen> {
                 _field(t, _categorieController, 'Catégorie',
                     Icons.category_outlined),
                 const SizedBox(height: 14),
-                _field(t, _imageUrlController, 'URL image (optionnel)',
-                    Icons.image_outlined,
-                    keyboardType: TextInputType.url),
+                _imagePickerWidget(t),
                 const SizedBox(height: 14),
                 Row(children: [
                   Icon(Icons.toggle_on_outlined,
@@ -251,7 +335,7 @@ class _AdminProduitFormScreenState extends State<AdminProduitFormScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _loading ? null : _submit,
+                    onPressed: _loading || _uploadingImage ? null : _submit,
                     style: ElevatedButton.styleFrom(
                         backgroundColor: AppThemeProvider.appBlue,
                         foregroundColor: Colors.white,
@@ -279,6 +363,100 @@ class _AdminProduitFormScreenState extends State<AdminProduitFormScreen> {
       ),
     );
   }
+
+  Widget _imagePickerWidget(AppThemeProvider t) {
+    final hasImage = _pickedImage != null || (_currentImageUrl?.isNotEmpty == true);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: t.bgCard,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: t.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Preview
+          ClipRRect(
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(9)),
+            child: SizedBox(
+              height: 160,
+              width: double.infinity,
+              child: _buildImagePreview(t),
+            ),
+          ),
+          // Actions
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: Icon(
+                        hasImage
+                            ? Icons.image_search_outlined
+                            : Icons.add_photo_alternate_outlined,
+                        size: 18),
+                    label: Text(
+                        hasImage ? 'Changer la photo' : 'Choisir une photo',
+                        style: const TextStyle(fontSize: 13)),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppThemeProvider.appBlue,
+                      side: const BorderSide(color: AppThemeProvider.appBlue),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                    ),
+                    onPressed: _uploadingImage ? null : _pickImage,
+                  ),
+                ),
+                if (hasImage) ...[
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon:
+                        const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                    tooltip: 'Supprimer la photo',
+                    onPressed: () => setState(() {
+                      _pickedImage = null;
+                      _pickedImageBytes = null;
+                      _currentImageUrl = null;
+                    }),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImagePreview(AppThemeProvider t) {
+    if (_pickedImageBytes != null) {
+      return Image.memory(_pickedImageBytes!, fit: BoxFit.cover,
+          width: double.infinity);
+    }
+    if (_currentImageUrl?.isNotEmpty == true) {
+      return Image.network(
+        _currentImageUrl!,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        errorBuilder: (_, __, ___) => _imagePlaceholder(t),
+      );
+    }
+    return _imagePlaceholder(t);
+  }
+
+  Widget _imagePlaceholder(AppThemeProvider t) => Container(
+        color: t.bgSection,
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Icon(Icons.image_outlined, color: t.textMuted, size: 40),
+          const SizedBox(height: 8),
+          Text('Aucune photo',
+              style: TextStyle(color: t.textMuted, fontSize: 12)),
+        ]),
+      );
 
   InputDecoration _inputDeco(AppThemeProvider t, String label, IconData icon) =>
       InputDecoration(

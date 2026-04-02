@@ -109,6 +109,11 @@ class _CatalogueScreenState extends State<CatalogueScreen> {
                   fontWeight: FontWeight.w800, fontSize: 17)),
         ]),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Actualiser',
+            onPressed: _loading ? null : _loadProduits,
+          ),
           Stack(
             alignment: Alignment.topRight,
             children: [
@@ -201,38 +206,44 @@ class _CatalogueScreenState extends State<CatalogueScreen> {
               ? Center(
                   child: CircularProgressIndicator(
                       color: widget.accentColor))
-              : _filtered.isEmpty
-                  ? _emptyState(t)
-                  : RefreshIndicator(
-                      onRefresh: _loadProduits,
-                      color: widget.accentColor,
-                      child: GridView.builder(
-                        padding: const EdgeInsets.all(16),
-                        gridDelegate:
-                            const SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: 200,
-                          childAspectRatio: 0.72,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                        ),
-                        itemCount: _filtered.length,
-                        itemBuilder: (ctx, i) => _ProduitCard(
-                          produit: _filtered[i],
-                          accentColor: widget.accentColor,
-                          t: t,
-                          onTap: () => Navigator.push(
-                            ctx,
-                            MaterialPageRoute(
-                              builder: (_) => ProductDetailScreen(
-                                produit: _filtered[i],
-                                serviceType: widget.serviceType,
-                                accentColor: widget.accentColor,
+              : RefreshIndicator(
+                  onRefresh: _loadProduits,
+                  color: widget.accentColor,
+                  child: _filtered.isEmpty
+                      ? ListView(
+                          physics:
+                              const AlwaysScrollableScrollPhysics(),
+                          children: [_emptyState(t)],
+                        )
+                      : GridView.builder(
+                          physics:
+                              const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.all(16),
+                          gridDelegate:
+                              const SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: 200,
+                            childAspectRatio: 0.72,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                          ),
+                          itemCount: _filtered.length,
+                          itemBuilder: (ctx, i) => _ProduitCard(
+                            produit: _filtered[i],
+                            accentColor: widget.accentColor,
+                            t: t,
+                            onTap: () => Navigator.push(
+                              ctx,
+                              MaterialPageRoute(
+                                builder: (_) => ProductDetailScreen(
+                                  produit: _filtered[i],
+                                  serviceType: widget.serviceType,
+                                  accentColor: widget.accentColor,
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ),
+                ),
         ),
       ]),
     );
@@ -274,20 +285,30 @@ class _CatalogueScreenState extends State<CatalogueScreen> {
     );
   }
 
-  Widget _emptyState(AppThemeProvider t) => Center(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Text(widget.serviceEmoji,
-              style: const TextStyle(fontSize: 52)),
-          const SizedBox(height: 16),
-          Text('Aucun produit disponible',
-              style: TextStyle(
-                  color: t.textPrimary,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16)),
-          const SizedBox(height: 8),
-          Text('Revenez bientôt !',
-              style: TextStyle(color: t.textMuted, fontSize: 13)),
-        ]),
+  Widget _emptyState(AppThemeProvider t) => SizedBox(
+        height: MediaQuery.of(context).size.height * 0.55,
+        child: Center(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text(widget.serviceEmoji,
+                style: const TextStyle(fontSize: 52)),
+            const SizedBox(height: 16),
+            Text('Aucun produit disponible',
+                style: TextStyle(
+                    color: t.textPrimary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16)),
+            const SizedBox(height: 8),
+            Text('Revenez bientôt !',
+                style: TextStyle(color: t.textMuted, fontSize: 13)),
+            const SizedBox(height: 20),
+            TextButton.icon(
+              icon: Icon(Icons.refresh, color: t.textMuted, size: 16),
+              label: Text('Actualiser',
+                  style: TextStyle(color: t.textMuted, fontSize: 13)),
+              onPressed: _loadProduits,
+            ),
+          ]),
+        ),
       );
 }
 
