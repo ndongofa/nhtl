@@ -83,6 +83,44 @@ class _CommandeTrackingScreenState extends State<CommandeTrackingScreen> {
       });
   }
 
+  void _openPhotoFullscreen(BuildContext context, String url) {
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.black,
+        insetPadding: EdgeInsets.zero,
+        child: Stack(children: [
+          InteractiveViewer(
+            child: CachedNetworkImage(
+              imageUrl: url,
+              fit: BoxFit.contain,
+              width: double.infinity,
+              height: double.infinity,
+              placeholder: (_, __) => const Center(
+                  child: CircularProgressIndicator(color: Colors.white)),
+              errorWidget: (_, __, ___) => const Center(
+                  child: Icon(Icons.broken_image_outlined,
+                      color: Colors.white54, size: 48)),
+            ),
+          ),
+          Positioned(
+            top: 16,
+            right: 16,
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: const BoxDecoration(
+                    color: Colors.black54, shape: BoxShape.circle),
+                child: const Icon(Icons.close, color: Colors.white, size: 22),
+              ),
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+
   void _showPostalUploadSheet() {
     showModalBottomSheet(
       context: context,
@@ -243,13 +281,68 @@ class _CommandeTrackingScreenState extends State<CommandeTrackingScreen> {
                   label: 'Livraison',
                   value: '${_commande.villeLivraison}, '
                       '${_commande.paysLivraison}'),
-              if (_commande.lienProduit.isNotEmpty)
-                _InfoRow(
-                    t: t,
-                    label: 'Produit',
-                    value: _commande.lienProduit.length > 50
-                        ? '${_commande.lienProduit.substring(0, 50)}…'
-                        : _commande.lienProduit),
+              // ✅ Liens multiples — affiche tous les liens disponibles
+              ...() {
+                final liens = _commande.liensProduits.isNotEmpty
+                    ? _commande.liensProduits
+                    : (_commande.lienProduit.isNotEmpty
+                        ? [_commande.lienProduit]
+                        : []);
+                return liens.asMap().entries.map((e) {
+                  final label =
+                      liens.length == 1 ? 'Lien produit' : 'Lien ${e.key + 1}';
+                  final val = e.value;
+                  return _InfoRow(
+                      t: t,
+                      label: label,
+                      value:
+                          val.length > 50 ? '${val.substring(0, 50)}…' : val);
+                }).toList();
+              }(),
+              // ✅ Photos produit
+              if (_commande.photosProduits.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Text('Photos produit',
+                    style: TextStyle(
+                        color: t.textMuted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _commande.photosProduits.map((url) {
+                    return GestureDetector(
+                      onTap: () => _openPhotoFullscreen(context, url),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: CachedNetworkImage(
+                          imageUrl: url,
+                          width: 72,
+                          height: 72,
+                          fit: BoxFit.cover,
+                          placeholder: (_, __) => Container(
+                              width: 72,
+                              height: 72,
+                              color: Colors.grey.shade200,
+                              child: const Center(
+                                  child: SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2)))),
+                          errorWidget: (_, __, ___) => Container(
+                              width: 72,
+                              height: 72,
+                              color: Colors.grey.shade100,
+                              child: const Icon(Icons.broken_image,
+                                  color: Colors.grey)),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
               _InfoRow(t: t, label: 'Quantité', value: '${_commande.quantite}'),
               if (_commande.prixTotal > 0)
                 _InfoRow(

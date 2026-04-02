@@ -2,6 +2,7 @@ package com.nhtl.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class CommandeDTO {
     private Long id;
@@ -15,6 +16,8 @@ public class CommandeDTO {
     private String adresseLivraison;
     private String plateforme;
     private String lienProduit;
+    private List<String> liensProduits;
+    private List<String> photosProduits;
     private String descriptionCommande;
     private Integer quantite;
     private BigDecimal prixUnitaire;
@@ -76,6 +79,12 @@ public class CommandeDTO {
 
     public String getLienProduit() { return lienProduit; }
     public void setLienProduit(String lienProduit) { this.lienProduit = lienProduit; }
+
+    public List<String> getLiensProduits() { return liensProduits; }
+    public void setLiensProduits(List<String> liensProduits) { this.liensProduits = liensProduits; }
+
+    public List<String> getPhotosProduits() { return photosProduits; }
+    public void setPhotosProduits(List<String> photosProduits) { this.photosProduits = photosProduits; }
 
     public String getDescriptionCommande() { return descriptionCommande; }
     public void setDescriptionCommande(String descriptionCommande) { this.descriptionCommande = descriptionCommande; }

@@ -1,6 +1,7 @@
 package com.nhtl.services;
 
 import java.text.Normalizer;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -9,6 +10,8 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nhtl.dto.CommandeDTO;
 import com.nhtl.models.Commande;
 import com.nhtl.models.GpAgent;
@@ -36,6 +39,26 @@ public class CommandeService {
     @Autowired
     private NotificationService notificationService;
 
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    private String toJsonList(List<String> list) {
+        if (list == null || list.isEmpty()) return null;
+        try {
+            return objectMapper.writeValueAsString(list);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private List<String> parseJsonList(String json) {
+        if (json == null || json.trim().isEmpty()) return new ArrayList<>();
+        try {
+            return objectMapper.readValue(json, new TypeReference<List<String>>() {});
+        } catch (Exception e) {
+            return new ArrayList<>();
+        }
+    }
+
     public CommandeDTO createCommande(CommandeDTO dto, String userId) {
         Commande c = new Commande();
         c.setUserId(userId);
@@ -48,6 +71,8 @@ public class CommandeService {
         c.setAdresseLivraison(dto.getAdresseLivraison());
         c.setPlateforme(dto.getPlateforme());
         c.setLienProduit(dto.getLienProduit());
+        c.setLiensProduits(toJsonList(dto.getLiensProduits()));
+        c.setPhotosProduits(toJsonList(dto.getPhotosProduits()));
         c.setDescriptionCommande(dto.getDescriptionCommande());
         c.setQuantite(dto.getQuantite());
         c.setPrixUnitaire(dto.getPrixUnitaire());
@@ -273,6 +298,8 @@ public class CommandeService {
         dto.setAdresseLivraison(c.getAdresseLivraison());
         dto.setPlateforme(c.getPlateforme());
         dto.setLienProduit(c.getLienProduit());
+        dto.setLiensProduits(parseJsonList(c.getLiensProduits()));
+        dto.setPhotosProduits(parseJsonList(c.getPhotosProduits()));
         dto.setDescriptionCommande(c.getDescriptionCommande());
         dto.setQuantite(c.getQuantite());
         dto.setPrixUnitaire(c.getPrixUnitaire());
@@ -307,6 +334,8 @@ public class CommandeService {
         c.setAdresseLivraison(dto.getAdresseLivraison());
         c.setPlateforme(dto.getPlateforme());
         c.setLienProduit(dto.getLienProduit());
+        c.setLiensProduits(toJsonList(dto.getLiensProduits()));
+        c.setPhotosProduits(toJsonList(dto.getPhotosProduits()));
         c.setDescriptionCommande(dto.getDescriptionCommande());
         c.setQuantite(dto.getQuantite());
         c.setPrixUnitaire(dto.getPrixUnitaire());
