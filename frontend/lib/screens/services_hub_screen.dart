@@ -78,6 +78,14 @@ class ServicesHubScreen extends StatelessWidget {
         desc: 'Sélection des articles\nles plus demandés du moment',
         color: Color(0xFF7C3AED),
         isLive: false),
+    _ServiceItem(
+        id: 'techdigital',
+        emoji: '💻',
+        name: 'Sama Tech Digital',
+        tagline: 'Services digitaux',
+        desc: 'Création de sites web\net solutions digitales sur mesure',
+        color: Color(0xFF0EA5E9),
+        isLive: false),
   ];
 
   Future<void> _wa(BuildContext context, String digits) async {
@@ -117,6 +125,8 @@ class ServicesHubScreen extends StatelessWidget {
       case 'bestseller':
         screen = const SamaBestSellerScreen();
         break;
+      case 'techdigital':
+        return;
       default:
         return;
     }
@@ -146,12 +156,12 @@ class ServicesHubScreen extends StatelessWidget {
                       _HeroSection(t: t, isDesktop: isDesktop),
                       Padding(
                         padding: EdgeInsets.symmetric(
-                          horizontal: isDesktop ? 48 : 16,
+                          horizontal: isDesktop ? 24 : 16,
                           vertical: 32,
                         ),
                         child: Center(
                           child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 1100),
+                            constraints: const BoxConstraints(maxWidth: 1400),
                             child: Column(
                               children: [
                                 _sectionLabel(t, "Nos services"),
@@ -182,37 +192,34 @@ class ServicesHubScreen extends StatelessWidget {
     );
   }
 
-  Widget _gridDesktop(BuildContext context, AppThemeProvider t) =>
-      Column(children: [
-        Row(
-            children: _services
-                .sublist(0, 3)
-                .map((s) => Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 16, bottom: 16),
-                        child: _ServiceCard(
-                          service: s,
-                          t: t,
-                          onTap: () => _openService(context, s),
-                        ),
-                      ),
-                    ))
-                .toList()),
-        Row(
-            children: _services
-                .sublist(3, 6)
-                .map((s) => Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 16, bottom: 16),
-                        child: _ServiceCard(
-                          service: s,
-                          t: t,
-                          onTap: () => _openService(context, s),
-                        ),
-                      ),
-                    ))
-                .toList()),
-      ]);
+  Widget _gridDesktop(BuildContext context, AppThemeProvider t) {
+    const itemsPerRow = 3;
+    final rows = (_services.length / itemsPerRow).ceil();
+    return Column(
+      children: List.generate(rows, (rowIdx) {
+        final start = rowIdx * itemsPerRow;
+        final end = (start + itemsPerRow).clamp(0, _services.length);
+        final rowServices = _services.sublist(start, end);
+        final fillers = itemsPerRow - rowServices.length;
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ...rowServices.map((s) => Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 16, bottom: 16),
+                    child: _ServiceCard(
+                      service: s,
+                      t: t,
+                      onTap: () => _openService(context, s),
+                    ),
+                  ),
+                )),
+            ...List.generate(fillers, (_) => const Expanded(child: SizedBox())),
+          ],
+        );
+      }),
+    );
+  }
 
   Widget _gridMobile(BuildContext context, AppThemeProvider t) => Column(
         children: List.generate((_services.length / 2).ceil(), (row) {

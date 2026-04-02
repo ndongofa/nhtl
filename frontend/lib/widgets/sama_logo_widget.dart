@@ -148,12 +148,12 @@ class SamaTopBarLogo extends StatelessWidget {
             ),
           ),
           Text(
-            'SERVICES INTL',
+            'SERVICES INTERNATIONAL',
             style: TextStyle(
               color: Colors.white60,
               fontWeight: FontWeight.w700,
-              fontSize: 9,
-              letterSpacing: 1.0,
+              fontSize: 7.5,
+              letterSpacing: 0.8,
               height: 1.0,
             ),
           ),
