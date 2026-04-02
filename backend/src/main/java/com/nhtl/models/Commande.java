@@ -33,6 +33,9 @@ public class Commande {
     @Column(name = "photos_produits", columnDefinition = "TEXT")
     private String photosProduits;
 
+    @Column(name = "articles_json", columnDefinition = "TEXT")
+    private String articlesJson;
+
     private String descriptionCommande;
 
     private Integer quantite;
@@ -130,6 +133,9 @@ public class Commande {
 
     public String getPhotosProduits() { return photosProduits; }
     public void setPhotosProduits(String p) { this.photosProduits = p; }
+
+    public String getArticlesJson() { return articlesJson; }
+    public void setArticlesJson(String a) { this.articlesJson = a; }
 
     public String getDescriptionCommande() { return descriptionCommande; }
     public void setDescriptionCommande(String d) { this.descriptionCommande = d; }

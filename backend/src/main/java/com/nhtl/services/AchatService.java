@@ -1,6 +1,7 @@
 package com.nhtl.services;
 
 import java.text.Normalizer;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -9,6 +10,8 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nhtl.dto.AchatDTO;
 import com.nhtl.models.Achat;
 import com.nhtl.models.AchatStatus;
@@ -36,6 +39,26 @@ public class AchatService {
     @Autowired
     private NotificationService notificationService;
 
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    private String toJsonList(List<String> list) {
+        if (list == null || list.isEmpty()) return null;
+        try {
+            return objectMapper.writeValueAsString(list);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private List<String> parseJsonList(String json) {
+        if (json == null || json.trim().isEmpty()) return new ArrayList<>();
+        try {
+            return objectMapper.readValue(json, new TypeReference<List<String>>() {});
+        } catch (Exception e) {
+            return new ArrayList<>();
+        }
+    }
+
     public AchatDTO createAchat(AchatDTO dto, String userId) {
         Achat a = new Achat();
         a.setUserId(userId);
@@ -49,6 +72,9 @@ public class AchatService {
         a.setMarche(dto.getMarche());
         a.setTypeProduit(dto.getTypeProduit());
         a.setDescriptionAchat(dto.getDescriptionAchat());
+        a.setLiensProduits(toJsonList(dto.getLiensProduits()));
+        a.setPhotosProduits(toJsonList(dto.getPhotosProduits()));
+        a.setArticlesJson(dto.getArticlesJson());
         a.setQuantite(dto.getQuantite());
         a.setPrixEstime(dto.getPrixEstime());
         a.setPrixTotal(dto.getPrixTotal());
@@ -272,6 +298,9 @@ public class AchatService {
         dto.setMarche(a.getMarche());
         dto.setTypeProduit(a.getTypeProduit());
         dto.setDescriptionAchat(a.getDescriptionAchat());
+        dto.setLiensProduits(parseJsonList(a.getLiensProduits()));
+        dto.setPhotosProduits(parseJsonList(a.getPhotosProduits()));
+        dto.setArticlesJson(a.getArticlesJson());
         dto.setQuantite(a.getQuantite());
         dto.setPrixEstime(a.getPrixEstime());
         dto.setPrixTotal(a.getPrixTotal());
@@ -304,6 +333,9 @@ public class AchatService {
         a.setMarche(dto.getMarche());
         a.setTypeProduit(dto.getTypeProduit());
         a.setDescriptionAchat(dto.getDescriptionAchat());
+        a.setLiensProduits(toJsonList(dto.getLiensProduits()));
+        a.setPhotosProduits(toJsonList(dto.getPhotosProduits()));
+        a.setArticlesJson(dto.getArticlesJson());
         a.setQuantite(dto.getQuantite());
         a.setPrixEstime(dto.getPrixEstime());
         a.setPrixTotal(dto.getPrixTotal());

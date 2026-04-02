@@ -73,6 +73,7 @@ public class CommandeService {
         c.setLienProduit(dto.getLienProduit());
         c.setLiensProduits(toJsonList(dto.getLiensProduits()));
         c.setPhotosProduits(toJsonList(dto.getPhotosProduits()));
+        c.setArticlesJson(dto.getArticlesJson());
         c.setDescriptionCommande(dto.getDescriptionCommande());
         c.setQuantite(dto.getQuantite());
         c.setPrixUnitaire(dto.getPrixUnitaire());
@@ -300,6 +301,7 @@ public class CommandeService {
         dto.setLienProduit(c.getLienProduit());
         dto.setLiensProduits(parseJsonList(c.getLiensProduits()));
         dto.setPhotosProduits(parseJsonList(c.getPhotosProduits()));
+        dto.setArticlesJson(c.getArticlesJson());
         dto.setDescriptionCommande(c.getDescriptionCommande());
         dto.setQuantite(c.getQuantite());
         dto.setPrixUnitaire(c.getPrixUnitaire());
@@ -336,6 +338,7 @@ public class CommandeService {
         c.setLienProduit(dto.getLienProduit());
         c.setLiensProduits(toJsonList(dto.getLiensProduits()));
         c.setPhotosProduits(toJsonList(dto.getPhotosProduits()));
+        c.setArticlesJson(dto.getArticlesJson());
         c.setDescriptionCommande(dto.getDescriptionCommande());
         c.setQuantite(dto.getQuantite());
         c.setPrixUnitaire(dto.getPrixUnitaire());
