@@ -20,6 +20,7 @@ import 'transport_hub_screen.dart';
 import 'services/sama_achat_screen.dart';
 import 'services/sama_best_seller_screen.dart';
 import 'services/sama_maad_screen.dart';
+import 'services/sama_tech_digital_screen.dart';
 import 'services/sama_teranga_screen.dart';
 
 class ServicesHubScreen extends StatelessWidget {
@@ -86,7 +87,7 @@ class ServicesHubScreen extends StatelessWidget {
         tagline: 'Services digitaux',
         desc: 'Création de sites web\net solutions digitales sur mesure',
         color: Color(0xFF0EA5E9),
-        isLive: false),
+        isLive: true),
   ];
 
   Future<void> _wa(BuildContext context, String digits) async {
@@ -127,7 +128,8 @@ class ServicesHubScreen extends StatelessWidget {
         screen = const SamaBestSellerScreen();
         break;
       case 'techdigital':
-        return;
+        screen = const SamaTechDigitalScreen();
+        break;
       default:
         return;
     }
