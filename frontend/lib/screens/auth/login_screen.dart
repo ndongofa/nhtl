@@ -152,10 +152,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                     fontWeight: FontWeight.w900,
                                     fontSize: 18)),
                             Text(AppBrand.appName,
-                                style: const TextStyle(
+                                style: TextStyle(
                                     color: _textMuted,
                                     fontWeight: FontWeight.w500,
-                                    fontSize: 12)),
+                                    fontSize: AppBrand.appNameFontSize(context))),
                           ]),
                     ]),
 
