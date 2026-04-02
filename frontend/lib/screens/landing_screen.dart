@@ -37,7 +37,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
   static const List<Map<String, dynamic>> _services = [
     {
       "iconWidget":
-          FaIcon(FontAwesomeIcons.truckFast, color: _appBlue, size: 18),
+          FaIcon(FontAwesomeIcons.planeDeparture, color: _appBlue, size: 18),
       "title": "Transport GP",
       "desc": "Groupage, fret aérien & maritime",
       "color": _appBlue

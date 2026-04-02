@@ -321,7 +321,7 @@ class _LandingTransportScreenState extends State<LandingTransportScreen> {
             end: Alignment.bottomRight),
       ),
       child: Column(children: [
-        const FaIcon(FontAwesomeIcons.truckFast, color: Colors.white, size: 48),
+        const FaIcon(FontAwesomeIcons.planeDeparture, color: Colors.white, size: 48),
         const SizedBox(height: 20),
         Text("Envoyez vos colis\npartout dans le monde",
             textAlign: TextAlign.center,
