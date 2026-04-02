@@ -99,27 +99,9 @@ class SamaTopBarLogo extends StatelessWidget {
   // baseline for proportional font scaling across different screen sizes.
   static const double _kBaseScreenWidth = 390;
 
-  static const String _svgMark = r'''
-<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <radialGradient id="g" cx="35%" cy="30%" r="70%">
-      <stop offset="0%" stop-color="#1A7ED4" stop-opacity="0.9"/>
-      <stop offset="60%" stop-color="#0D2B6B" stop-opacity="1"/>
-      <stop offset="100%" stop-color="#0A2040" stop-opacity="1"/>
-    </radialGradient>
-
-    <linearGradient id="ring" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#7EC8F7" stop-opacity="0.28"/>
-      <stop offset="55%" stop-color="#42AAFE" stop-opacity="1"/>
-      <stop offset="100%" stop-color="#7EC8F7" stop-opacity="0.22"/>
-    </linearGradient>
-  </defs>
-
-  <ellipse cx="32" cy="38" rx="26" ry="9" fill="none" stroke="url(#ring)" stroke-width="4"/>
-  <circle cx="32" cy="28" r="18" fill="url(#g)"/>
-  <path d="M 45 10 L 47 16 L 53 18 L 47 20 L 45 26 L 43 20 L 37 18 L 43 16 Z" fill="#FFD700"/>
-</svg>
-''';
+  // Logo height in the top bar — matches the full globe used in the footer,
+  // scaled down to fit within kToolbarHeight (56 px).
+  static const double _kLogoHeight = 44;
 
   @override
   Widget build(BuildContext context) {
@@ -127,54 +109,45 @@ class SamaTopBarLogo extends StatelessWidget {
     // Scale grows gradually from small phones (360px) up to desktop (1440px),
     // capped so the top bar never gets oversized.
     final scale = (screenWidth / _kBaseScreenWidth).clamp(0.9, 1.5);
+    final logoSize = _kLogoHeight * scale;
 
-    return Row(mainAxisSize: MainAxisSize.min, children: [
-      Container(
-        width: 34,
-        height: 34,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
-          gradient: const LinearGradient(
-            colors: [Color(0xFF2296F3), Color(0xFF00D4C8)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        SvgPicture.string(
+          SamaLogoWidget._svgFull,
+          width: logoSize,
+          height: logoSize,
         ),
-        child: Center(
-          child: SvgPicture.string(
-            _svgMark,
-            width: 26,
-            height: 26,
-          ),
+        const SizedBox(width: 10),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'SAMA',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                fontSize: logoSize * 0.28,
+                letterSpacing: 2.2,
+                height: 1.0,
+              ),
+            ),
+            Text(
+              'Services International',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.85),
+                fontWeight: FontWeight.w800,
+                fontSize: logoSize * 0.12,
+                letterSpacing: 1.2,
+                height: 1.0,
+              ),
+            ),
+          ],
         ),
-      ),
-      const SizedBox(width: 10),
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'SAMA',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w900,
-              fontSize: 15 * scale,
-              letterSpacing: 2.2,
-              height: 1.0,
-            ),
-          ),
-          Text(
-            'SERVICES INTERNATIONAL',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.85),
-              fontWeight: FontWeight.w800,
-              fontSize: 10 * scale,
-              letterSpacing: 1.2,
-              height: 1.0,
-            ),
-          ),
-        ],
-      ),
-    ]);
+      ],
+    );
   }
 }
