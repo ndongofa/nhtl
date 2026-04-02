@@ -9,6 +9,7 @@ import '../widgets/sama_account_menu.dart';
 import '../widgets/sama_service_icon.dart';
 import '../providers/app_theme_provider.dart';
 import '../services/auth_service.dart';
+import '../models/logged_user.dart';
 import '../widgets/sama_logo_widget.dart';
 
 import 'commande_hub_screen.dart';
@@ -137,6 +138,8 @@ class ServicesHubScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.watch<AppThemeProvider>();
     final isLogged = AuthService.isLoggedIn();
+    final isAdmin = isLogged &&
+        LoggedUser.fromSupabase().role == 'admin';
     final w = MediaQuery.of(context).size.width;
     final isDesktop = w >= 900;
 
@@ -148,7 +151,7 @@ class ServicesHubScreen extends StatelessWidget {
         body: SafeArea(
           child: Column(
             children: [
-              _TopBar(t: t, isLogged: isLogged, isDesktop: isDesktop),
+              _TopBar(t: t, isLogged: isLogged, isDesktop: isDesktop, isAdmin: isAdmin),
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
@@ -390,10 +393,12 @@ class _TopBar extends StatelessWidget {
   final AppThemeProvider t;
   final bool isLogged;
   final bool isDesktop;
+  final bool isAdmin;
   const _TopBar({
     required this.t,
     required this.isLogged,
     required this.isDesktop,
+    required this.isAdmin,
   });
 
   Future<void> _openAccountMenu(BuildContext context) async {
@@ -471,6 +476,14 @@ class _TopBar extends StatelessWidget {
                       subtitle: "Gérer mes informations",
                       value: "profile",
                     ),
+                    if (isAdmin)
+                      _menuItem(
+                        ctx,
+                        icon: Icons.admin_panel_settings_outlined,
+                        title: "Espace Admin",
+                        subtitle: "Tableau de bord administrateur",
+                        value: "admin",
+                      ),
                     _menuItem(
                       ctx,
                       icon: Icons.logout,
@@ -533,6 +546,10 @@ class _TopBar extends StatelessWidget {
 
       case "profile":
         Navigator.pushNamed(context, '/profile');
+        break;
+
+      case "admin":
+        Navigator.pushNamed(context, '/admin');
         break;
 
       case "logout":
@@ -622,6 +639,9 @@ class _TopBar extends StatelessWidget {
                   case 'account':
                     SamaAccountMenu.open(context);
                     break;
+                  case 'admin':
+                    Navigator.pushNamed(context, '/admin');
+                    break;
                   case 'login':
                     Navigator.pushNamed(context, '/login');
                     break;
@@ -668,8 +688,25 @@ class _TopBar extends StatelessWidget {
                         ),
                       ),
                     ]),
+                  ),
+                if (isAdmin)
+                  PopupMenuItem<String>(
+                    value: 'admin',
+                    child: Row(children: [
+                      Icon(Icons.admin_panel_settings_outlined,
+                          size: 18, color: AppThemeProvider.amber),
+                      const SizedBox(width: 10),
+                      Text(
+                        "Espace Admin",
+                        style: TextStyle(
+                          color: t.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ]),
                   )
-                else ...[
+                // Non-admin non-logged: show login/signup
+                else if (!isLogged) ...[
                   PopupMenuItem<String>(
                     value: 'login',
                     child: Row(children: [
@@ -738,6 +775,33 @@ class _TopBar extends StatelessWidget {
             ),
 
             const SizedBox(width: 8),
+
+            // Espace Admin (si admin)
+            if (isAdmin) ...[
+              ElevatedButton.icon(
+                icon: const Icon(Icons.admin_panel_settings_outlined, size: 14),
+                label: const Text(
+                  "Espace Admin",
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppThemeProvider.amber.withValues(alpha: 0.18),
+                  foregroundColor: AppThemeProvider.amber,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: BorderSide(
+                        color: AppThemeProvider.amber.withValues(alpha: 0.45)),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 9,
+                  ),
+                ),
+                onPressed: () => Navigator.pushNamed(context, '/admin'),
+              ),
+              const SizedBox(width: 8),
+            ],
 
             // Mon espace (menu)
             if (isLogged)

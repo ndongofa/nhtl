@@ -3,7 +3,10 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'providers/app_theme_provider.dart';
+import 'screens/admin/admin_dashboard_screen.dart';
+import 'screens/admin/admin_departures_screen.dart';
 import 'screens/admin/admin_user_screen.dart';
+import 'screens/gp/gp_list_screen.dart';
 import 'screens/auth/auth_callback_screen.dart';
 import 'screens/auth/forgot_password_screen.dart';
 import 'screens/auth/login_screen.dart';
@@ -78,7 +81,10 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignupScreen(),
         '/forgot-password': (context) => const ForgotPasswordScreen(),
-        '/admin': (context) => AdminUserScreen(),
+        '/admin': (context) => const AdminDashboardScreen(),
+        '/admin/users': (context) => const AdminUserScreen(),
+        '/admin/departures': (context) => const AdminDeparturesScreen(),
+        '/admin/gps': (context) => const GpListScreen(),
         '/profile': (context) => const ProfileScreen(),
         '/auth/callback': (context) => const AuthCallbackScreen(),
         '/reset-password': (context) => const ResetPasswordScreen(),
