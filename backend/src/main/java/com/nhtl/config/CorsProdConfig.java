@@ -19,9 +19,11 @@ public class CorsProdConfig {
         config.setAllowedOriginPatterns(List.of(
             // ✅ Nouveau domaine principal
             "https://sama-services-intl.com",
+            "https://www.sama-services-intl.com",
             "https://*.sama-services-intl.com",
             // ✅ Ancien domaine — pendant la période de transition
             "https://ngom-holding.com",
+            "https://www.ngom-holding.com",
             "https://*.ngom-holding.com"
         ));
 
