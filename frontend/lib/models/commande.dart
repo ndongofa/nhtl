@@ -11,6 +11,8 @@ class Commande {
   final String adresseLivraison;
   final String plateforme;
   final String lienProduit;
+  final List<String> liensProduits;
+  final List<String> photosProduits;
   final String descriptionCommande;
   final int quantite;
   final double prixUnitaire;
@@ -57,6 +59,8 @@ class Commande {
     required this.adresseLivraison,
     required this.plateforme,
     required this.lienProduit,
+    this.liensProduits = const [],
+    this.photosProduits = const [],
     required this.descriptionCommande,
     required this.quantite,
     required this.prixUnitaire,
@@ -90,6 +94,8 @@ class Commande {
     String? adresseLivraison,
     String? plateforme,
     String? lienProduit,
+    List<String>? liensProduits,
+    List<String>? photosProduits,
     String? descriptionCommande,
     int? quantite,
     double? prixUnitaire,
@@ -122,6 +128,8 @@ class Commande {
       adresseLivraison: adresseLivraison ?? this.adresseLivraison,
       plateforme: plateforme ?? this.plateforme,
       lienProduit: lienProduit ?? this.lienProduit,
+      liensProduits: liensProduits ?? this.liensProduits,
+      photosProduits: photosProduits ?? this.photosProduits,
       descriptionCommande: descriptionCommande ?? this.descriptionCommande,
       quantite: quantite ?? this.quantite,
       prixUnitaire: prixUnitaire ?? this.prixUnitaire,
@@ -157,6 +165,14 @@ class Commande {
       adresseLivraison: json['adresseLivraison'] as String? ?? '',
       plateforme: json['plateforme'] as String? ?? '',
       lienProduit: json['lienProduit'] as String? ?? '',
+      liensProduits: (json['liensProduits'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      photosProduits: (json['photosProduits'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
       descriptionCommande: json['descriptionCommande'] as String? ?? '',
       quantite: (json['quantite'] as num?)?.toInt() ?? 1,
       prixUnitaire: (json['prixUnitaire'] is int)
@@ -205,6 +221,8 @@ class Commande {
       'adresseLivraison': adresseLivraison,
       'plateforme': plateforme,
       'lienProduit': lienProduit,
+      'liensProduits': liensProduits,
+      'photosProduits': photosProduits,
       'descriptionCommande': descriptionCommande,
       'quantite': quantite,
       'prixUnitaire': prixUnitaire,

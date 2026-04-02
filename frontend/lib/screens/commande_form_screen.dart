@@ -1,9 +1,12 @@
 // lib/screens/commande_form_screen.dart
 
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/commande.dart';
 import '../services/commande_service.dart';
@@ -39,12 +42,21 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
   final _paysLivraisonController = TextEditingController();
   final _villeLivraisonController = TextEditingController();
   final _adresseLivraisonController = TextEditingController();
-  final _lienProduitController = TextEditingController();
   final _descriptionCommandeController = TextEditingController();
   final _quantiteController = TextEditingController();
   final _prixUnitaireController = TextEditingController();
   final _prixTotalController = TextEditingController();
   final _notesSpecialesController = TextEditingController();
+
+  // ✅ Liens multiples : liste de contrôleurs (au moins un)
+  List<TextEditingController> _lienControllers = [TextEditingController()];
+
+  // ✅ Photos produit : fichiers sélectionnés en attente d'upload
+  final List<XFile> _pendingPhotos = [];
+  // URLs des photos déjà uploadées (mode édition)
+  final List<String> _uploadedPhotoUrls = [];
+
+  final _imagePicker = ImagePicker();
 
   String? _phoneE164;
   String _plateforme = 'AMAZON';
@@ -113,7 +125,6 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
       _paysLivraisonController.text = c.paysLivraison ?? '';
       _villeLivraisonController.text = c.villeLivraison ?? '';
       _adresseLivraisonController.text = c.adresseLivraison ?? '';
-      _lienProduitController.text = c.lienProduit ?? '';
       _descriptionCommandeController.text = c.descriptionCommande ?? '';
       _quantiteController.text = c.quantite?.toString() ?? '';
       _prixUnitaireController.text = c.prixUnitaire?.toString() ?? '';
@@ -121,6 +132,17 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
       _notesSpecialesController.text = c.notesSpeciales ?? '';
       _plateforme = c.plateforme ?? 'AMAZON';
       _devise = c.devise ?? 'EUR';
+
+      // ✅ Liens multiples — priorité à liensProduits, sinon lienProduit
+      final liens = c.liensProduits.isNotEmpty
+          ? c.liensProduits
+          : (c.lienProduit.isNotEmpty ? [c.lienProduit] : []);
+      _lienControllers = liens.isNotEmpty
+          ? liens.map((l) => TextEditingController(text: l)).toList()
+          : [TextEditingController()];
+
+      // ✅ Photos produit déjà uploadées
+      _uploadedPhotoUrls.addAll(c.photosProduits);
     } else {
       // ── Nouveau formulaire : auto-remplissage depuis le profil connecté ──
       final meta = AuthService.userMetadata;
@@ -146,7 +168,9 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
     _paysLivraisonController.dispose();
     _villeLivraisonController.dispose();
     _adresseLivraisonController.dispose();
-    _lienProduitController.dispose();
+    for (final c in _lienControllers) {
+      c.dispose();
+    }
     _descriptionCommandeController.dispose();
     _quantiteController.dispose();
     _prixUnitaireController.dispose();
@@ -164,8 +188,45 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
           toastLength: Toast.LENGTH_LONG);
       return;
     }
+
+    // ✅ Valider qu'au moins un lien ou une photo est fourni
+    final validLinks = _lienControllers
+        .map((c) => c.text.trim())
+        .where((l) => l.isNotEmpty)
+        .toList();
+    if (validLinks.isEmpty &&
+        _pendingPhotos.isEmpty &&
+        _uploadedPhotoUrls.isEmpty) {
+      Fluttertoast.showToast(
+          msg:
+              '⚠️ Ajoutez au moins un lien ou une photo de produit.',
+          backgroundColor: Colors.orange,
+          toastLength: Toast.LENGTH_LONG);
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
+      // ✅ Upload des nouvelles photos vers Supabase
+      final List<String> newPhotoUrls = [];
+      final supa = Supabase.instance.client;
+      for (int i = 0; i < _pendingPhotos.length; i++) {
+        final file = _pendingPhotos[i];
+        final ext = _resolveExt(file);
+        final path =
+            'commandes/produits/${DateTime.now().millisecondsSinceEpoch}_$i.$ext';
+        final bytes = await file.readAsBytes();
+        await supa.storage.from('sama-postal').uploadBinary(
+              path,
+              bytes,
+              fileOptions: FileOptions(contentType: 'image/$ext', upsert: true),
+            );
+        final url = supa.storage.from('sama-postal').getPublicUrl(path);
+        newPhotoUrls.add(url);
+      }
+
+      final allPhotoUrls = [..._uploadedPhotoUrls, ...newPhotoUrls];
+
       final qte = int.parse(_quantiteController.text.trim());
       final prix = _parseDecimal(_prixUnitaireController.text) ?? 0;
       final total = _parseDecimal(_prixTotalController.text) ?? 0;
@@ -182,7 +243,9 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
         villeLivraison: _villeLivraisonController.text.trim(),
         adresseLivraison: _adresseLivraisonController.text.trim(),
         plateforme: _plateforme,
-        lienProduit: _lienProduitController.text.trim(),
+        lienProduit: validLinks.isNotEmpty ? validLinks.first : '',
+        liensProduits: validLinks,
+        photosProduits: allPhotoUrls,
         descriptionCommande: _descriptionCommandeController.text.trim(),
         quantite: qte,
         prixUnitaire: prix,
@@ -210,6 +273,32 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
       Fluttertoast.showToast(msg: '❌ Erreur : $e', backgroundColor: Colors.red);
     } finally {
       setState(() => _isLoading = false);
+    }
+  }
+
+  String _resolveExt(XFile file) {
+    final name = file.name;
+    if (name.contains('.')) {
+      final ext = name.split('.').last.toLowerCase();
+      if (['jpg', 'jpeg', 'png', 'webp'].contains(ext)) {
+        return ext == 'jpeg' ? 'jpg' : ext;
+      }
+    }
+    final mime = file.mimeType ?? '';
+    if (mime.contains('jpeg') || mime.contains('jpg')) return 'jpg';
+    if (mime.contains('png')) return 'png';
+    if (mime.contains('webp')) return 'webp';
+    return 'jpg';
+  }
+
+  Future<void> _pickProductPhoto() async {
+    final file = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+      maxWidth: 1920,
+    );
+    if (file != null) {
+      setState(() => _pendingPhotos.add(file));
     }
   }
 
@@ -316,11 +405,177 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
                       Icons.store_outlined,
                       (v) => setState(() => _plateforme = v!),
                       displayLabels: _plateformeLabels),
-                  const SizedBox(height: 14),
-                  _field(_lienProduitController, "Lien du produit", Icons.link,
-                      hint: "https://www.amazon.fr/produit/...",
-                      required: true,
-                      keyboardType: TextInputType.url),
+                  const SizedBox(height: 16),
+
+                  // ✅ Liens multiples
+                  Row(children: [
+                    const Icon(Icons.link, color: _appBlue, size: 18),
+                    const SizedBox(width: 8),
+                    const Text('Liens des produits',
+                        style: TextStyle(
+                            color: _textMain,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13)),
+                  ]),
+                  const SizedBox(height: 8),
+                  ...List.generate(_lienControllers.length, (i) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _lienControllers[i],
+                              keyboardType: TextInputType.url,
+                              style: const TextStyle(
+                                  color: _textMain,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 14),
+                              decoration: InputDecoration(
+                                hintText:
+                                    'https://www.amazon.fr/produit/...',
+                                hintStyle: const TextStyle(
+                                    color: Color(0xFFB0BBCC), fontSize: 13),
+                                prefixIcon: const Icon(Icons.link,
+                                    color: _appBlue, size: 18),
+                                filled: true,
+                                fillColor: _bgLight,
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 14),
+                                border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide:
+                                        const BorderSide(color: _border)),
+                                enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide:
+                                        const BorderSide(color: _border)),
+                                focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                        color: _appBlue, width: 1.8)),
+                                errorBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                        color: Colors.red)),
+                              ),
+                            ),
+                          ),
+                          if (_lienControllers.length > 1)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 8),
+                              child: InkWell(
+                                onTap: () {
+                                  final ctrl = _lienControllers[i];
+                                  setState(() => _lienControllers.removeAt(i));
+                                  ctrl.dispose();
+                                },
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red.shade50,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(Icons.close,
+                                      color: Colors.red, size: 18),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    );
+                  }),
+                  TextButton.icon(
+                    onPressed: () => setState(() =>
+                        _lienControllers.add(TextEditingController())),
+                    icon: const Icon(Icons.add, size: 16, color: _appBlue),
+                    label: const Text('Ajouter un lien',
+                        style: TextStyle(color: _appBlue, fontSize: 13)),
+                  ),
+
+                  const SizedBox(height: 16),
+                  const Divider(height: 1),
+                  const SizedBox(height: 16),
+
+                  // ✅ Photos produit
+                  Row(children: [
+                    const Icon(Icons.photo_camera_outlined,
+                        color: _amber, size: 18),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                          'Photos des produits (si pas de lien disponible)',
+                          style: TextStyle(
+                              color: _textMain,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13)),
+                    ),
+                  ]),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Pour les produits sans lien, ajoutez une photo.',
+                    style:
+                        TextStyle(color: _textMuted, fontSize: 12),
+                  ),
+                  const SizedBox(height: 10),
+                  if (_uploadedPhotoUrls.isNotEmpty ||
+                      _pendingPhotos.isNotEmpty)
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        // Photos déjà uploadées (mode édition)
+                        ...List.generate(_uploadedPhotoUrls.length, (i) {
+                          return _photoTile(
+                            child: Image.network(
+                              _uploadedPhotoUrls[i],
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) =>
+                                  const Icon(Icons.broken_image,
+                                      color: _textMuted),
+                            ),
+                            onRemove: () => setState(
+                                () => _uploadedPhotoUrls.removeAt(i)),
+                          );
+                        }),
+                        // Nouvelles photos en attente d'upload
+                        ...List.generate(_pendingPhotos.length, (i) {
+                          return FutureBuilder<Uint8List>(
+                            future: _pendingPhotos[i].readAsBytes(),
+                            builder: (ctx, snap) {
+                              return _photoTile(
+                                child: snap.hasData
+                                    ? Image.memory(
+                                        snap.data!,
+                                        fit: BoxFit.cover)
+                                    : const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2)),
+                                onRemove: () => setState(
+                                    () => _pendingPhotos.removeAt(i)),
+                              );
+                            },
+                          );
+                        }),
+                      ],
+                    ),
+                  const SizedBox(height: 10),
+                  OutlinedButton.icon(
+                    onPressed: _pickProductPhoto,
+                    icon: const Icon(Icons.add_photo_alternate_outlined,
+                        size: 16, color: _amber),
+                    label: const Text('Ajouter une photo',
+                        style: TextStyle(color: _amber, fontSize: 13)),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: _amber),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+
                   const SizedBox(height: 14),
                   _field(_descriptionCommandeController,
                       "Description du produit", Icons.description_outlined,
@@ -621,6 +876,39 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
               ))
           .toList(),
       onChanged: onChanged,
+    );
+  }
+
+  Widget _photoTile({required Widget child, required VoidCallback onRemove}) {
+    return Stack(
+      children: [
+        Container(
+          width: 88,
+          height: 88,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: _border),
+            color: _bgLight,
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: child,
+        ),
+        Positioned(
+          top: 2,
+          right: 2,
+          child: GestureDetector(
+            onTap: onRemove,
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.6),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.close, color: Colors.white, size: 14),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

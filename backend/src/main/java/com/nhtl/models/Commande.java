@@ -26,6 +26,13 @@ public class Commande {
 
     private String plateforme;
     private String lienProduit;
+
+    @Column(name = "liens_produits", columnDefinition = "TEXT")
+    private String liensProduits;
+
+    @Column(name = "photos_produits", columnDefinition = "TEXT")
+    private String photosProduits;
+
     private String descriptionCommande;
 
     private Integer quantite;
@@ -117,6 +124,12 @@ public class Commande {
 
     public String getLienProduit() { return lienProduit; }
     public void setLienProduit(String l) { this.lienProduit = l; }
+
+    public String getLiensProduits() { return liensProduits; }
+    public void setLiensProduits(String l) { this.liensProduits = l; }
+
+    public String getPhotosProduits() { return photosProduits; }
+    public void setPhotosProduits(String p) { this.photosProduits = p; }
 
     public String getDescriptionCommande() { return descriptionCommande; }
     public void setDescriptionCommande(String d) { this.descriptionCommande = d; }
