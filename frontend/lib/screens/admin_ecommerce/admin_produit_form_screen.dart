@@ -131,7 +131,7 @@ class _AdminProduitFormScreenState extends State<AdminProduitFormScreen> {
             path,
             bytes,
             fileOptions: FileOptions(
-                contentType: 'image/$ext', upsert: false),
+                contentType: _extToMime(ext), upsert: false),
           );
       return supa.storage.from(_imageBucket).getPublicUrl(path);
     } catch (e) {
@@ -153,6 +153,17 @@ class _AdminProduitFormScreenState extends State<AdminProduitFormScreen> {
     if (mime.contains('png')) return 'png';
     if (mime.contains('webp')) return 'webp';
     return 'jpg';
+  }
+
+  String _extToMime(String ext) {
+    switch (ext) {
+      case 'png':
+        return 'image/png';
+      case 'webp':
+        return 'image/webp';
+      default:
+        return 'image/jpeg';
+    }
   }
 
   Future<void> _submit() async {
