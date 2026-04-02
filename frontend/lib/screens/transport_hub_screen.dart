@@ -224,37 +224,106 @@ class _TransportHubScreenState extends State<TransportHubScreen> {
             );
           },
         ),
-        actions: [
-          IconButton(
-            tooltip: "Mon espace",
-            icon: const Icon(Icons.dashboard_outlined),
-            onPressed: () => SamaAccountMenu.open(context),
-            splashRadius: 20,
-          ),
-          IconButton(
-            tooltip: "Profil",
-            icon: const Icon(Icons.person_outline),
-            onPressed: () => Navigator.pushNamed(context, '/profile'),
-            splashRadius: 20,
-          ),
-          IconButton(
-            tooltip: t.isDark ? "Thème clair" : "Thème sombre",
-            onPressed: () => context.read<AppThemeProvider>().toggleTheme(),
-            icon: Icon(
-                t.isDark ? Icons.wb_sunny_outlined : Icons.nightlight_round),
-            splashRadius: 20,
-          ),
-          IconButton(
-            tooltip: "Déconnexion",
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await AuthService.logout();
-              if (!context.mounted) return;
-              Navigator.of(context).pushNamedAndRemoveUntil('/', (_) => false);
-            },
-            splashRadius: 20,
-          ),
-        ],
+        actions: isDesktop
+            ? [
+                IconButton(
+                  tooltip: "Mon espace",
+                  icon: const Icon(Icons.dashboard_outlined),
+                  onPressed: () => SamaAccountMenu.open(context),
+                  splashRadius: 20,
+                ),
+                IconButton(
+                  tooltip: "Profil",
+                  icon: const Icon(Icons.person_outline),
+                  onPressed: () => Navigator.pushNamed(context, '/profile'),
+                  splashRadius: 20,
+                ),
+                IconButton(
+                  tooltip: t.isDark ? "Thème clair" : "Thème sombre",
+                  onPressed: () =>
+                      context.read<AppThemeProvider>().toggleTheme(),
+                  icon: Icon(t.isDark
+                      ? Icons.wb_sunny_outlined
+                      : Icons.nightlight_round),
+                  splashRadius: 20,
+                ),
+                IconButton(
+                  tooltip: "Déconnexion",
+                  icon: const Icon(Icons.logout),
+                  onPressed: () async {
+                    await AuthService.logout();
+                    if (!context.mounted) return;
+                    Navigator.of(context)
+                        .pushNamedAndRemoveUntil('/', (_) => false);
+                  },
+                  splashRadius: 20,
+                ),
+              ]
+            : [
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert),
+                  tooltip: "Menu",
+                  onSelected: (value) async {
+                    switch (value) {
+                      case 'account':
+                        SamaAccountMenu.open(context);
+                        break;
+                      case 'profile':
+                        Navigator.pushNamed(context, '/profile');
+                        break;
+                      case 'theme':
+                        context.read<AppThemeProvider>().toggleTheme();
+                        break;
+                      case 'logout':
+                        await AuthService.logout();
+                        if (!context.mounted) return;
+                        Navigator.of(context)
+                            .pushNamedAndRemoveUntil('/', (_) => false);
+                        break;
+                    }
+                  },
+                  itemBuilder: (ctx) => [
+                    const PopupMenuItem<String>(
+                      value: 'account',
+                      child: Row(children: [
+                        Icon(Icons.dashboard_outlined, size: 18),
+                        SizedBox(width: 10),
+                        Text("Mon espace"),
+                      ]),
+                    ),
+                    const PopupMenuItem<String>(
+                      value: 'profile',
+                      child: Row(children: [
+                        Icon(Icons.person_outline, size: 18),
+                        SizedBox(width: 10),
+                        Text("Profil"),
+                      ]),
+                    ),
+                    PopupMenuItem<String>(
+                      value: 'theme',
+                      child: Row(children: [
+                        Icon(
+                          t.isDark
+                              ? Icons.wb_sunny_outlined
+                              : Icons.nightlight_round,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(t.isDark ? "Thème clair" : "Thème sombre"),
+                      ]),
+                    ),
+                    const PopupMenuItem<String>(
+                      value: 'logout',
+                      child: Row(children: [
+                        Icon(Icons.logout, size: 18, color: Colors.red),
+                        SizedBox(width: 10),
+                        Text("Déconnexion",
+                            style: TextStyle(color: Colors.red)),
+                      ]),
+                    ),
+                  ],
+                ),
+              ],
       ), // ── Ticker départs ────────────────────────────────────────────────
       body: Column(children: [
         _buildTicker(t, svc),

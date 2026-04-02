@@ -5,8 +5,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../widgets/emoji_icon.dart';
 import '../widgets/sama_account_menu.dart';
+import '../widgets/sama_service_icon.dart';
 import '../providers/app_theme_provider.dart';
 import '../services/auth_service.dart';
 import '../widgets/sama_logo_widget.dart';
@@ -294,17 +294,7 @@ class _ServiceCard extends StatelessWidget {
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Center(
-                child: EmojiIcon(service.emoji, size: 26),
-              ),
-            ),
+            SamaServiceIcon(emoji: service.emoji, color: color),
             const Spacer(),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -607,90 +597,172 @@ class _TopBar extends StatelessWidget {
           const SamaTopBarLogo(),
           const Spacer(),
 
-          // Toggle thème
-          GestureDetector(
-            onTap: () => context.read<AppThemeProvider>().toggleTheme(),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
+          if (!isDesktop) ...[
+            // ── Mobile: all actions collapsed into a single hamburger menu ──
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.menu, color: Colors.white),
+              tooltip: "Menu",
+              color: t.bgCard,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: t.border.withValues(alpha: 0.5)),
               ),
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 250),
-                transitionBuilder: (child, anim) => RotationTransition(
-                  turns: anim,
-                  child: FadeTransition(opacity: anim, child: child),
+              onSelected: (value) async {
+                switch (value) {
+                  case 'theme':
+                    context.read<AppThemeProvider>().toggleTheme();
+                    break;
+                  case 'account':
+                    SamaAccountMenu.open(context);
+                    break;
+                  case 'login':
+                    Navigator.pushNamed(context, '/login');
+                    break;
+                  case 'signup':
+                    Navigator.pushNamed(context, '/signup');
+                    break;
+                }
+              },
+              itemBuilder: (ctx) => [
+                PopupMenuItem<String>(
+                  value: 'theme',
+                  child: Row(children: [
+                    Icon(
+                      t.isDark
+                          ? Icons.wb_sunny_outlined
+                          : Icons.nightlight_round,
+                      size: 18,
+                      color: t.isDark
+                          ? AppThemeProvider.amber
+                          : AppThemeProvider.appBlue,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      t.isDark ? "Thème clair" : "Thème sombre",
+                      style: TextStyle(
+                        color: t.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ]),
                 ),
-                child: Icon(
-                  t.isDark ? Icons.wb_sunny_outlined : Icons.nightlight_round,
-                  key: ValueKey(t.isDark),
-                  color: t.isDark ? AppThemeProvider.amber : Colors.white,
-                  size: 16,
+                if (isLogged)
+                  PopupMenuItem<String>(
+                    value: 'account',
+                    child: Row(children: [
+                      Icon(Icons.dashboard_outlined,
+                          size: 18, color: AppThemeProvider.appBlue),
+                      const SizedBox(width: 10),
+                      Text(
+                        "Mon espace",
+                        style: TextStyle(
+                          color: t.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ]),
+                  )
+                else ...[
+                  PopupMenuItem<String>(
+                    value: 'login',
+                    child: Row(children: [
+                      Icon(Icons.login_outlined,
+                          size: 18, color: AppThemeProvider.appBlue),
+                      const SizedBox(width: 10),
+                      Text(
+                        "Connexion",
+                        style: TextStyle(
+                          color: t.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ]),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'signup',
+                    child: Row(children: [
+                      Icon(Icons.person_add_alt_1_outlined,
+                          size: 18, color: AppThemeProvider.appBlue),
+                      const SizedBox(width: 10),
+                      Text(
+                        "S'inscrire",
+                        style: TextStyle(
+                          color: t.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ]),
+                  ),
+                ],
+              ],
+            ),
+          ] else ...[
+            // ── Desktop: keep full action bar ──────────────────────────────
+
+            // Toggle thème
+            GestureDetector(
+              onTap: () => context.read<AppThemeProvider>().toggleTheme(),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                  border:
+                      Border.all(color: Colors.white.withValues(alpha: 0.28)),
+                ),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 250),
+                  transitionBuilder: (child, anim) => RotationTransition(
+                    turns: anim,
+                    child: FadeTransition(opacity: anim, child: child),
+                  ),
+                  child: Icon(
+                    t.isDark
+                        ? Icons.wb_sunny_outlined
+                        : Icons.nightlight_round,
+                    key: ValueKey(t.isDark),
+                    color: t.isDark ? AppThemeProvider.amber : Colors.white,
+                    size: 16,
+                  ),
                 ),
               ),
             ),
-          ),
 
-          const SizedBox(width: 8),
+            const SizedBox(width: 8),
 
-          // Mon espace (menu)
-          if (isLogged)
-            (isDesktop
-                ? ElevatedButton.icon(
-                    icon: const Icon(Icons.dashboard_outlined, size: 14),
-                    label: const Text(
-                      "Mon espace",
-                      style:
-                          TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white.withValues(alpha: 0.14),
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 9,
-                      ),
-                    ),
-                    onPressed: () => SamaAccountMenu.open(context),
-                  )
-                : IconButton(
-                    icon: const Icon(Icons.dashboard_outlined,
-                        color: Colors.white, size: 20),
-                    tooltip: "Mon espace",
-                    onPressed: () => SamaAccountMenu.open(context),
-                    padding: const EdgeInsets.all(6),
-                    constraints:
-                        const BoxConstraints(minWidth: 34, minHeight: 34),
-                  ))
-          else ...[
-            if (!isDesktop) ...[
-              IconButton(
-                icon: const Icon(Icons.login, color: Colors.white, size: 20),
-                tooltip: "Connexion",
-                onPressed: () => Navigator.pushNamed(context, '/login'),
-              ),
-              IconButton(
-                icon: const Icon(Icons.person_add_alt_1_outlined,
-                    color: Colors.white, size: 20),
-                tooltip: "Créer un compte",
-                onPressed: () => Navigator.pushNamed(context, '/signup'),
-              ),
-            ] else ...[
+            // Mon espace (menu)
+            if (isLogged)
+              ElevatedButton.icon(
+                icon: const Icon(Icons.dashboard_outlined, size: 14),
+                label: const Text(
+                  "Mon espace",
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white.withValues(alpha: 0.14),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 9,
+                  ),
+                ),
+                onPressed: () => SamaAccountMenu.open(context),
+              )
+            else ...[
               OutlinedButton(
                 onPressed: () => Navigator.pushNamed(context, '/login'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.white,
-                  side: BorderSide(color: Colors.white.withValues(alpha: 0.5)),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                  side:
+                      BorderSide(color: Colors.white.withValues(alpha: 0.5)),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 9),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -707,8 +779,8 @@ class _TopBar extends StatelessWidget {
                   backgroundColor: Colors.white,
                   foregroundColor: AppThemeProvider.appBlue,
                   elevation: 0,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 9),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
