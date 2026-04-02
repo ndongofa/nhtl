@@ -18,6 +18,7 @@ public class CommandeDTO {
     private String lienProduit;
     private List<String> liensProduits;
     private List<String> photosProduits;
+    private String articlesJson;
     private String descriptionCommande;
     private Integer quantite;
     private BigDecimal prixUnitaire;
@@ -85,6 +86,9 @@ public class CommandeDTO {
 
     public List<String> getPhotosProduits() { return photosProduits; }
     public void setPhotosProduits(List<String> photosProduits) { this.photosProduits = photosProduits; }
+
+    public String getArticlesJson() { return articlesJson; }
+    public void setArticlesJson(String articlesJson) { this.articlesJson = articlesJson; }
 
     public String getDescriptionCommande() { return descriptionCommande; }
     public void setDescriptionCommande(String descriptionCommande) { this.descriptionCommande = descriptionCommande; }

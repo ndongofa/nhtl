@@ -29,6 +29,15 @@ public class Achat {
     private String typeProduit;     // catégorie / type de produit
     private String descriptionAchat;
 
+    @Column(name = "liens_produits", columnDefinition = "TEXT")
+    private String liensProduits;
+
+    @Column(name = "photos_produits", columnDefinition = "TEXT")
+    private String photosProduits;
+
+    @Column(name = "articles_json", columnDefinition = "TEXT")
+    private String articlesJson;
+
     private Integer quantite;
     private BigDecimal prixEstime;
     private BigDecimal prixTotal;
@@ -136,6 +145,15 @@ public class Achat {
 
     public String getDescriptionAchat() { return descriptionAchat; }
     public void setDescriptionAchat(String d) { this.descriptionAchat = d; }
+
+    public String getLiensProduits() { return liensProduits; }
+    public void setLiensProduits(String l) { this.liensProduits = l; }
+
+    public String getPhotosProduits() { return photosProduits; }
+    public void setPhotosProduits(String p) { this.photosProduits = p; }
+
+    public String getArticlesJson() { return articlesJson; }
+    public void setArticlesJson(String a) { this.articlesJson = a; }
 
     public Integer getQuantite() { return quantite; }
     public void setQuantite(Integer q) { this.quantite = q; }

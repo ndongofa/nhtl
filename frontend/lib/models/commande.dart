@@ -13,6 +13,7 @@ class Commande {
   final String lienProduit;
   final List<String> liensProduits;
   final List<String> photosProduits;
+  final String? articlesJson;
   final String descriptionCommande;
   final int quantite;
   final double prixUnitaire;
@@ -61,6 +62,7 @@ class Commande {
     required this.lienProduit,
     this.liensProduits = const [],
     this.photosProduits = const [],
+    this.articlesJson,
     required this.descriptionCommande,
     required this.quantite,
     required this.prixUnitaire,
@@ -96,6 +98,7 @@ class Commande {
     String? lienProduit,
     List<String>? liensProduits,
     List<String>? photosProduits,
+    String? articlesJson,
     String? descriptionCommande,
     int? quantite,
     double? prixUnitaire,
@@ -130,6 +133,7 @@ class Commande {
       lienProduit: lienProduit ?? this.lienProduit,
       liensProduits: liensProduits ?? this.liensProduits,
       photosProduits: photosProduits ?? this.photosProduits,
+      articlesJson: articlesJson ?? this.articlesJson,
       descriptionCommande: descriptionCommande ?? this.descriptionCommande,
       quantite: quantite ?? this.quantite,
       prixUnitaire: prixUnitaire ?? this.prixUnitaire,
@@ -173,6 +177,7 @@ class Commande {
               ?.map((e) => e.toString())
               .toList() ??
           [],
+      articlesJson: json['articlesJson'] as String?,
       descriptionCommande: json['descriptionCommande'] as String? ?? '',
       quantite: (json['quantite'] as num?)?.toInt() ?? 1,
       prixUnitaire: (json['prixUnitaire'] is int)
@@ -223,6 +228,7 @@ class Commande {
       'lienProduit': lienProduit,
       'liensProduits': liensProduits,
       'photosProduits': photosProduits,
+      'articlesJson': articlesJson,
       'descriptionCommande': descriptionCommande,
       'quantite': quantite,
       'prixUnitaire': prixUnitaire,

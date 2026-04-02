@@ -1,17 +1,63 @@
 // lib/screens/commande_form_screen.dart
 
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/commande.dart';
+import '../models/article_item.dart';
 import '../services/commande_service.dart';
 import '../services/auth_service.dart';
 import '../widgets/phone_input_field.dart';
+
+// ── Classe interne représentant un article en cours d'édition ──────────────
+
+class _ArticleForm {
+  String type; // 'lien' ou 'photo'
+  final TextEditingController lienCtrl;
+  final TextEditingController quantiteCtrl;
+  final TextEditingController prixUnitaireCtrl;
+  final TextEditingController prixTotalCtrl;
+  final TextEditingController titreCtrl;
+  final TextEditingController descriptionCtrl;
+  XFile? pendingPhoto;
+  String? uploadedPhotoUrl;
+
+  _ArticleForm({
+    this.type = 'lien',
+    String lien = '',
+    String quantite = '1',
+    String prixUnitaire = '',
+    String prixTotal = '',
+    String titre = '',
+    String description = '',
+    this.pendingPhoto,
+    this.uploadedPhotoUrl,
+  })  : lienCtrl = TextEditingController(text: lien),
+        quantiteCtrl = TextEditingController(text: quantite),
+        prixUnitaireCtrl = TextEditingController(text: prixUnitaire),
+        prixTotalCtrl = TextEditingController(text: prixTotal),
+        titreCtrl = TextEditingController(text: titre),
+        descriptionCtrl = TextEditingController(text: description);
+
+  bool get hasPhoto =>
+      pendingPhoto != null || (uploadedPhotoUrl?.isNotEmpty ?? false);
+
+  void dispose() {
+    lienCtrl.dispose();
+    quantiteCtrl.dispose();
+    prixUnitaireCtrl.dispose();
+    prixTotalCtrl.dispose();
+    titreCtrl.dispose();
+    descriptionCtrl.dispose();
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 class CommandeFormScreen extends StatefulWidget {
   final Commande? commande;
@@ -31,6 +77,7 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
   static const Color _amber = Color(0xFFFFB300);
   static const Color _teal = Color(0xFF00BCD4);
   static const Color _green = Color(0xFF22C55E);
+  static const Color _red = Color(0xFFEF4444);
 
   final _formKey = GlobalKey<FormState>();
   final _service = CommandeService();
@@ -42,43 +89,21 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
   final _paysLivraisonController = TextEditingController();
   final _villeLivraisonController = TextEditingController();
   final _adresseLivraisonController = TextEditingController();
-  final _descriptionCommandeController = TextEditingController();
-  final _quantiteController = TextEditingController();
-  final _prixUnitaireController = TextEditingController();
-  final _prixTotalController = TextEditingController();
   final _notesSpecialesController = TextEditingController();
-
-  // ✅ Liens multiples : liste de contrôleurs (au moins un)
-  List<TextEditingController> _lienControllers = [TextEditingController()];
-
-  // ✅ Photos produit : fichiers sélectionnés en attente d'upload
-  final List<XFile> _pendingPhotos = [];
-  // URLs des photos déjà uploadées (mode édition)
-  final List<String> _uploadedPhotoUrls = [];
-
-  final _imagePicker = ImagePicker();
 
   String? _phoneE164;
   String _plateforme = 'AMAZON';
   String _devise = 'EUR';
 
+  // ✅ Liste des articles (formulaire multi-articles)
+  final List<_ArticleForm> _articles = [];
+
+  final _imagePicker = ImagePicker();
+
   static const List<String> _plateformes = [
-    'AMAZON',
-    'TEMU',
-    'SHEIN',
-    'ALIEXPRESS',
-    'EBAY',
-    'ETSY',
-    'AUTRE'
+    'AMAZON', 'TEMU', 'SHEIN', 'ALIEXPRESS', 'EBAY', 'ETSY', 'AUTRE'
   ];
-  static const List<String> _devises = [
-    'EUR',
-    'USD',
-    'GBP',
-    'MAD',
-    'XOF',
-    'CAD'
-  ];
+  static const List<String> _devises = ['EUR', 'USD', 'GBP', 'MAD', 'XOF', 'CAD'];
   static const Map<String, String> _plateformeLabels = {
     'AMAZON': '📦 Amazon',
     'TEMU': '🛍️ Temu',
@@ -89,27 +114,49 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
     'AUTRE': '🌐 Autre site',
   };
 
-  // ✅ Normalise virgule → point et parse en double
   double? _parseDecimal(String raw) =>
       double.tryParse(raw.trim().replaceAll(',', '.'));
 
-  // ✅ Recalcule le total dès que qté ou prix unitaire change
-  void _recalcTotal() {
-    final q = _parseDecimal(_quantiteController.text);
-    final p = _parseDecimal(_prixUnitaireController.text);
+  // ✅ Recalcule le sous-total d'un article lien
+  void _recalcArticleTotal(_ArticleForm art) {
+    final q = _parseDecimal(art.quantiteCtrl.text);
+    final p = _parseDecimal(art.prixUnitaireCtrl.text);
     if (q != null && p != null && q > 0 && p > 0) {
       final total = q * p;
-      // Affiche sans décimale inutile : 2 × 14.5 → "29.0" → "29" ; 2.5 × 4 → "10"
       final formatted = total == total.truncateToDouble()
           ? total.toInt().toString()
           : total.toStringAsFixed(2);
-      if (_prixTotalController.text != formatted) {
-        _prixTotalController.text = formatted;
-        // Positionner le curseur à la fin
-        _prixTotalController.selection =
+      if (art.prixTotalCtrl.text != formatted) {
+        art.prixTotalCtrl.text = formatted;
+        art.prixTotalCtrl.selection =
             TextSelection.fromPosition(TextPosition(offset: formatted.length));
       }
     }
+    if (mounted) setState(() {});
+  }
+
+  // ✅ Nombre total d'articles
+  int get _totalArticlesCount {
+    int count = 0;
+    for (final art in _articles) {
+      if (art.type == 'lien') {
+        count += (int.tryParse(art.quantiteCtrl.text.trim()) ?? 0).clamp(0, 9999);
+      } else {
+        count += 1;
+      }
+    }
+    return count;
+  }
+
+  // ✅ Total global (somme des sous-totaux des articles lien)
+  double get _globalTotal {
+    double total = 0.0;
+    for (final art in _articles) {
+      if (art.type == 'lien') {
+        total += _parseDecimal(art.prixTotalCtrl.text) ?? 0.0;
+      }
+    }
+    return total;
   }
 
   @override
@@ -117,34 +164,67 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
     super.initState();
     final c = widget.commande;
     if (c != null) {
-      // ── Mode édition : remplir depuis l'objet existant ──────────────
-      _nomController.text = c.nom ?? '';
-      _prenomController.text = c.prenom ?? '';
+      // ── Mode édition ────────────────────────────────────────────
+      _nomController.text = c.nom;
+      _prenomController.text = c.prenom;
       _phoneE164 = c.numeroTelephone;
       _emailController.text = c.email ?? '';
-      _paysLivraisonController.text = c.paysLivraison ?? '';
-      _villeLivraisonController.text = c.villeLivraison ?? '';
-      _adresseLivraisonController.text = c.adresseLivraison ?? '';
-      _descriptionCommandeController.text = c.descriptionCommande ?? '';
-      _quantiteController.text = c.quantite?.toString() ?? '';
-      _prixUnitaireController.text = c.prixUnitaire?.toString() ?? '';
-      _prixTotalController.text = c.prixTotal?.toString() ?? '';
+      _paysLivraisonController.text = c.paysLivraison;
+      _villeLivraisonController.text = c.villeLivraison;
+      _adresseLivraisonController.text = c.adresseLivraison;
       _notesSpecialesController.text = c.notesSpeciales ?? '';
-      _plateforme = c.plateforme ?? 'AMAZON';
-      _devise = c.devise ?? 'EUR';
+      _plateforme = c.plateforme.isNotEmpty ? c.plateforme : 'AMAZON';
+      _devise = c.devise.isNotEmpty ? c.devise : 'EUR';
 
-      // ✅ Liens multiples — priorité à liensProduits, sinon lienProduit
-      final liens = c.liensProduits.isNotEmpty
-          ? c.liensProduits
-          : (c.lienProduit.isNotEmpty ? [c.lienProduit] : []);
-      _lienControllers = liens.isNotEmpty
-          ? liens.map((l) => TextEditingController(text: l)).toList()
-          : [TextEditingController()];
+      // ✅ Priorité à articlesJson (nouveau format)
+      if (c.articlesJson != null && c.articlesJson!.isNotEmpty) {
+        try {
+          final List<dynamic> raw = jsonDecode(c.articlesJson!);
+          for (final item in raw) {
+            final a = ArticleItem.fromJson(item as Map<String, dynamic>);
+            final form = _ArticleForm(
+              type: a.type,
+              lien: a.lien,
+              quantite: a.quantite.toString(),
+              prixUnitaire: a.prixUnitaire > 0 ? a.prixUnitaire.toString() : '',
+              prixTotal: a.prixTotal > 0 ? a.prixTotal.toString() : '',
+              titre: a.titre,
+              description: a.description,
+              uploadedPhotoUrl: a.photoUrl.isNotEmpty ? a.photoUrl : null,
+            );
+            _addArticleListeners(form);
+            _articles.add(form);
+          }
+        } catch (_) {}
+      }
 
-      // ✅ Photos produit déjà uploadées
-      _uploadedPhotoUrls.addAll(c.photosProduits);
+      // ✅ Fallback : format héritage (liensProduits / photosProduits)
+      if (_articles.isEmpty) {
+        final liens = c.liensProduits.isNotEmpty
+            ? c.liensProduits
+            : (c.lienProduit.isNotEmpty ? [c.lienProduit] : []);
+        for (final lien in liens) {
+          final form = _ArticleForm(
+            type: 'lien',
+            lien: lien,
+            quantite: c.quantite > 0 ? c.quantite.toString() : '1',
+            prixUnitaire: c.prixUnitaire > 0 ? c.prixUnitaire.toString() : '',
+            prixTotal: c.prixTotal > 0 ? c.prixTotal.toString() : '',
+          );
+          _addArticleListeners(form);
+          _articles.add(form);
+        }
+        for (final photoUrl in c.photosProduits) {
+          final form = _ArticleForm(
+            type: 'photo',
+            uploadedPhotoUrl: photoUrl,
+            description: c.descriptionCommande,
+          );
+          _articles.add(form);
+        }
+      }
     } else {
-      // ── Nouveau formulaire : auto-remplissage depuis le profil connecté ──
+      // ── Nouveau formulaire : auto-remplissage profil ─────────────
       final meta = AuthService.userMetadata;
       final user = AuthService.currentUser;
       if (meta != null || user != null) {
@@ -155,124 +235,43 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
       }
     }
 
-    // ✅ Listeners calcul automatique du total
-    _quantiteController.addListener(_recalcTotal);
-    _prixUnitaireController.addListener(_recalcTotal);
+    // Ajouter un article vide si la liste est vide
+    if (_articles.isEmpty) {
+      _addNewArticle();
+    }
   }
 
-  @override
-  void dispose() {
-    _nomController.dispose();
-    _prenomController.dispose();
-    _emailController.dispose();
-    _paysLivraisonController.dispose();
-    _villeLivraisonController.dispose();
-    _adresseLivraisonController.dispose();
-    for (final c in _lienControllers) {
-      c.dispose();
-    }
-    _descriptionCommandeController.dispose();
-    _quantiteController.dispose();
-    _prixUnitaireController.dispose();
-    _prixTotalController.dispose();
-    _notesSpecialesController.dispose();
-    super.dispose();
+  void _addArticleListeners(_ArticleForm form) {
+    form.quantiteCtrl.addListener(() => _recalcArticleTotal(form));
+    form.prixUnitaireCtrl.addListener(() => _recalcArticleTotal(form));
   }
 
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-    if (_phoneE164 == null || _phoneE164!.isEmpty) {
-      Fluttertoast.showToast(
-          msg: 'Veuillez entrer un numéro de téléphone valide.',
-          backgroundColor: Colors.red,
-          toastLength: Toast.LENGTH_LONG);
-      return;
-    }
+  void _addNewArticle({String type = 'lien'}) {
+    final form = _ArticleForm(type: type);
+    _addArticleListeners(form);
+    setState(() => _articles.add(form));
+  }
 
-    // ✅ Valider qu'au moins un lien ou une photo est fourni
-    final validLinks = _lienControllers
-        .map((c) => c.text.trim())
-        .where((l) => l.isNotEmpty)
-        .toList();
-    if (validLinks.isEmpty &&
-        _pendingPhotos.isEmpty &&
-        _uploadedPhotoUrls.isEmpty) {
-      Fluttertoast.showToast(
-          msg:
-              '⚠️ Ajoutez au moins un lien ou une photo de produit.',
-          backgroundColor: Colors.orange,
-          toastLength: Toast.LENGTH_LONG);
-      return;
-    }
-
-    setState(() => _isLoading = true);
-    try {
-      // ✅ Upload des nouvelles photos vers Supabase
-      final List<String> newPhotoUrls = [];
-      final supa = Supabase.instance.client;
-      for (int i = 0; i < _pendingPhotos.length; i++) {
-        final file = _pendingPhotos[i];
-        final ext = _resolveExt(file);
-        final path =
-            'commandes/produits/${DateTime.now().millisecondsSinceEpoch}_$i.$ext';
-        final bytes = await file.readAsBytes();
-        await supa.storage.from('sama-postal').uploadBinary(
-              path,
-              bytes,
-              fileOptions: FileOptions(contentType: 'image/$ext', upsert: true),
-            );
-        final url = supa.storage.from('sama-postal').getPublicUrl(path);
-        newPhotoUrls.add(url);
+  void _removeArticle(int index) {
+    setState(() {
+      _articles[index].dispose();
+      _articles.removeAt(index);
+      if (_articles.isEmpty) {
+        final form = _ArticleForm();
+        _addArticleListeners(form);
+        _articles.add(form);
       }
+    });
+  }
 
-      final allPhotoUrls = [..._uploadedPhotoUrls, ...newPhotoUrls];
-
-      final qte = int.parse(_quantiteController.text.trim());
-      final prix = _parseDecimal(_prixUnitaireController.text) ?? 0;
-      final total = _parseDecimal(_prixTotalController.text) ?? 0;
-
-      final data = Commande(
-        id: widget.commande?.id,
-        nom: _nomController.text.trim(),
-        prenom: _prenomController.text.trim(),
-        numeroTelephone: _phoneE164!,
-        email: _emailController.text.trim().isEmpty
-            ? null
-            : _emailController.text.trim(),
-        paysLivraison: _paysLivraisonController.text.trim(),
-        villeLivraison: _villeLivraisonController.text.trim(),
-        adresseLivraison: _adresseLivraisonController.text.trim(),
-        plateforme: _plateforme,
-        lienProduit: validLinks.isNotEmpty ? validLinks.first : '',
-        liensProduits: validLinks,
-        photosProduits: allPhotoUrls,
-        descriptionCommande: _descriptionCommandeController.text.trim(),
-        quantite: qte,
-        prixUnitaire: prix,
-        prixTotal: total,
-        devise: _devise,
-        notesSpeciales: _notesSpecialesController.text.trim().isEmpty
-            ? null
-            : _notesSpecialesController.text.trim(),
-      );
-      final result = widget.commande == null
-          ? await _service.createCommande(data)
-          : await _service.updateCommande(data);
-      if (result != null) {
-        Fluttertoast.showToast(
-            msg: widget.commande == null
-                ? '✅ Commande créée !'
-                : '✅ Commande modifiée !',
-            backgroundColor: Colors.green);
-        Navigator.pop(context, true);
-      } else {
-        Fluttertoast.showToast(
-            msg: '❌ Une erreur est survenue.', backgroundColor: Colors.red);
-      }
-    } catch (e) {
-      Fluttertoast.showToast(msg: '❌ Erreur : $e', backgroundColor: Colors.red);
-    } finally {
-      setState(() => _isLoading = false);
+  Future<void> _pickPhotoForArticle(_ArticleForm art) async {
+    final file = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+      maxWidth: 1920,
+    );
+    if (file != null) {
+      setState(() => art.pendingPhoto = file);
     }
   }
 
@@ -291,15 +290,172 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
     return 'jpg';
   }
 
-  Future<void> _pickProductPhoto() async {
-    final file = await _imagePicker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 85,
-      maxWidth: 1920,
-    );
-    if (file != null) {
-      setState(() => _pendingPhotos.add(file));
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_phoneE164 == null || _phoneE164!.isEmpty) {
+      Fluttertoast.showToast(
+          msg: 'Veuillez entrer un numéro de téléphone valide.',
+          backgroundColor: Colors.red,
+          toastLength: Toast.LENGTH_LONG);
+      return;
     }
+
+    // ✅ Vérifier qu'au moins un article est valide
+    bool hasValidArticle = false;
+    for (final art in _articles) {
+      if (art.type == 'lien' && art.lienCtrl.text.trim().isNotEmpty) {
+        hasValidArticle = true;
+        break;
+      }
+      if (art.type == 'photo' && art.hasPhoto) {
+        hasValidArticle = true;
+        break;
+      }
+    }
+    if (!hasValidArticle) {
+      Fluttertoast.showToast(
+          msg: '⚠️ Ajoutez au moins un article (lien ou photo).',
+          backgroundColor: Colors.orange,
+          toastLength: Toast.LENGTH_LONG);
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final supa = Supabase.instance.client;
+      final List<ArticleItem> finalArticles = [];
+
+      for (final art in _articles) {
+        if (art.type == 'lien') {
+          final lien = art.lienCtrl.text.trim();
+          if (lien.isEmpty) continue;
+          final q = int.tryParse(art.quantiteCtrl.text.trim()) ?? 1;
+          final pu = _parseDecimal(art.prixUnitaireCtrl.text) ?? 0.0;
+          final pt = _parseDecimal(art.prixTotalCtrl.text) ?? 0.0;
+          finalArticles.add(ArticleItem(
+            type: 'lien',
+            lien: lien,
+            quantite: q,
+            prixUnitaire: pu,
+            prixTotal: pt,
+          ));
+        } else {
+          // Article photo : upload si en attente
+          String photoUrl = art.uploadedPhotoUrl ?? '';
+          if (art.pendingPhoto != null) {
+            final file = art.pendingPhoto!;
+            final ext = _resolveExt(file);
+            final path =
+                'commandes/produits/${DateTime.now().millisecondsSinceEpoch}_${_articles.indexOf(art)}.$ext';
+            final bytes = await file.readAsBytes();
+            await supa.storage.from('sama-postal').uploadBinary(
+                  path,
+                  bytes,
+                  fileOptions: FileOptions(contentType: 'image/$ext', upsert: true),
+                );
+            photoUrl = supa.storage.from('sama-postal').getPublicUrl(path);
+          }
+          if (photoUrl.isEmpty) continue;
+          finalArticles.add(ArticleItem(
+            type: 'photo',
+            photoUrl: photoUrl,
+            titre: art.titreCtrl.text.trim(),
+            description: art.descriptionCtrl.text.trim(),
+          ));
+        }
+      }
+
+      if (finalArticles.isEmpty) {
+        Fluttertoast.showToast(
+            msg: '⚠️ Ajoutez au moins un article valide.',
+            backgroundColor: Colors.orange,
+            toastLength: Toast.LENGTH_LONG);
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      // ✅ Dériver les champs hérités depuis la liste d'articles
+      final lienArticles = finalArticles.where((a) => a.isLien).toList();
+      final photoArticles = finalArticles.where((a) => a.isPhoto).toList();
+      final allLinks = lienArticles.map((a) => a.lien).toList();
+      final allPhotos = photoArticles.map((a) => a.photoUrl).toList();
+      final totalQte = lienArticles.fold<int>(0, (s, a) => s + a.quantite);
+      final totalPrice = finalArticles.fold<double>(0.0, (s, a) => s + a.prixTotal);
+
+      // Description synthétique pour l'admin
+      final descParts = <String>[];
+      for (final a in finalArticles) {
+        if (a.isLien && a.lien.isNotEmpty) {
+          descParts.add('Lien: ${a.lien}');
+        } else if (a.isPhoto && a.titre.isNotEmpty) {
+          descParts.add(a.titre);
+        }
+      }
+      final descCommande = descParts.isNotEmpty ? descParts.join(' | ') : 'Articles';
+      final articlesJson = jsonEncode(finalArticles.map((a) => a.toJson()).toList());
+
+      final data = Commande(
+        id: widget.commande?.id,
+        nom: _nomController.text.trim(),
+        prenom: _prenomController.text.trim(),
+        numeroTelephone: _phoneE164!,
+        email: _emailController.text.trim().isEmpty
+            ? null
+            : _emailController.text.trim(),
+        paysLivraison: _paysLivraisonController.text.trim(),
+        villeLivraison: _villeLivraisonController.text.trim(),
+        adresseLivraison: _adresseLivraisonController.text.trim(),
+        plateforme: _plateforme,
+        lienProduit: allLinks.isNotEmpty ? allLinks.first : '',
+        liensProduits: allLinks,
+        photosProduits: allPhotos,
+        articlesJson: articlesJson,
+        descriptionCommande: descCommande,
+        quantite: totalQte > 0 ? totalQte : finalArticles.length,
+        prixUnitaire:
+            lienArticles.isNotEmpty ? lienArticles.first.prixUnitaire : 0.0,
+        prixTotal: totalPrice,
+        devise: _devise,
+        notesSpeciales: _notesSpecialesController.text.trim().isEmpty
+            ? null
+            : _notesSpecialesController.text.trim(),
+      );
+
+      final result = widget.commande == null
+          ? await _service.createCommande(data)
+          : await _service.updateCommande(data);
+
+      if (result != null) {
+        Fluttertoast.showToast(
+            msg: widget.commande == null
+                ? '✅ Commande créée !'
+                : '✅ Commande modifiée !',
+            backgroundColor: Colors.green);
+        if (mounted) Navigator.pop(context, true);
+      } else {
+        Fluttertoast.showToast(
+            msg: '❌ Une erreur est survenue.', backgroundColor: Colors.red);
+      }
+    } catch (e) {
+      Fluttertoast.showToast(msg: '❌ Erreur : $e', backgroundColor: Colors.red);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _nomController.dispose();
+    _prenomController.dispose();
+    _emailController.dispose();
+    _paysLivraisonController.dispose();
+    _villeLivraisonController.dispose();
+    _adresseLivraisonController.dispose();
+    _notesSpecialesController.dispose();
+    for (final art in _articles) {
+      art.dispose();
+    }
+    super.dispose();
   }
 
   @override
@@ -342,7 +498,6 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
                             hint: "Ex : Fatou", required: true)),
                   ]),
                   const SizedBox(height: 14),
-                  // ✅ PhoneInputField avec initialValue depuis le profil
                   PhoneInputField(
                     label: 'Téléphone',
                     initialCountryCode: 'SN',
@@ -393,249 +548,56 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
 
                 const SizedBox(height: 16),
 
-                // ── Section 3 : Produit ───────────────────────────────────
+                // ── Section 3 : Plateforme ────────────────────────────────
                 _card(children: [
-                  _sectionHeader(Icons.shopping_bag_outlined, _amber, "Produit",
-                      "Détails de l'article à commander"),
-                  const SizedBox(height: 20),
+                  _sectionHeader(Icons.store_outlined, _appBlue, "Plateforme",
+                      "Sur quel site souhaitez-vous commander ?"),
+                  const SizedBox(height: 16),
                   _dropdown(
                       "Site d'achat",
                       _plateforme,
-                      _plateformes.map((p) => p).toList(),
+                      _plateformes,
                       Icons.store_outlined,
                       (v) => setState(() => _plateforme = v!),
                       displayLabels: _plateformeLabels),
-                  const SizedBox(height: 16),
-
-                  // ✅ Liens multiples
-                  Row(children: [
-                    const Icon(Icons.link, color: _appBlue, size: 18),
-                    const SizedBox(width: 8),
-                    const Text('Liens des produits',
-                        style: TextStyle(
-                            color: _textMain,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13)),
-                  ]),
-                  const SizedBox(height: 8),
-                  ...List.generate(_lienControllers.length, (i) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _lienControllers[i],
-                              keyboardType: TextInputType.url,
-                              style: const TextStyle(
-                                  color: _textMain,
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 14),
-                              decoration: InputDecoration(
-                                hintText:
-                                    'https://www.amazon.fr/produit/...',
-                                hintStyle: const TextStyle(
-                                    color: Color(0xFFB0BBCC), fontSize: 13),
-                                prefixIcon: const Icon(Icons.link,
-                                    color: _appBlue, size: 18),
-                                filled: true,
-                                fillColor: _bgLight,
-                                contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 14),
-                                border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide:
-                                        const BorderSide(color: _border)),
-                                enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide:
-                                        const BorderSide(color: _border)),
-                                focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: const BorderSide(
-                                        color: _appBlue, width: 1.8)),
-                                errorBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: const BorderSide(
-                                        color: Colors.red)),
-                              ),
-                            ),
-                          ),
-                          if (_lienControllers.length > 1)
-                            Padding(
-                              padding: const EdgeInsets.only(left: 8),
-                              child: InkWell(
-                                onTap: () {
-                                  final ctrl = _lienControllers[i];
-                                  setState(() => _lienControllers.removeAt(i));
-                                  ctrl.dispose();
-                                },
-                                borderRadius: BorderRadius.circular(8),
-                                child: Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.red.shade50,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const Icon(Icons.close,
-                                      color: Colors.red, size: 18),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    );
-                  }),
-                  TextButton.icon(
-                    onPressed: () => setState(() =>
-                        _lienControllers.add(TextEditingController())),
-                    icon: const Icon(Icons.add, size: 16, color: _appBlue),
-                    label: const Text('Ajouter un lien',
-                        style: TextStyle(color: _appBlue, fontSize: 13)),
-                  ),
-
-                  const SizedBox(height: 16),
-                  const Divider(height: 1),
-                  const SizedBox(height: 16),
-
-                  // ✅ Photos produit
-                  Row(children: [
-                    const Icon(Icons.photo_camera_outlined,
-                        color: _amber, size: 18),
-                    const SizedBox(width: 8),
-                    const Expanded(
-                      child: Text(
-                          'Photos des produits (si pas de lien disponible)',
-                          style: TextStyle(
-                              color: _textMain,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13)),
-                    ),
-                  ]),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Pour les produits sans lien, ajoutez une photo.',
-                    style:
-                        TextStyle(color: _textMuted, fontSize: 12),
-                  ),
-                  const SizedBox(height: 10),
-                  if (_uploadedPhotoUrls.isNotEmpty ||
-                      _pendingPhotos.isNotEmpty)
-                    Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      children: [
-                        // Photos déjà uploadées (mode édition)
-                        ...List.generate(_uploadedPhotoUrls.length, (i) {
-                          return _photoTile(
-                            child: Image.network(
-                              _uploadedPhotoUrls[i],
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) =>
-                                  const Icon(Icons.broken_image,
-                                      color: _textMuted),
-                            ),
-                            onRemove: () => setState(
-                                () => _uploadedPhotoUrls.removeAt(i)),
-                          );
-                        }),
-                        // Nouvelles photos en attente d'upload
-                        ...List.generate(_pendingPhotos.length, (i) {
-                          return FutureBuilder<Uint8List>(
-                            future: _pendingPhotos[i].readAsBytes(),
-                            builder: (ctx, snap) {
-                              return _photoTile(
-                                child: snap.hasData
-                                    ? Image.memory(
-                                        snap.data!,
-                                        fit: BoxFit.cover)
-                                    : const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                            strokeWidth: 2)),
-                                onRemove: () => setState(
-                                    () => _pendingPhotos.removeAt(i)),
-                              );
-                            },
-                          );
-                        }),
-                      ],
-                    ),
-                  const SizedBox(height: 10),
-                  OutlinedButton.icon(
-                    onPressed: _pickProductPhoto,
-                    icon: const Icon(Icons.add_photo_alternate_outlined,
-                        size: 16, color: _amber),
-                    label: const Text('Ajouter une photo',
-                        style: TextStyle(color: _amber, fontSize: 13)),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: _amber),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                    ),
-                  ),
-
-                  const SizedBox(height: 14),
-                  _field(_descriptionCommandeController,
-                      "Description du produit", Icons.description_outlined,
-                      hint:
-                          "Taille, couleur, modèle, référence... soyez précis !",
-                      required: true,
-                      maxLines: 3, validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'Requis';
-                    if (v.trim().length < 10) return 'Minimum 10 caractères';
-                    return null;
-                  }),
                 ]),
 
                 const SizedBox(height: 16),
 
-                // ── Section 4 : Prix & quantité ───────────────────────────
+                // ── Section 4 : Articles ──────────────────────────────────
                 _card(children: [
-                  _sectionHeader(Icons.payments_outlined, _green,
-                      "Prix & Quantité", "Combien et à quel prix ?"),
-                  const SizedBox(height: 20),
-                  Row(children: [
-                    Expanded(
-                        child: _field(_quantiteController, "Quantité",
-                            Icons.add_box_outlined,
-                            hint: "Ex : 2",
-                            keyboardType: TextInputType.number, validator: (v) {
-                      if (v == null || v.trim().isEmpty) return 'Requis';
-                      final q = int.tryParse(v.trim());
-                      return (q == null || q < 1) ? 'Min. 1' : null;
-                    })),
-                    const SizedBox(width: 12),
-                    Expanded(
-                        child: _dropdown(
-                            "Devise",
-                            _devise,
-                            _devises,
-                            Icons.currency_exchange,
-                            (v) => setState(() => _devise = v!))),
-                  ]),
-                  const SizedBox(height: 14),
-                  Row(children: [
-                    // ✅ Prix unitaire — virgule acceptée
-                    Expanded(
-                        child: _decimalField(_prixUnitaireController,
-                            "Prix unitaire", Icons.sell_outlined,
-                            hint: "Ex : 29,99")),
-                    const SizedBox(width: 12),
-                    // ✅ Prix total — calculé automatiquement, toujours éditable
-                    Expanded(
-                        child: _decimalField(_prixTotalController, "Prix total",
-                            Icons.calculate_outlined,
-                            hint: "Calculé auto",
-                            suffix: const Icon(Icons.auto_fix_high,
-                                size: 14, color: Color(0xFF22C55E)))),
-                  ]),
+                  _sectionHeader(Icons.shopping_bag_outlined, _amber,
+                      "Articles",
+                      "Ajoutez vos articles (liens et/ou photos)"),
+                  const SizedBox(height: 16),
+                  ...List.generate(_articles.length,
+                      (i) => _buildArticleCard(i)),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _addNewArticle(),
+                      icon: const Icon(Icons.add, size: 16, color: _appBlue),
+                      label: const Text('Ajouter un article',
+                          style: TextStyle(color: _appBlue, fontSize: 13)),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: _appBlue),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
                 ]),
 
                 const SizedBox(height: 16),
 
-                // ── Section 5 : Notes ─────────────────────────────────────
+                // ── Section 5 : Récapitulatif ─────────────────────────────
+                _buildSummaryCard(),
+
+                const SizedBox(height: 16),
+
+                // ── Section 6 : Notes ─────────────────────────────────────
                 _card(children: [
                   _sectionHeader(Icons.sticky_note_2_outlined, _textMuted,
                       "Notes", "Informations supplémentaires (optionnel)"),
@@ -689,6 +651,410 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  // ── Article card ──────────────────────────────────────────────────────────
+
+  Widget _buildArticleCard(int index) {
+    final art = _articles[index];
+    final isLien = art.type == 'lien';
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        color: _bgLight,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── En-tête : numéro + type toggle + supprimer ──────────
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: isLien
+                  ? _appBlue.withValues(alpha: 0.08)
+                  : _amber.withValues(alpha: 0.08),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(12)),
+            ),
+            child: Row(
+              children: [
+                Text('Article ${index + 1}',
+                    style: const TextStyle(
+                        color: _textMain,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13)),
+                const SizedBox(width: 12),
+                _typeToggle(art),
+                const Spacer(),
+                if (_articles.length > 1)
+                  GestureDetector(
+                    onTap: () => _removeArticle(index),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: _red.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.close, color: _red, size: 16),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          // ── Contenu selon le type ────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: isLien
+                ? _buildLienContent(art)
+                : _buildPhotoContent(art),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _typeToggle(_ArticleForm art) {
+    return Container(
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: _border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _typeBtn('🔗 Lien', art.type == 'lien',
+              () => setState(() => art.type = 'lien')),
+          _typeBtn('📷 Photo', art.type == 'photo',
+              () => setState(() => art.type = 'photo')),
+        ],
+      ),
+    );
+  }
+
+  Widget _typeBtn(String label, bool active, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: active ? _appBlue : Colors.transparent,
+          borderRadius: BorderRadius.circular(7),
+        ),
+        child: Text(label,
+            style: TextStyle(
+                color: active ? Colors.white : _textMuted,
+                fontSize: 12,
+                fontWeight: FontWeight.w600)),
+      ),
+    );
+  }
+
+  Widget _buildLienContent(_ArticleForm art) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextFormField(
+          controller: art.lienCtrl,
+          keyboardType: TextInputType.url,
+          style: const TextStyle(
+              color: _textMain, fontWeight: FontWeight.w500, fontSize: 14),
+          decoration: InputDecoration(
+            labelText: 'Lien du produit',
+            hintText: 'https://www.amazon.fr/produit/...',
+            prefixIcon: const Icon(Icons.link, color: _appBlue, size: 18),
+            hintStyle: const TextStyle(color: Color(0xFFB0BBCC), fontSize: 13),
+            labelStyle: const TextStyle(color: _textMuted, fontSize: 13),
+            filled: true,
+            fillColor: _surface,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: _border)),
+            enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: _border)),
+            focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: _appBlue, width: 1.8)),
+            errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: _red)),
+          ),
+          validator: (v) {
+            if (art.type == 'lien' && (v == null || v.trim().isEmpty)) {
+              return 'URL requise';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: _articleDecimalField(art.quantiteCtrl, "Quantité",
+                  Icons.add_box_outlined, hint: "1", isInt: true),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _articleDecimalField(art.prixUnitaireCtrl, "Prix unitaire",
+                  Icons.sell_outlined,
+                  hint: "Ex : 29,99"),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        // Sous-total auto-calculé
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: _green.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: _green.withValues(alpha: 0.3)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.calculate_outlined, color: _green, size: 16),
+              const SizedBox(width: 8),
+              const Text('Sous-total : ',
+                  style: TextStyle(color: _textMuted, fontSize: 13)),
+              Text(
+                art.prixTotalCtrl.text.isNotEmpty
+                    ? '${art.prixTotalCtrl.text} $_devise'
+                    : '—',
+                style: const TextStyle(
+                    color: _green,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13),
+              ),
+              const Spacer(),
+              const Icon(Icons.auto_fix_high, size: 12, color: _green),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPhotoContent(_ArticleForm art) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GestureDetector(
+          onTap: () => _pickPhotoForArticle(art),
+          child: _buildPhotoArea(art),
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: art.titreCtrl,
+          style: const TextStyle(
+              color: _textMain, fontWeight: FontWeight.w500, fontSize: 14),
+          decoration: InputDecoration(
+            labelText: 'Titre du produit',
+            hintText: 'Ex : Robe traditionnelle rouge',
+            prefixIcon: const Icon(Icons.title, color: _amber, size: 18),
+            hintStyle: const TextStyle(color: Color(0xFFB0BBCC), fontSize: 13),
+            labelStyle: const TextStyle(color: _textMuted, fontSize: 13),
+            filled: true,
+            fillColor: _surface,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: _border)),
+            enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: _border)),
+            focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: _amber, width: 1.8)),
+            errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: _red)),
+          ),
+          validator: (v) {
+            if (art.type == 'photo') {
+              if (v == null || v.trim().isEmpty) return 'Titre requis';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: art.descriptionCtrl,
+          maxLines: 3,
+          style: const TextStyle(
+              color: _textMain, fontWeight: FontWeight.w500, fontSize: 14),
+          decoration: InputDecoration(
+            labelText: 'Description',
+            hintText: 'Couleur, taille, matière, modèle... Soyez précis !',
+            prefixIcon:
+                const Icon(Icons.description_outlined, color: _amber, size: 18),
+            hintStyle: const TextStyle(color: Color(0xFFB0BBCC), fontSize: 13),
+            labelStyle: const TextStyle(color: _textMuted, fontSize: 13),
+            filled: true,
+            fillColor: _surface,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: _border)),
+            enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: _border)),
+            focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: _amber, width: 1.8)),
+          ),
+          validator: (v) {
+            if (art.type == 'photo') {
+              if (v == null || v.trim().isEmpty) return 'Description requise';
+              if (v.trim().length < 5) return 'Minimum 5 caractères';
+            }
+            return null;
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPhotoArea(_ArticleForm art) {
+    final hasPhoto = art.hasPhoto;
+    Widget content;
+    if (art.pendingPhoto != null) {
+      content = FutureBuilder<Uint8List>(
+        future: art.pendingPhoto!.readAsBytes(),
+        builder: (ctx, snap) {
+          if (snap.hasData) {
+            return Image.memory(snap.data!,
+                fit: BoxFit.cover, width: double.infinity, height: 130);
+          }
+          return const Center(
+              child: CircularProgressIndicator(strokeWidth: 2));
+        },
+      );
+    } else if (art.uploadedPhotoUrl != null &&
+        art.uploadedPhotoUrl!.isNotEmpty) {
+      content = Image.network(art.uploadedPhotoUrl!,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: 130,
+          errorBuilder: (_, __, ___) =>
+              const Icon(Icons.broken_image, color: _textMuted));
+    } else {
+      content = Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: const [
+          Icon(Icons.add_photo_alternate_outlined, color: _amber, size: 32),
+          SizedBox(height: 6),
+          Text('Appuyer pour ajouter une photo',
+              style: TextStyle(color: _textMuted, fontSize: 12)),
+        ],
+      );
+    }
+
+    return Stack(
+      children: [
+        Container(
+          width: double.infinity,
+          height: hasPhoto ? 130 : 90,
+          decoration: BoxDecoration(
+            color: _amber.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: hasPhoto ? _amber : _border),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: content,
+        ),
+        if (hasPhoto)
+          Positioned(
+            top: 6,
+            right: 6,
+            child: GestureDetector(
+              onTap: () => setState(() {
+                art.pendingPhoto = null;
+                art.uploadedPhotoUrl = null;
+              }),
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.55),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.close, color: Colors.white, size: 14),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  // ── Summary card ──────────────────────────────────────────────────────────
+
+  Widget _buildSummaryCard() {
+    final total = _globalTotal;
+    final count = _totalArticlesCount;
+    final formatted = total == total.truncateToDouble()
+        ? total.toInt().toString()
+        : total.toStringAsFixed(2);
+
+    return _card(children: [
+      _sectionHeader(Icons.receipt_long_outlined, _green, "Récapitulatif",
+          "Total calculé automatiquement"),
+      const SizedBox(height: 16),
+      Row(children: [
+        Expanded(
+          child: _summaryTile(
+            icon: Icons.inventory_2_outlined,
+            label: "Nombre d'articles",
+            value: '$count article${count > 1 ? 's' : ''}',
+            color: _appBlue,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _summaryTile(
+            icon: Icons.payments_outlined,
+            label: 'Total global',
+            value: total > 0 ? '$formatted $_devise' : '—',
+            color: _green,
+          ),
+        ),
+      ]),
+      const SizedBox(height: 14),
+      _deviseDropdown(),
+    ]);
+  }
+
+  Widget _summaryTile({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 18),
+          const SizedBox(height: 6),
+          Text(label, style: const TextStyle(color: _textMuted, fontSize: 11)),
+          const SizedBox(height: 2),
+          Text(value,
+              style: TextStyle(
+                  color: color, fontWeight: FontWeight.w800, fontSize: 14)),
+        ],
       ),
     );
   }
@@ -774,7 +1140,7 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
             borderSide: const BorderSide(color: _appBlue, width: 1.8)),
         errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.red)),
+            borderSide: const BorderSide(color: _red)),
       ),
       validator: validator ??
           (required
@@ -784,20 +1150,21 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
     );
   }
 
-  // ✅ Champ numérique décimal : accepte virgule ET point, valide les deux
-  Widget _decimalField(
+  Widget _articleDecimalField(
     TextEditingController controller,
     String label,
     IconData icon, {
     String? hint,
-    Widget? suffix,
+    bool isInt = false,
   }) {
     return TextFormField(
       controller: controller,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      // ✅ Autorise chiffres, point, virgule uniquement
+      keyboardType: isInt
+          ? TextInputType.number
+          : const TextInputType.numberWithOptions(decimal: true),
       inputFormatters: [
-        FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+        FilteringTextInputFormatter.allow(
+            isInt ? RegExp(r'[0-9]') : RegExp(r'[0-9.,]')),
       ],
       style: const TextStyle(
           color: _textMain, fontWeight: FontWeight.w500, fontSize: 14),
@@ -808,26 +1175,29 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
             color: _textMuted, fontWeight: FontWeight.w500, fontSize: 14),
         hintStyle: const TextStyle(color: Color(0xFFB0BBCC), fontSize: 13),
         prefixIcon: Icon(icon, color: _appBlue, size: 18),
-        suffixIcon: suffix,
         filled: true,
-        fillColor: _bgLight,
+        fillColor: _surface,
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             borderSide: const BorderSide(color: _border)),
         enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             borderSide: const BorderSide(color: _border)),
         focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             borderSide: const BorderSide(color: _appBlue, width: 1.8)),
         errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.red)),
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: _red)),
       ),
       validator: (v) {
         if (v == null || v.trim().isEmpty) return 'Requis';
+        if (isInt) {
+          final n = int.tryParse(v.trim());
+          return (n == null || n < 1) ? 'Min. 1' : null;
+        }
         final p = _parseDecimal(v);
         return (p == null || p <= 0) ? 'Invalide' : null;
       },
@@ -879,36 +1249,37 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
     );
   }
 
-  Widget _photoTile({required Widget child, required VoidCallback onRemove}) {
-    return Stack(
-      children: [
-        Container(
-          width: 88,
-          height: 88,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: _border),
-            color: _bgLight,
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: child,
+  Widget _deviseDropdown() => DropdownButtonFormField<String>(
+        value: _devise,
+        decoration: InputDecoration(
+          labelText: "Devise",
+          prefixIcon:
+              Icon(Icons.currency_exchange, size: 18, color: _textMuted),
+          labelStyle: const TextStyle(color: _textMuted, fontSize: 13),
+          filled: true,
+          fillColor: _bgLight,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: _border)),
+          enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: _border)),
+          focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: _appBlue, width: 1.8)),
         ),
-        Positioned(
-          top: 2,
-          right: 2,
-          child: GestureDetector(
-            onTap: onRemove,
-            child: Container(
-              padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.6),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.close, color: Colors.white, size: 14),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+        style: const TextStyle(
+            color: _textMain, fontWeight: FontWeight.w500, fontSize: 14),
+        dropdownColor: _surface,
+        borderRadius: BorderRadius.circular(12),
+        items: _devises
+            .map((d) => DropdownMenuItem<String>(
+                  value: d,
+                  child: Text(d, style: const TextStyle(color: _textMain)),
+                ))
+            .toList(),
+        onChanged: (v) => setState(() => _devise = v!),
+      );
 }

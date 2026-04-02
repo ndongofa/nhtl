@@ -16,6 +16,9 @@ class Achat {
   final String marche;         // marché ou boutique cible
   final String typeProduit;    // catégorie / type de produit
   final String descriptionAchat;
+  final List<String> liensProduits;
+  final List<String> photosProduits;
+  final String? articlesJson;
   final int quantite;
   final double prixEstime;
   final double prixTotal;
@@ -62,6 +65,9 @@ class Achat {
     required this.marche,
     required this.typeProduit,
     required this.descriptionAchat,
+    this.liensProduits = const [],
+    this.photosProduits = const [],
+    this.articlesJson,
     required this.quantite,
     required this.prixEstime,
     required this.prixTotal,
@@ -95,6 +101,9 @@ class Achat {
     String? marche,
     String? typeProduit,
     String? descriptionAchat,
+    List<String>? liensProduits,
+    List<String>? photosProduits,
+    String? articlesJson,
     int? quantite,
     double? prixEstime,
     double? prixTotal,
@@ -127,6 +136,9 @@ class Achat {
       marche: marche ?? this.marche,
       typeProduit: typeProduit ?? this.typeProduit,
       descriptionAchat: descriptionAchat ?? this.descriptionAchat,
+      liensProduits: liensProduits ?? this.liensProduits,
+      photosProduits: photosProduits ?? this.photosProduits,
+      articlesJson: articlesJson ?? this.articlesJson,
       quantite: quantite ?? this.quantite,
       prixEstime: prixEstime ?? this.prixEstime,
       prixTotal: prixTotal ?? this.prixTotal,
@@ -162,6 +174,15 @@ class Achat {
       marche: json['marche'] as String? ?? '',
       typeProduit: json['typeProduit'] as String? ?? '',
       descriptionAchat: json['descriptionAchat'] as String? ?? '',
+      liensProduits: (json['liensProduits'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      photosProduits: (json['photosProduits'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      articlesJson: json['articlesJson'] as String?,
       quantite: (json['quantite'] as num?)?.toInt() ?? 1,
       prixEstime: (json['prixEstime'] is int)
           ? (json['prixEstime'] as int).toDouble()
@@ -209,6 +230,9 @@ class Achat {
       'marche': marche,
       'typeProduit': typeProduit,
       'descriptionAchat': descriptionAchat,
+      'liensProduits': liensProduits,
+      'photosProduits': photosProduits,
+      'articlesJson': articlesJson,
       'quantite': quantite,
       'prixEstime': prixEstime,
       'prixTotal': prixTotal,
