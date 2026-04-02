@@ -91,6 +91,10 @@ class SamaLogoWidget extends StatelessWidget {
 class SamaTopBarLogo extends StatelessWidget {
   const SamaTopBarLogo({super.key});
 
+  // Reference screen width (iPhone 14 Pro, 390 logical pixels) used as the
+  // baseline for proportional font scaling across different screen sizes.
+  static const double _kBaseScreenWidth = 390;
+
   static const String _svgMark = r'''
 <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
   <defs>
@@ -115,14 +119,22 @@ class SamaTopBarLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    // Scale grows gradually from small phones (360px) up to desktop (1440px),
+    // capped so the top bar never gets oversized.
+    final scale = (screenWidth / _kBaseScreenWidth).clamp(0.9, 1.5);
+
     return Row(mainAxisSize: MainAxisSize.min, children: [
       Container(
         width: 34,
         height: 34,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
-          color: Colors.white.withValues(alpha: 0.10),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF2296F3), Color(0xFF00D4C8)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
         ),
         child: Center(
           child: SvgPicture.string(
@@ -133,7 +145,7 @@ class SamaTopBarLogo extends StatelessWidget {
         ),
       ),
       const SizedBox(width: 10),
-      const Column(
+      Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -142,7 +154,7 @@ class SamaTopBarLogo extends StatelessWidget {
             style: TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.w900,
-              fontSize: 14,
+              fontSize: 15 * scale,
               letterSpacing: 2.2,
               height: 1.0,
             ),
@@ -150,10 +162,10 @@ class SamaTopBarLogo extends StatelessWidget {
           Text(
             'SERVICES INTERNATIONAL',
             style: TextStyle(
-              color: Colors.white60,
-              fontWeight: FontWeight.w700,
-              fontSize: 7.5,
-              letterSpacing: 0.8,
+              color: Colors.white.withValues(alpha: 0.85),
+              fontWeight: FontWeight.w800,
+              fontSize: 10 * scale,
+              letterSpacing: 1.2,
               height: 1.0,
             ),
           ),
