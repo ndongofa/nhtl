@@ -10,8 +10,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../providers/app_theme_provider.dart';
-import '../../achat_hub_screen.dart';
-import '../../auth/login_screen.dart';
+import '../achat_hub_screen.dart';
+import '../auth/login_screen.dart';
 
 class SamaAchatScreen extends StatelessWidget {
   const SamaAchatScreen({Key? key}) : super(key: key);

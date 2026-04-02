@@ -74,7 +74,7 @@ class PanierScreen extends StatelessWidget {
         ],
       ),
       body: panier.isEmpty
-          ? _emptyState(t)
+          ? _emptyState(context, t)
           : Column(children: [
               Expanded(
                 child: ListView.builder(
@@ -149,7 +149,7 @@ class PanierScreen extends StatelessWidget {
     );
   }
 
-  Widget _emptyState(AppThemeProvider t) => Center(
+  Widget _emptyState(BuildContext context, AppThemeProvider t) => Center(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           const Text('🛒', style: TextStyle(fontSize: 52)),
           const SizedBox(height: 16),
