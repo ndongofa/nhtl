@@ -234,7 +234,7 @@ class SamaAppTopBar extends StatelessWidget implements PreferredSizeWidget {
       title: Row(
         children: [
           const SizedBox(width: 8),
-          const SamaTopBarLogo(),
+          SamaTopBarLogo(),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
