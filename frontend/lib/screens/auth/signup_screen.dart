@@ -240,10 +240,10 @@ class _SignupScreenState extends State<SignupScreen> {
                                     fontWeight: FontWeight.w900,
                                     fontSize: 18)),
                             Text(AppBrand.appName,
-                                style: const TextStyle(
+                                style: TextStyle(
                                     color: textMuted,
                                     fontWeight: FontWeight.w500,
-                                    fontSize: 12)),
+                                    fontSize: AppBrand.appNameFontSize(context))),
                           ]),
                     ]),
 
