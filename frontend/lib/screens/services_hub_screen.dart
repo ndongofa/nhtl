@@ -10,7 +10,6 @@ import '../widgets/sama_service_icon.dart';
 import '../providers/app_theme_provider.dart';
 import '../services/auth_service.dart';
 import '../models/logged_user.dart';
-import '../widgets/sama_logo_widget.dart';
 
 import 'commande_hub_screen.dart';
 import 'landing_commande_screen.dart';
@@ -1088,7 +1087,34 @@ class _Footer extends StatelessWidget {
         ),
       ),
       child: Column(children: [
-        const SamaLogoWidget(size: 100, lightText: true),
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              gradient: const LinearGradient(
+                colors: [AppThemeProvider.appBlue, AppThemeProvider.teal],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: const Center(
+              child:
+                  FaIcon(FontAwesomeIcons.globe, color: Colors.white, size: 14),
+            ),
+          ),
+          const SizedBox(width: 10),
+          const Text(
+            "SAMA SERVICES INTERNATIONAL",
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              fontSize: 13,
+              letterSpacing: 1.5,
+            ),
+          ),
+        ]),
         const SizedBox(height: 10),
         Text(
           "© 2026 · Paris · Casablanca · Dakar",

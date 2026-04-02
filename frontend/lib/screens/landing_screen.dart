@@ -7,7 +7,6 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../providers/app_theme_provider.dart';
-import '../widgets/sama_logo_widget.dart';
 import '../services/departure_countdown_service.dart';
 
 class LandingScreenSamaServicesInternational extends StatefulWidget {
@@ -1415,7 +1414,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight)),
         child: Column(children: [
-          const SamaLogoWidget(size: 100, lightText: true),
+          _brandLogo(),
           const SizedBox(height: 12),
           Text(
               "© 2026 SAMA · Services International · Paris · Casablanca · Dakar",
