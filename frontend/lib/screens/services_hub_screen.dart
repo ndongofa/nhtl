@@ -5,6 +5,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../widgets/emoji_icon.dart';
 import '../widgets/sama_account_menu.dart';
 import '../providers/app_theme_provider.dart';
 import '../services/auth_service.dart';
@@ -301,8 +302,7 @@ class _ServiceCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Center(
-                child:
-                    Text(service.emoji, style: const TextStyle(fontSize: 26)),
+                child: EmojiIcon(service.emoji, size: 26),
               ),
             ),
             const Spacer(),

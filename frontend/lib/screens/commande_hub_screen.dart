@@ -136,10 +136,70 @@ class CommandeHubScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
-        titleSpacing: 0,
-        title: const Padding(
-          padding: EdgeInsets.only(left: 6),
-          child: SamaTopBarLogo(),
+        title: LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth >= 360;
+            return Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(10),
+                    border:
+                        Border.all(color: Colors.white.withValues(alpha: 0.20)),
+                  ),
+                  child: const Center(
+                    child:
+                        Text("🛒", style: TextStyle(fontSize: 18, height: 1.0)),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Text(
+                    "Sama Commande",
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                if (isWide)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppThemeProvider.green.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: AppThemeProvider.green.withValues(alpha: 0.45),
+                      ),
+                    ),
+                    child: const Text(
+                      "● Disponible",
+                      style: TextStyle(
+                        color: AppThemeProvider.green,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  )
+                else
+                  const Text(
+                    "●",
+                    style: TextStyle(
+                      color: AppThemeProvider.green,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+              ],
+            );
+          },
         ),
         actions: [
           IconButton(
