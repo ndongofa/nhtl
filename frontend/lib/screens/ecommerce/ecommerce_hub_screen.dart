@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../../models/commande_ecommerce.dart';
 import '../../providers/app_theme_provider.dart';
+import '../../providers/panier_provider.dart';
 import '../../services/ecommerce_service.dart';
 import 'ecommerce_tracking_screen.dart';
 import 'catalogue_screen.dart';
@@ -79,11 +80,15 @@ class _EcommerceHubScreenState extends State<EcommerceHubScreen> {
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => CatalogueScreen(
-                  serviceType: widget.serviceType,
-                  serviceLabel: widget.serviceLabel,
-                  serviceEmoji: '🛍️',
-                  accentColor: widget.accentColor,
+                builder: (_) => ChangeNotifierProvider(
+                  create: (_) =>
+                      PanierProvider(serviceType: widget.serviceType),
+                  child: CatalogueScreen(
+                    serviceType: widget.serviceType,
+                    serviceLabel: widget.serviceLabel,
+                    serviceEmoji: '🛍️',
+                    accentColor: widget.accentColor,
+                  ),
                 ),
               ),
             ),
@@ -143,11 +148,15 @@ class _EcommerceHubScreenState extends State<EcommerceHubScreen> {
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => CatalogueScreen(
-                  serviceType: widget.serviceType,
-                  serviceLabel: widget.serviceLabel,
-                  serviceEmoji: '🛍️',
-                  accentColor: widget.accentColor,
+                builder: (_) => ChangeNotifierProvider(
+                  create: (_) =>
+                      PanierProvider(serviceType: widget.serviceType),
+                  child: CatalogueScreen(
+                    serviceType: widget.serviceType,
+                    serviceLabel: widget.serviceLabel,
+                    serviceEmoji: '🛍️',
+                    accentColor: widget.accentColor,
+                  ),
                 ),
               ),
             ),
