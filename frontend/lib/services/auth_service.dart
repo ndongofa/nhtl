@@ -1,124 +1,331 @@
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'api_client.dart';
-import '../models/auth/login_request.dart';
-import '../models/auth/login_response.dart';
-import '../models/auth/signup_request.dart';
-import '../models/auth/signup_response.dart';
+import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+/// Résultat du signup:
+/// - signedIn: session créée (pas de confirmation requise ou auto-confirm)
+/// - confirmationRequired: signup OK, mais l'utilisateur doit confirmer email/phone
+enum SignupOutcome {
+  signedIn,
+  confirmationRequired,
+}
 
 class AuthService {
-  // LOGIN
-  static Future<LoginResponse> login(LoginRequest request) async {
+  static final SupabaseClient _supabase = Supabase.instance.client;
+
+  static bool _looksLikeEmail(String v) => v.contains('@');
+
+  /// Très simple validation E.164: + puis chiffres 8..15
+  static bool _looksLikeE164Phone(String v) =>
+      RegExp(r'^\+[1-9]\d{7,14}$').hasMatch(v);
+
+  static bool _is429(dynamic statusCode) =>
+      statusCode == 429 || statusCode?.toString() == '429';
+
+  /// Supabase/Twilio attend le numéro sans "+" pour signUp, signInWithOtp
+  /// et verifyOTP. On conserve le "+" uniquement pour la validation E.164
+  /// côté Flutter.
+  static String _toSupabasePhone(String phoneE164) {
+    final p = phoneE164.trim();
+    return p.startsWith('+') ? p.substring(1) : p;
+  }
+
+  /// Signup avec metadata (prenom/nom/role).
+  /// `identifier` = email OU téléphone E.164 (ex: +221783042838)
+  static Future<SignupOutcome> signupWithMetadata({
+    required String identifier,
+    required String password,
+    required String prenom,
+    required String nom,
+    required String role,
+  }) async {
+    final cleanIdentifier = identifier.trim();
+    final cleanPrenom = prenom.trim();
+    final cleanNom = nom.trim();
+
+    if (cleanIdentifier.isEmpty) {
+      throw Exception(
+          "Veuillez renseigner un email ou un numéro de téléphone.");
+    }
+    if (cleanPrenom.isEmpty) {
+      throw Exception("Veuillez renseigner votre prénom.");
+    }
+    if (cleanNom.isEmpty) {
+      throw Exception("Veuillez renseigner votre nom.");
+    }
+    if (password.length < 8) {
+      throw Exception("Le mot de passe doit contenir au moins 8 caractères.");
+    }
+
+    // IMPORTANT (Flutter Web + hash routing):
+    final redirectTo = kIsWeb ? '${Uri.base.origin}/#/auth/callback' : null;
+
+    // ignore: avoid_print
+    print("[AuthService][signup] start identifier=$cleanIdentifier role=$role "
+        "prenomLen=${cleanPrenom.length} nomLen=${cleanNom.length} "
+        "isWeb=$kIsWeb origin=${kIsWeb ? Uri.base.origin : 'n/a'}");
+
     try {
-      final response = await ApiClient.post(
-        '/auth/login',
-        request.toJson(),
-      );
+      final data = <String, dynamic>{
+        'prenom': cleanPrenom,
+        'nom': cleanNom,
+        'role': role,
+      };
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final loginResponse = LoginResponse.fromJson(data);
+      AuthResponse res;
 
-        // Sauvegarder le token
-        await ApiClient.saveToken(loginResponse.accessToken);
-
-        return loginResponse;
+      if (_looksLikeEmail(cleanIdentifier)) {
+        final email = cleanIdentifier.toLowerCase();
+        res = await _supabase.auth.signUp(
+          email: email,
+          password: password,
+          emailRedirectTo: redirectTo,
+          data: data,
+        );
       } else {
-        throw Exception('Erreur login: ${response.statusCode}');
+        if (!_looksLikeE164Phone(cleanIdentifier)) {
+          throw Exception(
+            "Numéro invalide. Utilisez le format international E.164, ex: +221783042838",
+          );
+        }
+        // ✅ Strip le "+" — Supabase/Twilio attend le numéro sans préfixe.
+        // Supabase envoie automatiquement un OTP SMS ici — ne pas appeler
+        // sendPhoneOtp() ensuite, ce serait un double envoi → 429.
+        res = await _supabase.auth.signUp(
+          phone: _toSupabasePhone(cleanIdentifier),
+          password: password,
+          data: data,
+        );
       }
+
+      // ignore: avoid_print
+      print("[AuthService][signup] signUp() done userId=${res.user?.id} "
+          "email=${res.user?.email} phone=${res.user?.phone} "
+          "session=${res.session != null}");
+
+      if (res.session == null) {
+        return SignupOutcome.confirmationRequired;
+      }
+      return SignupOutcome.signedIn;
+    } on AuthException catch (e) {
+      // ignore: avoid_print
+      print(
+          "[AuthService][signup] AuthException status=${e.statusCode} message=${e.message}");
+
+      if (_is429(e.statusCode)) {
+        throw Exception(
+          "Trop de tentatives d'inscription pour le moment. "
+          "Veuillez patienter quelques minutes puis réessayer.\n\n"
+          "Si le problème persiste, contactez tech@ngom-holding.com.",
+        );
+      }
+
+      rethrow;
     } catch (e) {
-      throw Exception('Erreur: $e');
+      // ignore: avoid_print
+      print("[AuthService][signup] Unknown error: $e");
+      rethrow;
     }
   }
 
-  // SIGNUP
-  static Future<SignupResponse> signup(SignupRequest request) async {
-    try {
-      final response = await ApiClient.post(
-        '/auth/signup',
-        request.toJson(),
-      );
+  /// Envoi d'un code OTP par SMS via Supabase.
+  /// À utiliser UNIQUEMENT pour le renvoi manuel (bouton "Renvoyer le code").
+  /// Ne pas appeler après signUp() — Supabase envoie déjà l'OTP automatiquement.
+  static Future<void> sendPhoneOtp(String phoneE164) async {
+    final cleanPhone = phoneE164.trim();
 
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return SignupResponse.fromJson(data);
+    if (!_looksLikeE164Phone(cleanPhone)) {
+      throw Exception(
+        "Numéro invalide. Utilisez le format international E.164, ex: +221783042838",
+      );
+    }
+
+    // ignore: avoid_print
+    print("[AuthService][sendPhoneOtp] start phone=$cleanPhone");
+
+    try {
+      // ✅ Strip le "+" — Supabase/Twilio attend le numéro sans préfixe
+      await _supabase.auth.signInWithOtp(
+        phone: _toSupabasePhone(cleanPhone),
+      );
+      // ignore: avoid_print
+      print("[AuthService][sendPhoneOtp] OK");
+    } on AuthException catch (e) {
+      // ignore: avoid_print
+      print(
+          "[AuthService][sendPhoneOtp] AuthException status=${e.statusCode} message=${e.message}");
+
+      if (_is429(e.statusCode)) {
+        throw Exception(
+          "Un code SMS a déjà été envoyé récemment. "
+          "Veuillez patienter quelques secondes avant de redemander un code.",
+        );
+      }
+
+      rethrow;
+    } catch (e) {
+      // ignore: avoid_print
+      print("[AuthService][sendPhoneOtp] Unknown error: $e");
+      rethrow;
+    }
+  }
+
+  /// Vérifie un code OTP SMS via Supabase (nécessite Phone provider configuré)
+  static Future<void> verifyPhoneOtp({
+    required String phoneE164,
+    required String token,
+  }) async {
+    final cleanPhone = phoneE164.trim();
+    final cleanToken = token.trim();
+
+    if (!_looksLikeE164Phone(cleanPhone)) {
+      throw Exception("Numéro invalide (E.164).");
+    }
+    if (cleanToken.length < 4) {
+      throw Exception("Code invalide.");
+    }
+
+    // ignore: avoid_print
+    print(
+        "[AuthService][verifyPhoneOtp] start phone=$cleanPhone tokenLen=${cleanToken.length}");
+
+    try {
+      // ✅ Strip le "+" — Supabase/Twilio attend le numéro sans préfixe
+      await _supabase.auth.verifyOTP(
+        type: OtpType.sms,
+        phone: _toSupabasePhone(cleanPhone),
+        token: cleanToken,
+      );
+      // ignore: avoid_print
+      print("[AuthService][verifyPhoneOtp] OK");
+    } on AuthException catch (e) {
+      // ignore: avoid_print
+      print(
+          "[AuthService][verifyPhoneOtp] AuthException status=${e.statusCode} message=${e.message}");
+
+      if (_is429(e.statusCode)) {
+        throw Exception(
+          "Trop de tentatives de vérification. Veuillez patienter avant de réessayer.",
+        );
+      }
+
+      rethrow;
+    } catch (e) {
+      // ignore: avoid_print
+      print("[AuthService][verifyPhoneOtp] Unknown error: $e");
+      rethrow;
+    }
+  }
+
+  /// Login avec email OU téléphone + password
+  static Future<void> login(String identifier, String password) async {
+    final cleanIdentifier = identifier.trim();
+
+    if (cleanIdentifier.isEmpty) {
+      throw Exception(
+          "Veuillez renseigner un email ou un numéro de téléphone.");
+    }
+
+    // ignore: avoid_print
+    print("[AuthService][login] start identifier=$cleanIdentifier");
+
+    try {
+      AuthResponse res;
+
+      if (_looksLikeEmail(cleanIdentifier)) {
+        res = await _supabase.auth.signInWithPassword(
+          email: cleanIdentifier.toLowerCase(),
+          password: password,
+        );
       } else {
-        throw Exception('Erreur signup: ${response.statusCode}');
+        if (!_looksLikeE164Phone(cleanIdentifier)) {
+          throw Exception(
+            "Numéro invalide. Utilisez le format international E.164, ex: +221783042838",
+          );
+        }
+        res = await _supabase.auth.signInWithPassword(
+          phone: cleanIdentifier,
+          password: password,
+        );
       }
+
+      // ignore: avoid_print
+      print(
+          "[AuthService][login] done userId=${res.user?.id} session=${res.session != null}");
+
+      if (res.user == null || res.session == null) {
+        throw Exception('Connexion échouée. Vérifiez vos identifiants.');
+      }
+    } on AuthException catch (e) {
+      // ignore: avoid_print
+      print(
+          "[AuthService][login] AuthException status=${e.statusCode} message=${e.message}");
+      rethrow;
     } catch (e) {
-      throw Exception('Erreur: $e');
+      // ignore: avoid_print
+      print("[AuthService][login] Unknown error: $e");
+      rethrow;
     }
   }
 
-  // SEND RESET OTP (Forgot Password) - Email OU Téléphone
-  static Future<void> sendResetOtp(String identifier) async {
+  static Future<void> resetPasswordForEmail(String email) async {
+    final cleanEmail = email.trim().toLowerCase();
+    if (!_looksLikeEmail(cleanEmail)) {
+      throw Exception("Veuillez entrer une adresse e-mail valide.");
+    }
+
+    // ignore: avoid_print
+    print("[AuthService][resetPassword] start email=$cleanEmail isWeb=$kIsWeb");
+
     try {
-      final response = await ApiClient.post(
-        '/auth/forgot-password',
-        {'identifier': identifier}, // Email OU Téléphone
+      await _supabase.auth.resetPasswordForEmail(
+        cleanEmail,
+        redirectTo: kIsWeb ? '${Uri.base.origin}/#/reset-password' : null,
       );
+      // ignore: avoid_print
+      print("[AuthService][resetPassword] OK");
+    } on AuthException catch (e) {
+      // ignore: avoid_print
+      print(
+          "[AuthService][resetPassword] AuthException status=${e.statusCode} message=${e.message}");
 
-      if (response.statusCode != 200) {
-        throw Exception('Erreur: ${response.statusCode}');
+      if (_is429(e.statusCode)) {
+        throw Exception(
+          "Trop de demandes de réinitialisation pour le moment. "
+          "Veuillez patienter quelques minutes puis réessayer.",
+        );
       }
-    } catch (e) {
-      throw Exception('Erreur: $e');
+
+      rethrow;
     }
   }
 
-  // VERIFY OTP - Email OU Téléphone
-  static Future<bool> verifyOtp(String identifier, String otp) async {
-    try {
-      final response = await ApiClient.post(
-        '/auth/verify-otp',
-        {
-          'identifier': identifier, // Email OU Téléphone
-          'otp': otp
-        },
-      );
-
-      if (response.statusCode == 200) {
-        return true;
-      } else {
-        throw Exception('OTP invalide');
-      }
-    } catch (e) {
-      throw Exception('Erreur: $e');
-    }
-  }
-
-  // RESET PASSWORD - Email OU Téléphone
-  static Future<void> resetPassword(
-    String identifier, // Email OU Téléphone
-    String otp,
-    String newPassword,
-  ) async {
-    try {
-      final response = await ApiClient.post(
-        '/auth/reset-password',
-        {
-          'identifier': identifier, // Email OU Téléphone
-          'otp': otp,
-          'newPassword': newPassword,
-        },
-      );
-
-      if (response.statusCode != 200) {
-        throw Exception('Erreur: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Erreur: $e');
-    }
-  }
-
-  // LOGOUT
   static Future<void> logout() async {
-    await ApiClient.deleteToken();
+    // ignore: avoid_print
+    print("[AuthService][logout] start");
+    await _supabase.auth.signOut();
+    // ignore: avoid_print
+    print("[AuthService][logout] done");
   }
 
-  // CHECK IF LOGGED IN
-  static Future<bool> isLoggedIn() async {
-    final token = await ApiClient.getToken();
-    return token != null && token.isNotEmpty;
+  /// Compat: certains services appellent `await AuthService.getJwt()`
+  static Future<String?> getJwt() async {
+    final token = _supabase.auth.currentSession?.accessToken;
+    // ignore: avoid_print
+    print("[AuthService][getJwt] token=${token == null ? 'null' : 'present'}");
+    return token;
   }
+
+  /// JWT courant (access token) si l'utilisateur est connecté
+  static String? get jwt => _supabase.auth.currentSession?.accessToken;
+
+  static bool isLoggedIn() => _supabase.auth.currentSession != null;
+
+  static String? get userId => _supabase.auth.currentUser?.id;
+  static User? get currentUser => _supabase.auth.currentUser;
+
+  static Map<String, dynamic>? get userMetadata =>
+      _supabase.auth.currentUser?.userMetadata;
+
+  static String getCurrentRole() =>
+      _supabase.auth.currentUser?.userMetadata?['role']?.toString() ?? 'user';
 }

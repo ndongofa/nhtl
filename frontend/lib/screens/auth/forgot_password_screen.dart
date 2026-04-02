@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+
 import '../../services/auth_service.dart';
+import '../../ui/app_brand.dart';
+import '../../widgets/phone_input_field.dart';
+import 'password_reset_sent_screen.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({Key? key}) : super(key: key);
@@ -12,8 +16,12 @@ class ForgotPasswordScreen extends StatefulWidget {
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
+
+  // ✅ Numéro E.164 retourné par PhoneInputField
+  String? _phoneE164;
+
   bool _isLoading = false;
-  bool _otpSent = false;
+  bool _usePhone = false;
 
   @override
   void dispose() {
@@ -21,198 +29,149 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     super.dispose();
   }
 
-  void _handleSendOtp() async {
+  Future<void> _handleResetPassword() async {
     if (!_formKey.currentState!.validate()) return;
+
+    if (_usePhone && (_phoneE164 == null || _phoneE164!.isEmpty)) {
+      Fluttertoast.showToast(
+        msg: "Veuillez entrer un numéro de téléphone valide.",
+        backgroundColor: Colors.red,
+        toastLength: Toast.LENGTH_LONG,
+      );
+      return;
+    }
 
     setState(() => _isLoading = true);
 
-    try {
-      await AuthService.sendResetOtp(_emailController.text.trim());
+    final identifier =
+        _usePhone ? _phoneE164! : _emailController.text.trim().toLowerCase();
 
-      if (mounted) {
-        setState(() => _otpSent = true);
+    try {
+      if (!_usePhone) {
+        await AuthService.resetPasswordForEmail(identifier);
+      } else {
+        // Flux SMS/OTP reset (en cours d'activation)
         Fluttertoast.showToast(
-          msg: 'OTP envoyé à votre email!',
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.BOTTOM,
-          backgroundColor: Colors.green,
-          textColor: Colors.white,
+          msg:
+              "Réinitialisation par téléphone: vous recevrez un SMS (en cours d'activation).",
+          backgroundColor: Colors.orange,
+          toastLength: Toast.LENGTH_LONG,
         );
       }
+
+      if (!mounted) return;
+
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => PasswordResetSentScreen(identifier: identifier),
+        ),
+      );
     } catch (e) {
-      if (mounted) {
-        Fluttertoast.showToast(
-          msg: e.toString().replaceFirst('Exception: ', ''),
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.BOTTOM,
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
-        );
-      }
+      if (!mounted) return;
+      Fluttertoast.showToast(
+        msg: e.toString().replaceFirst('Exception: ', ''),
+        backgroundColor: Colors.red,
+        toastLength: Toast.LENGTH_LONG,
+      );
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Réinitialiser le mot de passe'),
-        elevation: 0,
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 30),
-                const Text(
-                  'Mot de passe oublié?',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  'Entrez votre email pour recevoir un code de réinitialisation',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
-                ),
-                const SizedBox(height: 40),
+      appBar: AppBar(title: Text(AppBrand.appName)),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              const SizedBox(height: 28),
+              Text("Mot de passe oublié",
+                  style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 12),
+              const Text(
+                "Entrez votre email ou votre numéro de téléphone.\n"
+                "Si un compte existe, vous recevrez un lien (email) ou un message (SMS) "
+                "pour réinitialiser votre mot de passe.",
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
 
-                // Email TextField
+              // ✅ Toggle email / téléphone
+              SegmentedButton<bool>(
+                segments: const [
+                  ButtonSegment(
+                    value: false,
+                    label: Text('Email'),
+                    icon: Icon(Icons.alternate_email),
+                  ),
+                  ButtonSegment(
+                    value: true,
+                    label: Text('Téléphone'),
+                    icon: Icon(Icons.phone),
+                  ),
+                ],
+                selected: {_usePhone},
+                onSelectionChanged: (val) {
+                  setState(() {
+                    _usePhone = val.first;
+                    _phoneE164 = null;
+                  });
+                },
+              ),
+
+              const SizedBox(height: 20),
+
+              // ✅ Champ email OU PhoneInputField selon le mode
+              if (!_usePhone)
                 TextFormField(
                   controller: _emailController,
-                  enabled: !_otpSent,
-                  decoration: InputDecoration(
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
                     labelText: 'Email',
-                    hintText: 'exemple@email.com',
-                    prefixIcon: const Icon(Icons.email),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+                    hintText: 'ex: nom@domaine.com',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.alternate_email),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Email requis';
-                    }
-                    if (!value.contains('@')) {
-                      return 'Email invalide';
-                    }
+                  validator: (v) {
+                    final value = (v ?? '').trim();
+                    if (value.isEmpty) return 'Email requis';
+                    if (!value.contains('@') ||
+                        !value.contains('.') ||
+                        value.startsWith('@') ||
+                        value.endsWith('@')) return 'Email invalide';
                     return null;
                   },
+                )
+              else
+                PhoneInputField(
+                  label: 'Téléphone',
+                  initialCountryCode: 'SN',
+                  onChanged: (e164) => setState(() => _phoneE164 = e164),
                 ),
-                const SizedBox(height: 30),
 
-                // Send OTP Button
-                if (!_otpSent)
-                  ElevatedButton(
-                    onPressed: _isLoading ? null : _handleSendOtp,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                      backgroundColor: Colors.blue,
-                      disabledBackgroundColor: Colors.grey,
-                    ),
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.white,
-                              ),
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : const Text(
-                            'Envoyer le code',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                  ),
-
-                // Success Message
-                if (_otpSent)
-                  Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(15),
-                        decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.1),
-                          border: Border.all(color: Colors.green),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Row(
-                          children: [
-                            Icon(Icons.check_circle, color: Colors.green),
-                            SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                'Code envoyé! Vérifiez votre email.',
-                                style: TextStyle(color: Colors.green),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 30),
-                      ElevatedButton(
-                        onPressed: () {
-                          Navigator.of(context).pushNamed(
-                            '/otp-verification',
-                            arguments: _emailController.text.trim(),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 15),
-                          backgroundColor: Colors.blue,
-                        ),
-                        child: const Text(
-                          'Vérifier le code',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                const SizedBox(height: 20),
-
-                // Back to Login Link
-                if (!_otpSent)
-                  Center(
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.of(context).pop();
-                      },
-                      child: const Text(
-                        'Retour à la connexion',
-                        style: TextStyle(
-                          color: Colors.blue,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _handleResetPassword,
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Continuer'),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text("Support: ${AppBrand.supportEmail}",
+                  textAlign: TextAlign.center),
+            ],
           ),
         ),
       ),

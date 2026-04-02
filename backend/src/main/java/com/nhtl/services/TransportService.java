@@ -1,169 +1,331 @@
 package com.nhtl.services;
 
-import com.nhtl.models.Transport;
-import com.nhtl.models.StatutTransport;
-import com.nhtl.repositories.TransportRepository;
-import com.nhtl.dto.TransportDTO;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import java.time.LocalDateTime;
+import java.text.Normalizer;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.nhtl.dto.TransportDTO;
+import com.nhtl.models.GpAgent;
+import com.nhtl.models.TransportStatus;
+import com.nhtl.models.Transport;
+import com.nhtl.notifications.NotificationDispatcher;
+import com.nhtl.notifications.NotificationTemplates;
+import com.nhtl.repositories.GpAgentRepository;
+import com.nhtl.repositories.TransportRepository;
+
 @Service
 public class TransportService {
-    
+
     @Autowired
-    private TransportRepository transportRepository;
-    
-    /**
-     * Créer une nouvelle demande de transport
-     */
-    public TransportDTO createTransport(TransportDTO transportDTO) {
-        Transport transport = new Transport();
-        transport.setNom(transportDTO.getNom());
-        transport.setPrenom(transportDTO.getPrenom());
-        transport.setNumeroTelephone(transportDTO.getNumeroTelephone());
-        transport.setPaysExpediteur(transportDTO.getPaysExpediteur());
-        transport.setVilleExpediteur(transportDTO.getVilleExpediteur());
-        transport.setAdresseExpediteur(transportDTO.getAdresseExpediteur());
-        transport.setPaysDestinataire(transportDTO.getPaysDestinataire());
-        transport.setVilleDestinataire(transportDTO.getVilleDestinataire());
-        transport.setAdresseDestinataire(transportDTO.getAdresseDestinataire());
-        transport.setTypesMarchandise(transportDTO.getTypesMarchandise());
-        transport.setDescription(transportDTO.getDescription());
-        transport.setPoids(transportDTO.getPoids());
-        transport.setValeurEstimee(transportDTO.getValeurEstimee());
-        
-        Transport savedTransport = transportRepository.save(transport);
-        return convertToDTO(savedTransport);
-    }
-    
-    /**
-     * Récupérer un transport par ID
-     */
-    public TransportDTO getTransportById(Long id) {
-        Optional<Transport> transport = transportRepository.findById(id);
-        return transport.map(this::convertToDTO).orElse(null);
-    }
-    
-    /**
-     * Récupérer tous les transports
-     */
-    public List<TransportDTO> getAllTransports() {
-        return transportRepository.findAll()
-                .stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
-    
-    /**
-     * Récupérer les transports par statut
-     */
-    public List<TransportDTO> getTransportsByStatut(String statut) {
-        StatutTransport enumStatut = StatutTransport.valueOf(statut.toUpperCase());
-        return transportRepository.findByStatut(enumStatut)
-                .stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
-    
-    /**
-     * Récupérer les transports par numéro de téléphone
-     */
-    public List<TransportDTO> getTransportsByPhoneNumber(String phoneNumber) {
-        return transportRepository.findByNumeroTelephone(phoneNumber)
-                .stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
-    
-    /**
-     * Récupérer les transports par pays de destination
-     */
-    public List<TransportDTO> getTransportsByDestinationCountry(String country) {
-        return transportRepository.findByPaysDestinataire(country)
-                .stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
-    
-    /**
-     * Chercher les transports par nom ou prénom
-     */
-    public List<TransportDTO> searchByNomOrPrenom(String nom, String prenom) {
-        return transportRepository.searchByNomOrPrenom(nom, prenom)
-                .stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
-    
-    /**
-     * Mettre à jour un transport
-     */
-    public TransportDTO updateTransport(Long id, TransportDTO transportDTO) {
-        Optional<Transport> existingTransport = transportRepository.findById(id);
-        
-        if (existingTransport.isPresent()) {
-            Transport transport = existingTransport.get();
-            transport.setNom(transportDTO.getNom());
-            transport.setPrenom(transportDTO.getPrenom());
-            transport.setNumeroTelephone(transportDTO.getNumeroTelephone());
-            transport.setPaysExpediteur(transportDTO.getPaysExpediteur());
-            transport.setVilleExpediteur(transportDTO.getVilleExpediteur());
-            transport.setAdresseExpediteur(transportDTO.getAdresseExpediteur());
-            transport.setPaysDestinataire(transportDTO.getPaysDestinataire());
-            transport.setVilleDestinataire(transportDTO.getVilleDestinataire());
-            transport.setAdresseDestinataire(transportDTO.getAdresseDestinataire());
-            transport.setTypesMarchandise(transportDTO.getTypesMarchandise());
-            transport.setDescription(transportDTO.getDescription());
-            transport.setPoids(transportDTO.getPoids());
-            transport.setValeurEstimee(transportDTO.getValeurEstimee());
-            
-            if (transportDTO.getStatut() != null) {
-                transport.setStatut(StatutTransport.valueOf(transportDTO.getStatut().toUpperCase()));
-            }
-            
-            Transport updatedTransport = transportRepository.save(transport);
-            return convertToDTO(updatedTransport);
+    private TransportRepository transportRepo;
+
+    @Autowired
+    private GpAgentRepository gpRepo;
+
+    @Autowired
+    private NotificationDispatcher notificationDispatcher;
+
+    @Autowired
+    private NotificationTemplates templates;
+
+    @Autowired
+    private NotificationService notificationService;
+
+    public TransportDTO createTransport(TransportDTO dto, String userId) {
+        Transport t = new Transport();
+        t.setUserId(userId);
+        t.setNom(dto.getNom());
+        t.setPrenom(dto.getPrenom());
+        t.setNumeroTelephone(dto.getNumeroTelephone());
+        t.setEmail(dto.getEmail());
+        t.setPaysExpediteur(dto.getPaysExpediteur());
+        t.setVilleExpediteur(dto.getVilleExpediteur());
+        t.setAdresseExpediteur(dto.getAdresseExpediteur());
+        t.setPaysDestinataire(dto.getPaysDestinataire());
+        t.setVilleDestinataire(dto.getVilleDestinataire());
+        t.setAdresseDestinataire(dto.getAdresseDestinataire());
+        t.setPointDepart(dto.getPointDepart());
+        t.setPointArrivee(dto.getPointArrivee());
+        t.setTypesMarchandise(dto.getTypesMarchandise());
+        t.setDescription(dto.getDescription());
+        t.setPoids(dto.getPoids());
+        t.setValeurEstimee(dto.getValeurEstimee());
+        t.setDevise(dto.getDevise());
+        t.setStatut(parseOrDefault(dto.getStatut(), TransportStatus.EN_ATTENTE).name());
+        t.setTypeTransport(dto.getTypeTransport());
+        t.setDateCreation(java.time.LocalDateTime.now());
+        t.setDateModification(java.time.LocalDateTime.now());
+        t.setArchived(false);
+        t.setGpId(null);
+        t.setGpPrenom(null);
+        t.setGpNom(null);
+        t.setGpPhoneNumber(null);
+
+        Transport saved = transportRepo.save(t);
+
+        try {
+            notificationDispatcher.dispatch(templates.transportCreated(saved.getUserId(), saved.getEmail(),
+                    saved.getNumeroTelephone(), saved.getId()));
+        } catch (Exception e) {
+            System.out.println("⚠️ Notification transportCreated échouée: " + e.getMessage());
         }
-        return null;
+
+        return convertToDTO(saved);
     }
-    
-    /**
-     * Supprimer un transport
-     */
-    public boolean deleteTransport(Long id) {
-        if (transportRepository.existsById(id)) {
-            transportRepository.deleteById(id);
+
+    public List<TransportDTO> getAllTransportsForUser(String userId) {
+        return transportRepo.findByUserId(userId).stream().map(this::convertToDTO).collect(Collectors.toList());
+    }
+
+    public List<TransportDTO> getAllTransports() {
+        return transportRepo.findAll().stream().map(this::convertToDTO).collect(Collectors.toList());
+    }
+
+    public List<TransportDTO> getTransportsArchivesForUser(String userId) {
+        return transportRepo.findByUserIdAndArchived(userId, true).stream().map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<TransportDTO> getTransportsArchives() {
+        return transportRepo.findByArchived(true).stream().map(this::convertToDTO).collect(Collectors.toList());
+    }
+
+    public Optional<TransportDTO> getTransportByIdAndUser(Long id, String userId) {
+        return transportRepo.findById(id).filter(t -> t.getUserId().equals(userId)).map(this::convertToDTO);
+    }
+
+    public Optional<TransportDTO> getTransportByIdAndAdmin(Long id) {
+        return transportRepo.findById(id).map(this::convertToDTO);
+    }
+
+    public boolean deleteTransport(Long id, String userId) {
+        Optional<Transport> opt = transportRepo.findById(id);
+        if (opt.isPresent() && opt.get().getUserId().equals(userId)) {
+            transportRepo.deleteById(id);
             return true;
         }
         return false;
     }
-    
-    /**
-     * Convertir Transport entity en TransportDTO
-     */
-    private TransportDTO convertToDTO(Transport transport) {
+
+    public boolean deleteTransportAdmin(Long id) {
+        if (transportRepo.existsById(id)) {
+            transportRepo.deleteById(id);
+            return true;
+        }
+        return false;
+    }
+
+    public TransportDTO updateTransport(Long id, TransportDTO dto, String userId) {
+        Optional<Transport> opt = transportRepo.findById(id);
+        if (opt.isPresent() && opt.get().getUserId().equals(userId)) {
+            Transport t = opt.get();
+            updateFromDto(t, dto);
+            t.setDateModification(java.time.LocalDateTime.now());
+            Transport saved = transportRepo.save(t);
+            return convertToDTO(saved);
+        }
+        return null;
+    }
+
+    public TransportDTO updateTransportAdmin(Long id, TransportDTO dto) {
+        Optional<Transport> opt = transportRepo.findById(id);
+        if (opt.isPresent()) {
+            Transport t = opt.get();
+            updateFromDto(t, dto);
+            t.setDateModification(java.time.LocalDateTime.now());
+            Transport saved = transportRepo.save(t);
+            return convertToDTO(saved);
+        }
+        return null;
+    }
+
+    public boolean archiveTransport(Long id) {
+        Optional<Transport> opt = transportRepo.findById(id);
+        if (opt.isPresent()) {
+            Transport t = opt.get();
+            if (Boolean.TRUE.equals(t.getArchived())) return false;
+            t.setArchived(true);
+            t.setDateModification(java.time.LocalDateTime.now());
+            transportRepo.save(t);
+            return true;
+        }
+        return false;
+    }
+
+    public boolean unarchiveTransport(Long id) {
+        Optional<Transport> opt = transportRepo.findById(id);
+        if (opt.isPresent()) {
+            Transport t = opt.get();
+            if (!Boolean.TRUE.equals(t.getArchived())) return false;
+            t.setArchived(false);
+            t.setDateModification(java.time.LocalDateTime.now());
+            transportRepo.save(t);
+            return true;
+        }
+        return false;
+    }
+
+    public List<TransportDTO> searchByStatut(String statut) {
+        return transportRepo.findByStatut(statut).stream().map(this::convertToDTO).collect(Collectors.toList());
+    }
+
+    public boolean deleteTransportArchive(Long id, String userId) {
+        Optional<Transport> opt = transportRepo.findById(id);
+        if (opt.isPresent() && opt.get().getUserId().equals(userId) && Boolean.TRUE.equals(opt.get().getArchived())) {
+            transportRepo.deleteById(id);
+            return true;
+        }
+        return false;
+    }
+
+    public TransportDTO updateStatut(Long id, String statut) {
+        Optional<Transport> opt = transportRepo.findById(id);
+        if (opt.isEmpty()) return null;
+
+        Transport t = opt.get();
+        TransportStatus parsed = tryParseTransportStatut(statut);
+        boolean changed = false;
+
+        if (parsed != null) {
+            t.setStatut(parsed.name());
+            t.setDateModification(java.time.LocalDateTime.now());
+            t = transportRepo.save(t);
+            changed = true;
+        }
+
+        if (changed) {
+            try {
+                TransportStatus statusEnum = TransportStatus.valueOf(t.getStatut());
+                notificationDispatcher.dispatch(templates.transportStatusUpdated(t.getUserId(), t.getEmail(),
+                        t.getNumeroTelephone(), t.getId(), statusEnum));
+                if (statusEnum == TransportStatus.LIVRE) {
+                    notificationDispatcher.dispatch(templates.transportCompleted(t.getUserId(), t.getEmail(),
+                            t.getNumeroTelephone(), t.getId()));
+                }
+            } catch (Exception e) {
+                System.out.println("⚠️ Notification updateStatut transport échouée: " + e.getMessage());
+            }
+        }
+
+        return convertToDTO(t);
+    }
+
+    public TransportDTO assignGpAndValidate(Long transportId, Long gpId, String statut) {
+        Optional<Transport> optT = transportRepo.findById(transportId);
+        if (optT.isEmpty()) return null;
+
+        Optional<GpAgent> optGp = gpRepo.findById(gpId);
+        if (optGp.isEmpty()) return null;
+
+        Transport t = optT.get();
+        GpAgent gp = optGp.get();
+
+        t.setGpId(gp.getId());
+        t.setGpPrenom(gp.getPrenom());
+        t.setGpNom(gp.getNom());
+        t.setGpPhoneNumber(gp.getPhoneNumber());
+
+        TransportStatus parsed = tryParseTransportStatut(statut);
+        if (parsed != null) t.setStatut(parsed.name());
+
+        t.setDateModification(java.time.LocalDateTime.now());
+        Transport saved = transportRepo.save(t);
+
+        try {
+            TransportStatus newStatus = null;
+            try { newStatus = TransportStatus.valueOf(saved.getStatut()); } catch (Exception ignored) {}
+            String gpFullName = (gp.getPrenom() + " " + gp.getNom()).trim();
+            notificationDispatcher.dispatch(templates.transportGpAssigned(saved.getUserId(), saved.getEmail(),
+                    saved.getNumeroTelephone(), saved.getId(), gpFullName, gp.getPhoneNumber(), newStatus));
+        } catch (Exception e) {
+            System.out.println("⚠️ Notification transportGpAssigned échouée: " + e.getMessage());
+        }
+
+        return convertToDTO(saved);
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private TransportStatus parseOrDefault(String raw, TransportStatus def) {
+        TransportStatus parsed = tryParseTransportStatut(raw);
+        return parsed != null ? parsed : def;
+    }
+
+    private TransportStatus tryParseTransportStatut(String raw) {
+        if (raw == null || raw.trim().isEmpty()) return null;
+        String s = raw.trim().toUpperCase(Locale.ROOT);
+        s = Normalizer.normalize(s, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
+        s = s.replace(' ', '_').replace('-', '_');
+        if ("LIVREE".equals(s) || "LIVRE".equals(s)) return TransportStatus.LIVRE;
+        try { return TransportStatus.valueOf(s); } catch (IllegalArgumentException ex) { return null; }
+    }
+
+    // ✅ convertToDTO — inclut statutSuivi + champs postaux
+    private TransportDTO convertToDTO(Transport t) {
         TransportDTO dto = new TransportDTO();
-        dto.setId(transport.getId());
-        dto.setNom(transport.getNom());
-        dto.setPrenom(transport.getPrenom());
-        dto.setNumeroTelephone(transport.getNumeroTelephone());
-        dto.setPaysExpediteur(transport.getPaysExpediteur());
-        dto.setVilleExpediteur(transport.getVilleExpediteur());
-        dto.setAdresseExpediteur(transport.getAdresseExpediteur());
-        dto.setPaysDestinataire(transport.getPaysDestinataire());
-        dto.setVilleDestinataire(transport.getVilleDestinataire());
-        dto.setAdresseDestinataire(transport.getAdresseDestinataire());
-        dto.setTypesMarchandise(transport.getTypesMarchandise());
-        dto.setDescription(transport.getDescription());
-        dto.setPoids(transport.getPoids());
-        dto.setValeurEstimee(transport.getValeurEstimee());
-        dto.setStatut(transport.getStatut().toString());
-        dto.setDateCreation(transport.getDateCreation());
-        dto.setDateModification(transport.getDateModification());
+        dto.setId(t.getId());
+        dto.setUserId(t.getUserId());
+        dto.setNom(t.getNom());
+        dto.setPrenom(t.getPrenom());
+        dto.setNumeroTelephone(t.getNumeroTelephone());
+        dto.setEmail(t.getEmail());
+        dto.setPaysExpediteur(t.getPaysExpediteur());
+        dto.setVilleExpediteur(t.getVilleExpediteur());
+        dto.setAdresseExpediteur(t.getAdresseExpediteur());
+        dto.setPaysDestinataire(t.getPaysDestinataire());
+        dto.setVilleDestinataire(t.getVilleDestinataire());
+        dto.setAdresseDestinataire(t.getAdresseDestinataire());
+        dto.setPointDepart(t.getPointDepart());
+        dto.setPointArrivee(t.getPointArrivee());
+        dto.setTypesMarchandise(t.getTypesMarchandise());
+        dto.setDescription(t.getDescription());
+        dto.setPoids(t.getPoids());
+        dto.setValeurEstimee(t.getValeurEstimee());
+        dto.setDevise(t.getDevise());
+        dto.setStatut(t.getStatut());
+        dto.setTypeTransport(t.getTypeTransport());
+        dto.setDateCreation(t.getDateCreation());
+        dto.setDateModification(t.getDateModification());
+        dto.setArchived(t.getArchived());
+        dto.setGpId(t.getGpId());
+        dto.setGpPrenom(t.getGpPrenom());
+        dto.setGpNom(t.getGpNom());
+        dto.setGpPhoneNumber(t.getGpPhoneNumber());
+        // ✅ Statut logistique
+        dto.setStatutSuivi(t.getStatutSuivi() != null ? t.getStatutSuivi().name() : "EN_ATTENTE");
+        // ✅ Suivi postal
+        dto.setPhotoColisUrl(t.getPhotoColisUrl());
+        dto.setPhotoBordereauUrl(t.getPhotoBordereauUrl());
+        dto.setNumeroBordereau(t.getNumeroBordereau());
+        dto.setDeposePosteAt(t.getDeposePosteAt());
         return dto;
+    }
+
+    private void updateFromDto(Transport t, TransportDTO dto) {
+        t.setNom(dto.getNom());
+        t.setPrenom(dto.getPrenom());
+        t.setNumeroTelephone(dto.getNumeroTelephone());
+        t.setEmail(dto.getEmail());
+        t.setPaysExpediteur(dto.getPaysExpediteur());
+        t.setVilleExpediteur(dto.getVilleExpediteur());
+        t.setAdresseExpediteur(dto.getAdresseExpediteur());
+        t.setPaysDestinataire(dto.getPaysDestinataire());
+        t.setVilleDestinataire(dto.getVilleDestinataire());
+        t.setAdresseDestinataire(dto.getAdresseDestinataire());
+        t.setPointDepart(dto.getPointDepart());
+        t.setPointArrivee(dto.getPointArrivee());
+        t.setTypesMarchandise(dto.getTypesMarchandise());
+        t.setDescription(dto.getDescription());
+        t.setPoids(dto.getPoids());
+        t.setValeurEstimee(dto.getValeurEstimee());
+        t.setDevise(dto.getDevise());
+        t.setStatut(parseOrDefault(dto.getStatut(), TransportStatus.EN_ATTENTE).name());
+        t.setTypeTransport(dto.getTypeTransport());
+        t.setArchived(dto.getArchived());
     }
 }
