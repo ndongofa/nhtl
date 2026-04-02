@@ -373,7 +373,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
     );
   }
 
-  Widget _brandLogo() => const SamaTopBarLogo();
+  Widget _brandLogo() => SamaTopBarLogo();
 
   Widget _themeToggle(AppThemeProvider t) => Tooltip(
         message: t.isDark ? "Thème clair" : "Thème sombre",

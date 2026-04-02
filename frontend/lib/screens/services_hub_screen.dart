@@ -619,7 +619,7 @@ class _TopBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const SamaTopBarLogo(),
+          SamaTopBarLogo(),
           const Spacer(),
 
           if (!isDesktop) ...[
