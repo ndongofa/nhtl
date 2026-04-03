@@ -331,15 +331,23 @@ class _FeaturedGpCard extends StatelessWidget {
   }
 
   Widget _mobileLayout(BuildContext context) {
-    return Column(
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Align(
-          alignment: Alignment.centerRight,
-          child: _rightPanel(),
+        Expanded(child: _textContent(showBadge: true)),
+        const SizedBox(width: 12),
+        Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
+          ),
+          child: const Center(
+            child: Text("✈️", style: TextStyle(fontSize: 28)),
+          ),
         ),
-        const SizedBox(height: 16),
-        _textContent(showBadge: true),
       ],
     );
   }
@@ -603,7 +611,11 @@ class _CountdownBannerCard extends StatelessWidget {
         ),
         if (hasCountdown) ...[
           const SizedBox(height: 12),
-          _countdownRow(svc, t),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: _countdownRow(svc, t),
+          ),
         ],
       ],
     );
