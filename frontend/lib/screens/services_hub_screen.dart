@@ -63,7 +63,7 @@ class ServicesHubScreen extends StatelessWidget {
         tagline: 'Vente de Maad',
         desc: 'Maad frais de qualité\ndirectement depuis le Sénégal',
         color: Color(0xFF16A34A),
-        isLive: false),
+        isLive: true),
     _ServiceItem(
         id: 'teranga',
         emoji: '🥂',
@@ -71,7 +71,7 @@ class ServicesHubScreen extends StatelessWidget {
         tagline: 'Apéro sénégalais',
         desc: 'Bissap, Gnamakoudji, Ditax\net spécialités sénégalaises',
         color: Color(0xFFDC2626),
-        isLive: false),
+        isLive: true),
     _ServiceItem(
         id: 'bestseller',
         emoji: '⭐',
@@ -79,7 +79,7 @@ class ServicesHubScreen extends StatelessWidget {
         tagline: 'Articles best seller',
         desc: 'Sélection des articles\nles plus demandés du moment',
         color: Color(0xFF7C3AED),
-        isLive: false),
+        isLive: true),
     _ServiceItem(
         id: 'techdigital',
         emoji: '💻',
@@ -305,32 +305,7 @@ class _ServiceCard extends StatelessWidget {
           ],
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            SamaServiceIcon(emoji: service.emoji, color: color),
-            const Spacer(),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: service.isLive
-                    ? AppThemeProvider.green.withValues(alpha: 0.12)
-                    : color.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: service.isLive
-                      ? AppThemeProvider.green.withValues(alpha: 0.35)
-                      : color.withValues(alpha: 0.3),
-                ),
-              ),
-              child: Text(
-                service.isLive ? "● Disponible" : "Bientôt",
-                style: TextStyle(
-                  color: service.isLive ? AppThemeProvider.green : color,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ]),
+          SamaServiceIcon(emoji: service.emoji, color: color),
           const SizedBox(height: 14),
           Text(
             service.name,
@@ -365,18 +340,17 @@ class _ServiceCard extends StatelessWidget {
             child: ElevatedButton(
               onPressed: onTap,
               style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    service.isLive ? color : color.withValues(alpha: 0.15),
-                foregroundColor: service.isLive ? Colors.white : color,
+                backgroundColor: color,
+                foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
                 padding: const EdgeInsets.symmetric(vertical: 11),
               ),
-              child: Text(
-                service.isLive ? "Découvrir →" : "En savoir plus",
-                style: const TextStyle(
+              child: const Text(
+                "Découvrir →",
+                style: TextStyle(
                   fontWeight: FontWeight.w800,
                   fontSize: 13,
                 ),
