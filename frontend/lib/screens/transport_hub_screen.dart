@@ -247,7 +247,7 @@ class _TransportHubScreenState extends State<TransportHubScreen> {
                                 t,
                                 icon: FontAwesomeIcons.planeDeparture,
                                 color: AppThemeProvider.appBlue,
-                                title: "Nouveau transport",
+                                title: "Nouveau transport par GP",
                                 subtitle: "Envoyer un colis ou marchandise",
                                 onTap: () => Navigator.push(
                                   context,
@@ -263,7 +263,7 @@ class _TransportHubScreenState extends State<TransportHubScreen> {
                                 t,
                                 icon: Icons.list_alt_outlined,
                                 color: AppThemeProvider.teal,
-                                title: "Mes transports",
+                                title: "Mes transports par GP",
                                 subtitle: "Suivre mes envois en cours",
                                 onTap: () => Navigator.push(
                                   context,
@@ -279,7 +279,7 @@ class _TransportHubScreenState extends State<TransportHubScreen> {
                               t,
                               icon: FontAwesomeIcons.planeDeparture,
                               color: AppThemeProvider.appBlue,
-                              title: "Nouveau transport",
+                              title: "Nouveau transport par GP",
                               subtitle: "Envoyer un colis ou marchandise",
                               onTap: () => Navigator.push(
                                 context,
@@ -293,7 +293,7 @@ class _TransportHubScreenState extends State<TransportHubScreen> {
                               t,
                               icon: Icons.list_alt_outlined,
                               color: AppThemeProvider.teal,
-                              title: "Mes transports",
+                              title: "Mes transports par GP",
                               subtitle: "Suivre mes envois en cours",
                               onTap: () => Navigator.push(
                                 context,
@@ -442,7 +442,7 @@ class _TransportHubScreenState extends State<TransportHubScreen> {
           child: ElevatedButton.icon(
             icon: const Icon(Icons.add_box_outlined, size: 16),
             label: Text(
-              "Réserver ce départ — ${dep.route}",
+              "Réserver ce départ par GP — ${dep.route}",
               style: const TextStyle(fontWeight: FontWeight.w800),
             ),
             style: ElevatedButton.styleFrom(
