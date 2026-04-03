@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Sama GP — Flyer Transport</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Poppins', Arial, sans-serif;
+      background: #eef2f7;
+      display: flex; justify-content: center; align-items: center;
+      min-height: 100vh; padding: 20px;
+    }
+    .flyer {
+      width: 794px; min-height: 1123px;
+      background: linear-gradient(160deg, #0a1628 0%, #0d2b4a 60%, #071a30 100%);
+      border-radius: 16px; overflow: hidden; position: relative; color: white;
+    }
+    .accent-bar { height: 8px; background: linear-gradient(90deg, #FFD700, #FFA500, #FF6B00); }
+    .header { padding: 48px 48px 36px; position: relative; z-index: 1; }
+    .back-link { font-size: 11px; color: rgba(255,255,255,0.4); margin-bottom: 20px; display: block; text-decoration: none; }
+    .service-badge {
+      background: linear-gradient(90deg, #FFD700, #FFA500);
+      border-radius: 8px;
+      padding: 8px 20px;
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 700;
+      color: #0a1628;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .main-title { font-size: 64px; font-weight: 900; line-height: 1; margin-bottom: 8px; }
+    .main-title span { color: #FFD700; }
+    .main-subtitle { font-size: 18px; color: rgba(255,255,255,0.7); margin-bottom: 32px; }
+
+    .route-visual {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 40px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 20px 24px;
+      border: 1px solid rgba(255,215,0,0.2);
+    }
+    .route-node { text-align: center; }
+    .route-flag { font-size: 32px; }
+    .route-city { font-size: 13px; font-weight: 700; color: #FFD700; margin-top: 4px; }
+    .route-arrow { font-size: 24px; color: rgba(255,255,255,0.4); flex: 1; text-align: center; }
+
+    .features { padding: 0 48px 36px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; z-index: 1; position: relative; }
+    .feat {
+      background: rgba(255,215,0,0.06);
+      border: 1px solid rgba(255,215,0,0.15);
+      border-radius: 10px;
+      padding: 16px 18px;
+    }
+    .feat-icon { font-size: 24px; margin-bottom: 8px; }
+    .feat-title { font-size: 13px; font-weight: 700; color: #FFD700; margin-bottom: 4px; }
+    .feat-text { font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.5; }
+
+    .process { padding: 0 48px 36px; z-index: 1; position: relative; }
+    .process-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; color: rgba(255,255,255,0.9); }
+    .steps { display: flex; gap: 0; }
+    .step { flex: 1; text-align: center; position: relative; }
+    .step:not(:last-child)::after {
+      content: '→'; position: absolute; right: -10px; top: 18px;
+      color: rgba(255,255,255,0.3); font-size: 20px;
+    }
+    .step-num {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, #FFD700, #FFA500);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 900; color: #0a1628;
+      margin: 0 auto 8px;
+    }
+    .step-text { font-size: 11px; color: rgba(255,255,255,0.6); }
+
+    .cta {
+      margin: 0 48px 48px;
+      background: linear-gradient(90deg, rgba(255,215,0,0.15), rgba(255,165,0,0.1));
+      border: 2px solid #FFD700;
+      border-radius: 16px;
+      padding: 28px 36px;
+      text-align: center;
+      position: relative; z-index: 1;
+    }
+    .cta-text { font-size: 15px; color: rgba(255,255,255,0.8); margin-bottom: 16px; }
+    .cta-url { font-size: 24px; font-weight: 900; color: #FFD700; text-decoration: none; display: block; margin-bottom: 8px; }
+    .cta-sub { font-size: 13px; color: rgba(255,255,255,0.5); }
+
+    .footer { background: rgba(0,0,0,0.4); padding: 16px 48px; display: flex; justify-content: space-between; align-items: center; }
+    .footer-left { font-size: 11px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; }
+    .footer-right { font-size: 11px; color: rgba(255,255,255,0.4); }
+
+    @media print { body { background: white; padding: 0; } .flyer { border-radius: 0; width: 100%; } }
+  </style>
+</head>
+<body>
+<div class="flyer">
+  <div class="accent-bar"></div>
+  <div class="header">
+    <span class="back-link">↩ sama-services-intl.com | Retour à l'accueil</span>
+    <div class="service-badge">✈️ Service Transport</div>
+    <h1 class="main-title">Sama <span>GP</span></h1>
+    <p class="main-subtitle">Groupage aérien & maritime — Envoi de colis au Sénégal</p>
+
+    <div class="route-visual">
+      <div class="route-node">
+        <div class="route-flag">🗼</div>
+        <div class="route-city">Paris</div>
+      </div>
+      <div class="route-arrow">——</div>
+      <div class="route-node">
+        <div class="route-flag">🕌</div>
+        <div class="route-city">Casablanca</div>
+      </div>
+      <div class="route-arrow">——▶</div>
+      <div class="route-node">
+        <div class="route-flag">🇸🇳</div>
+        <div class="route-city">Dakar</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="features">
+    <div class="feat">
+      <div class="feat-icon">✈️</div>
+      <div class="feat-title">Fret Aérien</div>
+      <div class="feat-text">Envoi rapide par avion — délais courts, idéal pour les urgences</div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🚢</div>
+      <div class="feat-title">Fret Maritime</div>
+      <div class="feat-text">Solution économique pour les gros volumes — groupage optimisé</div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">📍</div>
+      <div class="feat-title">Suivi en Temps Réel</div>
+      <div class="feat-text">Suivez votre colis étape par étape depuis la plateforme</div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🔒</div>
+      <div class="feat-title">Expédition Sécurisée</div>
+      <div class="feat-text">Prise en charge soigneuse — vos colis arrivent en bon état</div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">💰</div>
+      <div class="feat-title">Tarifs Groupage</div>
+      <div class="feat-text">Paiement au volume — optimisez vos coûts d'expédition</div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">📞</div>
+      <div class="feat-title">Accompagnement</div>
+      <div class="feat-text">Équipe disponible pour vous guider à chaque étape</div>
+    </div>
+  </div>
+
+  <div class="process">
+    <div class="process-title">Comment ça marche ?</div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-text">Créez votre demande en ligne</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-text">Déposez votre colis</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-text">On gère le groupage</div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-text">Livraison au Sénégal</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cta">
+    <p class="cta-text">Faites votre demande dès maintenant depuis votre navigateur</p>
+    <a class="cta-url" href="https://www.sama-services-intl.com/transport">sama-services-intl.com/transport</a>
+    <p class="cta-sub">Pas d'application à télécharger — accès direct depuis votre navigateur</p>
+  </div>
+
+  <div class="footer">
+    <div class="footer-left">Ngom Holding Transport & Logistics</div>
+    <div class="footer-right">tech@ngom-holding.com</div>
+  </div>
+</div>
+</body>
+</html>
