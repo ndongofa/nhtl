@@ -72,11 +72,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => PanierScreen(
-                      serviceType: widget.serviceType,
-                      serviceLabel: widget.serviceType,
-                      serviceEmoji: '🛒',
-                      accentColor: widget.accentColor,
+                    builder: (_) => ChangeNotifierProvider.value(
+                      value: context.read<PanierProvider>(),
+                      child: PanierScreen(
+                        serviceType: widget.serviceType,
+                        serviceLabel: widget.serviceType,
+                        serviceEmoji: '🛒',
+                        accentColor: widget.accentColor,
+                      ),
                     ),
                   ),
                 ),

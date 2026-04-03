@@ -141,11 +141,14 @@ class _CatalogueScreenState extends State<CatalogueScreen> {
                 onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => PanierScreen(
-                      serviceType: widget.serviceType,
-                      serviceLabel: widget.serviceLabel,
-                      serviceEmoji: widget.serviceEmoji,
-                      accentColor: widget.accentColor,
+                    builder: (_) => ChangeNotifierProvider.value(
+                      value: context.read<PanierProvider>(),
+                      child: PanierScreen(
+                        serviceType: widget.serviceType,
+                        serviceLabel: widget.serviceLabel,
+                        serviceEmoji: widget.serviceEmoji,
+                        accentColor: widget.accentColor,
+                      ),
                     ),
                   ),
                 ),
@@ -253,10 +256,13 @@ class _CatalogueScreenState extends State<CatalogueScreen> {
                             onTap: () => Navigator.push(
                               ctx,
                               MaterialPageRoute(
-                                builder: (_) => ProductDetailScreen(
-                                  produit: _filtered[i],
-                                  serviceType: widget.serviceType,
-                                  accentColor: widget.accentColor,
+                                builder: (_) => ChangeNotifierProvider.value(
+                                  value: ctx.read<PanierProvider>(),
+                                  child: ProductDetailScreen(
+                                    produit: _filtered[i],
+                                    serviceType: widget.serviceType,
+                                    accentColor: widget.accentColor,
+                                  ),
                                 ),
                               ),
                             ),
