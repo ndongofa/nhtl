@@ -16,17 +16,6 @@ import '../services/departure_countdown_service.dart';
 import '../services/notification_polling_service.dart';
 import '../models/logged_user.dart';
 
-import 'commande_hub_screen.dart';
-import 'landing_commande_screen.dart';
-import 'landing_transport_screen.dart';
-import 'transport_hub_screen.dart';
-
-import 'services/sama_achat_screen.dart';
-import 'services/sama_best_seller_screen.dart';
-import 'services/sama_maad_screen.dart';
-import 'services/sama_tech_digital_screen.dart';
-import 'services/sama_teranga_screen.dart';
-
 class ServicesHubScreen extends StatelessWidget {
   const ServicesHubScreen({Key? key}) : super(key: key);
 
@@ -114,33 +103,17 @@ class ServicesHubScreen extends StatelessWidget {
   }
 
   void _openService(BuildContext context, _ServiceItem s) {
-    Widget screen;
-    switch (s.id) {
-      case 'gp':
-        screen = const LandingTransportScreen();
-        break;
-      case 'commande':
-        screen = const LandingCommandeScreen();
-        break;
-      case 'achat':
-        screen = const SamaAchatScreen();
-        break;
-      case 'maad':
-        screen = const SamaMaadScreen();
-        break;
-      case 'teranga':
-        screen = const SamaTerangaScreen();
-        break;
-      case 'bestseller':
-        screen = const SamaBestSellerScreen();
-        break;
-      case 'techdigital':
-        screen = const SamaTechDigitalScreen();
-        break;
-      default:
-        return;
-    }
-    Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+    const routes = {
+      'gp': '/transport',
+      'commande': '/commande',
+      'achat': '/achat',
+      'maad': '/maad',
+      'teranga': '/teranga',
+      'bestseller': '/bestseller',
+      'techdigital': '/tech',
+    };
+    final route = routes[s.id];
+    if (route != null) Navigator.pushNamed(context, route);
   }
 
   @override
@@ -189,12 +162,7 @@ class ServicesHubScreen extends StatelessWidget {
                                 _CountdownBannerCard(
                                   t: t,
                                   isDesktop: isDesktop,
-                                  onTap: () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const LandingTransportScreen(),
-                                    ),
-                                  ),
+                                  onTap: () => Navigator.pushNamed(context, '/transport'),
                                 ),
                                 const SizedBox(height: 24),
                                 _sectionLabel(t, "Autres services"),
@@ -364,15 +332,23 @@ class _FeaturedGpCard extends StatelessWidget {
   }
 
   Widget _mobileLayout(BuildContext context) {
-    return Column(
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Align(
-          alignment: Alignment.centerRight,
-          child: _rightPanel(),
+        Expanded(child: _textContent(showBadge: true)),
+        const SizedBox(width: 12),
+        Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
+          ),
+          child: const Center(
+            child: Text("✈️", style: TextStyle(fontSize: 28)),
+          ),
         ),
-        const SizedBox(height: 16),
-        _textContent(showBadge: true),
       ],
     );
   }
@@ -636,7 +612,11 @@ class _CountdownBannerCard extends StatelessWidget {
         ),
         if (hasCountdown) ...[
           const SizedBox(height: 12),
-          _countdownRow(svc, t),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: _countdownRow(svc, t),
+          ),
         ],
       ],
     );
@@ -1188,57 +1168,37 @@ class _TopBar extends StatelessWidget {
 
     switch (selected) {
       case "transport":
-        if (isLogged) {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const TransportHubScreen()),
-          );
-        } else {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const LandingTransportScreen()),
-          );
-        }
+        Navigator.pushNamed(
+          context,
+          isLogged ? '/transport/hub' : '/transport',
+        );
         break;
 
       case "commande":
-        if (isLogged) {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const CommandeHubScreen()),
-          );
-        } else {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const LandingCommandeScreen()),
-          );
-        }
+        Navigator.pushNamed(
+          context,
+          isLogged ? '/commande/hub' : '/commande',
+        );
         break;
 
       case "achat":
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const SamaAchatScreen()),
-        );
+        Navigator.pushNamed(context, '/achat');
         break;
 
       case "maad":
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const SamaMaadScreen()),
-        );
+        Navigator.pushNamed(context, '/maad');
         break;
 
       case "teranga":
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const SamaTerangaScreen()),
-        );
+        Navigator.pushNamed(context, '/teranga');
         break;
 
       case "techdigital":
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const SamaTechDigitalScreen()),
-        );
+        Navigator.pushNamed(context, '/tech');
         break;
 
       case "bestseller":
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const SamaBestSellerScreen()),
-        );
+        Navigator.pushNamed(context, '/bestseller');
         break;
 
       case "profile":
