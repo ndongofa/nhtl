@@ -142,8 +142,9 @@ class DepartureCountdownService extends ChangeNotifier {
     // Tick 1s — compte à rebours
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       _updateRemaining();
-      if (_remaining == Duration.zero && _groups.isNotEmpty) {
-        // Retirer les départs expirés du groupe courant
+      // Retirer les départs expirés du groupe courant (indépendant de _remaining)
+      if (_groups.isNotEmpty &&
+          !_groups[_groupIndex].first.dateTime.isAfter(DateTime.now())) {
         _groups[_groupIndex]
             .removeWhere((d) => !d.dateTime.isAfter(DateTime.now()));
         if (_groups[_groupIndex].isEmpty) {
@@ -171,8 +172,8 @@ class DepartureCountdownService extends ChangeNotifier {
       if (_inGroupIndex >= sameDayCount) {
         _inGroupIndex = 0;
         _groupIndex = (_groupIndex + 1) % _groups.length;
-        _updateRemaining();
       }
+      _updateRemaining();
       notifyListeners();
     });
 
@@ -199,8 +200,8 @@ class DepartureCountdownService extends ChangeNotifier {
     } else if (_groups.length > 1) {
       _groupIndex = (_groupIndex + 1) % _groups.length;
       _inGroupIndex = 0;
-      _updateRemaining();
     }
+    _updateRemaining();
     notifyListeners();
   }
 
@@ -211,8 +212,8 @@ class DepartureCountdownService extends ChangeNotifier {
     } else if (_groups.length > 1) {
       _groupIndex = (_groupIndex - 1 + _groups.length) % _groups.length;
       _inGroupIndex = 0;
-      _updateRemaining();
     }
+    _updateRemaining();
     notifyListeners();
   }
 
@@ -247,7 +248,8 @@ class DepartureCountdownService extends ChangeNotifier {
       _remaining = Duration.zero;
       return;
     }
-    final target = _groups[_groupIndex].first.dateTime;
+    // Compte à rebours vers le départ ACTUELLEMENT affiché
+    final target = currentDeparture.dateTime;
     final diff = target.difference(DateTime.now());
     _remaining = diff.isNegative ? Duration.zero : diff;
   }
