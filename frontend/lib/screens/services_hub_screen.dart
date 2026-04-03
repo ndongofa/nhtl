@@ -1,5 +1,7 @@
 // lib/screens/services_hub_screen.dart
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
@@ -10,6 +12,7 @@ import '../widgets/sama_logo_widget.dart';
 import '../widgets/sama_service_icon.dart';
 import '../providers/app_theme_provider.dart';
 import '../services/auth_service.dart';
+import '../services/departure_countdown_service.dart';
 import '../models/logged_user.dart';
 
 import 'commande_hub_screen.dart';
@@ -30,15 +33,18 @@ class ServicesHubScreen extends StatelessWidget {
   static const String _waDakar = "221783042838";
   static const String _email = "tech@ngom-holding.com";
 
-  static const List<_ServiceItem> _services = [
-    _ServiceItem(
-        id: 'gp',
-        emoji: '✈️',
-        name: 'Sama GP',
-        tagline: 'Transport par GP',
-        desc: 'Groupage, fret aérien & maritime\nParis · Casablanca · Dakar',
-        color: AppThemeProvider.appBlue,
-        isLive: true),
+  // ── Service phare (Sama GP) affiché en hero card pleine largeur ──────────
+  static const _ServiceItem _gpService = _ServiceItem(
+      id: 'gp',
+      emoji: '✈️',
+      name: 'Sama GP',
+      tagline: 'Transport par GP',
+      desc: 'Groupage, fret aérien & maritime\nParis · Casablanca · Dakar',
+      color: AppThemeProvider.appBlue,
+      isLive: true);
+
+  // ── Les 6 autres services affichés en grille équilibrée 3×2 / 2×3 ────────
+  static const List<_ServiceItem> _otherServices = [
     _ServiceItem(
         id: 'commande',
         emoji: '🛒',
@@ -171,9 +177,34 @@ class ServicesHubScreen extends StatelessWidget {
                               children: [
                                 _sectionLabel(t, "Nos services"),
                                 const SizedBox(height: 24),
+                                // ── 1. Sama GP — hero card pleine largeur ──
+                                _FeaturedGpCard(
+                                  t: t,
+                                  isDesktop: isDesktop,
+                                  onTap: () => _openService(context, _gpService),
+                                ),
+                                const SizedBox(height: 16),
+                                // ── 2. Compte à rebours prochain départ ───
+                                _CountdownBannerCard(
+                                  t: t,
+                                  isDesktop: isDesktop,
+                                  onTap: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const LandingTransportScreen(),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                                _sectionLabel(t, "Autres services"),
+                                const SizedBox(height: 16),
+                                // ── 3. Grille équilibrée des 6 autres services
                                 isDesktop
                                     ? _gridDesktop(context, t)
                                     : _gridMobile(context, t),
+                                const SizedBox(height: 8),
+                                // ── 4. Bandeau annonces / promotions ──────
+                                _AdsBannerCard(t: t, isDesktop: isDesktop),
                               ],
                             ),
                           ),
@@ -199,12 +230,12 @@ class ServicesHubScreen extends StatelessWidget {
 
   Widget _gridDesktop(BuildContext context, AppThemeProvider t) {
     const itemsPerRow = 3;
-    final rows = (_services.length / itemsPerRow).ceil();
+    final rows = (_otherServices.length / itemsPerRow).ceil();
     return Column(
       children: List.generate(rows, (rowIdx) {
         final start = rowIdx * itemsPerRow;
-        final end = (start + itemsPerRow).clamp(0, _services.length);
-        final rowServices = _services.sublist(start, end);
+        final end = (start + itemsPerRow).clamp(0, _otherServices.length);
+        final rowServices = _otherServices.sublist(start, end);
         final fillers = itemsPerRow - rowServices.length;
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -227,10 +258,10 @@ class ServicesHubScreen extends StatelessWidget {
   }
 
   Widget _gridMobile(BuildContext context, AppThemeProvider t) => Column(
-        children: List.generate((_services.length / 2).ceil(), (row) {
-          final a = _services[row * 2];
+        children: List.generate((_otherServices.length / 2).ceil(), (row) {
+          final a = _otherServices[row * 2];
           final bIdx = row * 2 + 1;
-          final b = bIdx < _services.length ? _services[bIdx] : null;
+          final b = bIdx < _otherServices.length ? _otherServices[bIdx] : null;
           return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Expanded(
               child: Padding(
@@ -270,6 +301,635 @@ class ServicesHubScreen extends StatelessWidget {
           ),
         ),
       );
+}
+
+// ── FEATURED GP CARD ─────────────────────────────────────────────────────────
+
+class _FeaturedGpCard extends StatelessWidget {
+  final AppThemeProvider t;
+  final bool isDesktop;
+  final VoidCallback onTap;
+  const _FeaturedGpCard({
+    required this.t,
+    required this.isDesktop,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(
+            colors: t.isDark
+                ? [const Color(0xFF0A1628), const Color(0xFF0D2545)]
+                : [AppThemeProvider.appBlue, AppThemeProvider.blueMid],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppThemeProvider.appBlue.withValues(alpha: 0.28),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        padding: EdgeInsets.all(isDesktop ? 28 : 20),
+        child: isDesktop
+            ? _desktopLayout(context)
+            : _mobileLayout(context),
+      ),
+    );
+  }
+
+  Widget _desktopLayout(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // ── Left: text content ────────────────────────────────────────────
+        Expanded(
+          flex: 3,
+          child: _textContent(showBadge: true),
+        ),
+        const SizedBox(width: 32),
+        // ── Right: icon + routes ──────────────────────────────────────────
+        _rightPanel(),
+      ],
+    );
+  }
+
+  Widget _mobileLayout(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Align(
+          alignment: Alignment.centerRight,
+          child: _rightPanel(),
+        ),
+        const SizedBox(height: 16),
+        _textContent(showBadge: true),
+      ],
+    );
+  }
+
+  Widget _badge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        const Text("⭐", style: TextStyle(fontSize: 11)),
+        const SizedBox(width: 5),
+        const Text(
+          "Service phare",
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+            fontSize: 11,
+            letterSpacing: 0.4,
+          ),
+        ),
+      ]),
+    );
+  }
+
+  Widget _textContent({bool showBadge = false}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (showBadge) ...[
+          _badge(),
+          const SizedBox(height: 14),
+        ],
+        const Text(
+          "Sama GP",
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w900,
+            fontSize: 26,
+            height: 1.1,
+            letterSpacing: -0.3,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          "Transport par GP",
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.82),
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          "Groupage, fret aérien & maritime",
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.68),
+            fontWeight: FontWeight.w400,
+            fontSize: 13,
+            height: 1.5,
+          ),
+        ),
+        const SizedBox(height: 20),
+        ElevatedButton(
+          onPressed: onTap,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: AppThemeProvider.appBlue,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 13),
+          ),
+          child: const Text(
+            "Découvrir →",
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _rightPanel() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          width: 72,
+          height: 72,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
+          ),
+          child: const Center(
+            child: Text("✈️", style: TextStyle(fontSize: 36)),
+          ),
+        ),
+        const SizedBox(height: 16),
+        ...[
+          ("🇫🇷", "Paris"),
+          ("🇲🇦", "Casablanca"),
+          ("🇸🇳", "Dakar"),
+        ].map((r) => Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(r.$1, style: const TextStyle(fontSize: 14)),
+                  const SizedBox(width: 6),
+                  Text(
+                    r.$2,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.88),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            )),
+      ],
+    );
+  }
+}
+
+// ── COUNTDOWN BANNER CARD ────────────────────────────────────────────────────
+
+class _CountdownBannerCard extends StatelessWidget {
+  final AppThemeProvider t;
+  final bool isDesktop;
+  final VoidCallback onTap;
+  const _CountdownBannerCard({
+    required this.t,
+    required this.isDesktop,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final svc = context.watch<DepartureCountdownService>();
+    final dep = svc.currentDeparture;
+    final hasCountdown = !svc.isExpired;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(
+          horizontal: isDesktop ? 24 : 16,
+          vertical: 16,
+        ),
+        decoration: BoxDecoration(
+          color: t.bgCard,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppThemeProvider.amber.withValues(alpha: 0.38),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppThemeProvider.amber.withValues(alpha: 0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: isDesktop
+            ? _desktopLayout(context, svc, dep, hasCountdown)
+            : _mobileLayout(context, svc, dep, hasCountdown),
+      ),
+    );
+  }
+
+  Widget _desktopLayout(BuildContext context, DepartureCountdownService svc,
+      Departure dep, bool hasCountdown) {
+    return Row(
+      children: [
+        // Label
+        _label(t),
+        const SizedBox(width: 20),
+        // Route + flag
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                Text(dep.flag, style: const TextStyle(fontSize: 18)),
+                const SizedBox(width: 8),
+                Text(
+                  dep.route,
+                  style: TextStyle(
+                    color: t.textPrimary,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                  ),
+                ),
+              ]),
+              const SizedBox(height: 2),
+              Text(
+                dep.date,
+                style: TextStyle(
+                  color: AppThemeProvider.amber,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Countdown digits
+        if (hasCountdown) ...[
+          _countdownRow(svc, t),
+          const SizedBox(width: 20),
+        ],
+        // CTA
+        _ctaButton(t),
+      ],
+    );
+  }
+
+  Widget _mobileLayout(BuildContext context, DepartureCountdownService svc,
+      Departure dep, bool hasCountdown) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            _label(t),
+            const Spacer(),
+            _ctaButton(t),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(children: [
+          Text(dep.flag, style: const TextStyle(fontSize: 18)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              dep.route,
+              style: TextStyle(
+                color: t.textPrimary,
+                fontWeight: FontWeight.w800,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ]),
+        const SizedBox(height: 2),
+        Text(
+          dep.date,
+          style: const TextStyle(
+            color: AppThemeProvider.amber,
+            fontWeight: FontWeight.w600,
+            fontSize: 12,
+          ),
+        ),
+        if (hasCountdown) ...[
+          const SizedBox(height: 12),
+          _countdownRow(svc, t),
+        ],
+      ],
+    );
+  }
+
+  Widget _label(AppThemeProvider t) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppThemeProvider.amber.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+            color: AppThemeProvider.amber.withValues(alpha: 0.35)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        const Icon(Icons.timer_outlined,
+            color: AppThemeProvider.amber, size: 14),
+        const SizedBox(width: 5),
+        const Text(
+          "PROCHAIN DÉPART",
+          style: TextStyle(
+            color: AppThemeProvider.amber,
+            fontWeight: FontWeight.w800,
+            fontSize: 10,
+            letterSpacing: 0.8,
+          ),
+        ),
+      ]),
+    );
+  }
+
+  Widget _countdownRow(DepartureCountdownService svc, AppThemeProvider t) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _unit(t, svc.days, "J"),
+        _sep(t),
+        _unit(t, svc.hours, "H"),
+        _sep(t),
+        _unit(t, svc.minutes, "M"),
+        _sep(t),
+        _unit(t, svc.seconds, "S"),
+      ],
+    );
+  }
+
+  Widget _unit(AppThemeProvider t, String value, String label) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+          decoration: BoxDecoration(
+            color: AppThemeProvider.amber.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+                color: AppThemeProvider.amber.withValues(alpha: 0.3)),
+          ),
+          child: Text(
+            value,
+            style: const TextStyle(
+              color: AppThemeProvider.amber,
+              fontWeight: FontWeight.w900,
+              fontSize: 16,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: TextStyle(
+            color: t.textMuted,
+            fontSize: 8,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _sep(AppThemeProvider t) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12, left: 2, right: 2),
+      child: Text(
+        ":",
+        style: TextStyle(
+          color: t.textMuted,
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  Widget _ctaButton(AppThemeProvider t) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: AppThemeProvider.amber,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          "Voir →",
+          style: TextStyle(
+            color: AppThemeProvider.textDark,
+            fontWeight: FontWeight.w800,
+            fontSize: 12,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── ADS BANNER CARD ──────────────────────────────────────────────────────────
+
+class _AdItem {
+  final String emoji;
+  final String title;
+  final String subtitle;
+  final Color color;
+  final Color colorEnd;
+  const _AdItem({
+    required this.emoji,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.colorEnd,
+  });
+}
+
+class _AdsBannerCard extends StatefulWidget {
+  final AppThemeProvider t;
+  final bool isDesktop;
+  const _AdsBannerCard({required this.t, required this.isDesktop});
+
+  @override
+  State<_AdsBannerCard> createState() => _AdsBannerCardState();
+}
+
+class _AdsBannerCardState extends State<_AdsBannerCard>
+    with WidgetsBindingObserver {
+  static const List<_AdItem> _ads = [
+    _AdItem(
+      emoji: "✈️",
+      title: "Prochain départ Paris → Dakar",
+      subtitle: "Envoyez vos colis en 5 à 10 jours · Tarifs compétitifs",
+      color: AppThemeProvider.appBlue,
+      colorEnd: Color(0xFF0D5BBF),
+    ),
+    _AdItem(
+      emoji: "🛒",
+      title: "Commandez depuis Amazon, Temu & Shein",
+      subtitle: "Livraison directe chez vous — Paris · Casablanca · Dakar",
+      color: AppThemeProvider.amber,
+      colorEnd: Color(0xFFE65100),
+    ),
+    _AdItem(
+      emoji: "🌿",
+      title: "Sama Maad — Fraîcheur du Sénégal",
+      subtitle: "Maad de qualité directement depuis le terroir sénégalais",
+      color: Color(0xFF16A34A),
+      colorEnd: Color(0xFF14532D),
+    ),
+  ];
+
+  int _index = 0;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _startTimer();
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (mounted) {
+        setState(() => _index = (_index + 1) % _ads.length);
+      }
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      _timer?.cancel();
+    } else if (state == AppLifecycleState.resumed) {
+      _startTimer();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ad = _ads[_index];
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 500),
+      transitionBuilder: (child, animation) => FadeTransition(
+        opacity: animation,
+        child: child,
+      ),
+      child: Container(
+        key: ValueKey(_index),
+        width: double.infinity,
+        padding: EdgeInsets.all(widget.isDesktop ? 22 : 18),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            colors: widget.t.isDark
+                ? [
+                    ad.color.withValues(alpha: 0.22),
+                    ad.colorEnd.withValues(alpha: 0.14),
+                  ]
+                : [
+                    ad.color.withValues(alpha: 0.9),
+                    ad.colorEnd,
+                  ],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+        ),
+        child: Row(
+          children: [
+            Text(ad.emoji,
+                style: TextStyle(fontSize: widget.isDesktop ? 32 : 26)),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    ad.title,
+                    style: TextStyle(
+                      color: widget.t.isDark ? widget.t.textPrimary : Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: widget.isDesktop ? 15 : 13,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    ad.subtitle,
+                    style: TextStyle(
+                      color: widget.t.isDark
+                          ? widget.t.textMuted
+                          : Colors.white.withValues(alpha: 0.82),
+                      fontWeight: FontWeight.w400,
+                      fontSize: widget.isDesktop ? 13 : 11,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Dot indicators
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(
+                _ads.length,
+                (i) => GestureDetector(
+                  onTap: () => setState(() => _index = i),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    margin: const EdgeInsets.symmetric(vertical: 3),
+                    width: _index == i ? 18 : 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: Colors.white
+                          .withValues(alpha: _index == i ? 0.95 : 0.38),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // ── Card service ─────────────────────────────────────────────────────────────
