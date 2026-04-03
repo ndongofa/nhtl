@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:provider/provider.dart';
 import 'package:sama/models/app_notification.dart';
 import 'package:sama/services/auth_service.dart';
+import 'package:sama/services/notification_polling_service.dart';
 import 'package:sama/services/notification_service.dart';
 import 'package:sama/services/notification_sound.dart';
 import 'package:sama/widgets/sama_account_menu.dart';
@@ -46,6 +48,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       }
       _previousUnreadCount = newUnreadCount;
       setState(() => _items = data);
+      if (mounted) {
+        context.read<NotificationPollingService>().refresh();
+      }
     } catch (e) {
       if (!mounted) return;
       Fluttertoast.showToast(
@@ -72,6 +77,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     try {
       await _service.deleteNotification(n.id);
       setState(() => _items.removeWhere((item) => item.id == n.id));
+      if (mounted) context.read<NotificationPollingService>().refresh();
       Fluttertoast.showToast(
           msg: "Notification supprimée",
           backgroundColor: Colors.green,
@@ -119,6 +125,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     try {
       await _service.deleteAllNotifications();
       setState(() => _items.clear());
+      if (mounted) context.read<NotificationPollingService>().refresh();
       Fluttertoast.showToast(
           msg: "Toutes les notifications supprimées",
           backgroundColor: Colors.green);

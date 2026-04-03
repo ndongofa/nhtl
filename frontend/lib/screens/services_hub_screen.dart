@@ -13,6 +13,7 @@ import '../widgets/sama_service_icon.dart';
 import '../providers/app_theme_provider.dart';
 import '../services/auth_service.dart';
 import '../services/departure_countdown_service.dart';
+import '../services/notification_polling_service.dart';
 import '../models/logged_user.dart';
 
 class ServicesHubScreen extends StatelessWidget {
@@ -1251,6 +1252,10 @@ class _TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final unreadCount = isLogged
+        ? context.watch<NotificationPollingService>().unreadCount
+        : 0;
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 350),
       padding: EdgeInsets.symmetric(
@@ -1272,6 +1277,9 @@ class _TopBar extends StatelessWidget {
           const Spacer(),
 
           if (!isDesktop) ...[
+            // ── Cloche notifications (mobile) ─────────────────────────────
+            if (isLogged)
+              _NotificationBell(unreadCount: unreadCount),
             // ── Mobile: all actions collapsed into a single hamburger menu ──
             PopupMenuButton<String>(
               icon: const Icon(Icons.menu, color: Colors.white),
@@ -1489,6 +1497,8 @@ class _TopBar extends StatelessWidget {
 
             // Mon espace (menu)
             if (isLogged) ...[
+              _NotificationBell(unreadCount: unreadCount),
+              const SizedBox(width: 8),
               ElevatedButton.icon(
                 icon: const Icon(Icons.dashboard_outlined, size: 14),
                 label: const Text(
@@ -1598,6 +1608,52 @@ class _TopBar extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+// ── NOTIFICATION BELL ─────────────────────────────────────────────────────────
+
+class _NotificationBell extends StatelessWidget {
+  final int unreadCount;
+  const _NotificationBell({required this.unreadCount});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        IconButton(
+          tooltip: "Notifications",
+          icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+          onPressed: () => Navigator.pushNamed(context, '/notifications').then(
+            (_) => context.read<NotificationPollingService>().refresh(),
+          ),
+        ),
+        if (unreadCount > 0)
+          Positioned(
+            right: 6,
+            top: 6,
+            child: Container(
+              padding: const EdgeInsets.all(3),
+              decoration: const BoxDecoration(
+                color: Colors.red,
+                shape: BoxShape.circle,
+              ),
+              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+              child: Text(
+                unreadCount > 9 ? '9+' : '$unreadCount',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                  height: 1,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
