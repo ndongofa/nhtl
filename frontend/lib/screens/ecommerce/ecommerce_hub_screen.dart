@@ -31,6 +31,8 @@ class EcommerceHubScreen extends StatefulWidget {
 }
 
 class _EcommerceHubScreenState extends State<EcommerceHubScreen> {
+  static const double _fabBottomPadding = 96;
+
   late EcommerceService _service;
   List<CommandeEcommerce> _commandes = [];
   bool _loading = false;
@@ -136,27 +138,25 @@ class _EcommerceHubScreenState extends State<EcommerceHubScreen> {
                     : RefreshIndicator(
                         onRefresh: _load,
                         color: widget.accentColor,
-                        child: ListView.builder(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
-                          itemCount: _commandes.length + 1,
-                          itemBuilder: (ctx, i) {
-                            if (i == 0) {
-                              return Padding(
-                                padding:
-                                    const EdgeInsets.only(bottom: 12, top: 4),
-                                child: Text('Mes commandes en cours',
-                                    style: TextStyle(
-                                        color: t.textPrimary,
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 14)),
-                              );
-                            }
-                            return _CommandeTile(
-                              commande: _commandes[i - 1],
-                              accentColor: widget.accentColor,
-                              t: t,
-                            );
-                          },
+                        child: ListView(
+                          padding: const EdgeInsets.fromLTRB(
+                              16, 0, 16, _fabBottomPadding),
+                          children: [
+                            Padding(
+                              padding:
+                                  const EdgeInsets.only(bottom: 12, top: 4),
+                              child: Text('Mes commandes en cours',
+                                  style: TextStyle(
+                                      color: t.textPrimary,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 14)),
+                            ),
+                            ..._commandes.map((c) => _CommandeTile(
+                                  commande: c,
+                                  accentColor: widget.accentColor,
+                                  t: t,
+                                )),
+                          ],
                         ),
                       ),
           ),
