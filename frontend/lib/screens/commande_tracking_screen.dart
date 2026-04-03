@@ -17,9 +17,11 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/commande.dart';
 import '../models/logged_user.dart';
 import '../providers/app_theme_provider.dart';
+import '../services/auth_service.dart';
 import '../services/postal_tracking_service.dart';
 import '../services/commande_service.dart';
 import '../services/postal_cache_service.dart';
+import '../widgets/sama_account_menu.dart';
 
 class CommandeTrackingScreen extends StatefulWidget {
   final Commande commande;
@@ -175,6 +177,21 @@ class _CommandeTrackingScreenState extends State<CommandeTrackingScreen> {
                   color: Colors.white.withValues(alpha: 0.65), fontSize: 12)),
         ]),
         actions: [
+          IconButton(
+            tooltip: "Mon espace",
+            onPressed: () => SamaAccountMenu.open(context),
+            icon: const Icon(Icons.dashboard_outlined),
+          ),
+          IconButton(
+            tooltip: "Déconnexion",
+            onPressed: () async {
+              await AuthService.logout();
+              if (!context.mounted) return;
+              Navigator.of(context)
+                  .pushNamedAndRemoveUntil('/', (_) => false);
+            },
+            icon: const Icon(Icons.logout),
+          ),
           if (_isAdmin && !_commande.isDeposePoste)
             Padding(
               padding: const EdgeInsets.only(right: 8),

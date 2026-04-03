@@ -9,6 +9,11 @@ import '../screens/transport_hub_screen.dart';
 import '../screens/commande_hub_screen.dart';
 import '../screens/landing_transport_screen.dart';
 import '../screens/landing_commande_screen.dart';
+import '../screens/services/sama_achat_screen.dart';
+import '../screens/services/sama_maad_screen.dart';
+import '../screens/services/sama_teranga_screen.dart';
+import '../screens/services/sama_tech_digital_screen.dart';
+import '../screens/services/sama_best_seller_screen.dart';
 
 class SamaAppTopBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -32,6 +37,7 @@ class SamaAppTopBar extends StatelessWidget implements PreferredSizeWidget {
     final selected = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (ctx) {
         return Container(
           decoration: BoxDecoration(
@@ -43,97 +49,130 @@ class SamaAppTopBar extends StatelessWidget implements PreferredSizeWidget {
             top: false,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 42,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: t.border.withValues(alpha: 0.8),
-                      borderRadius: BorderRadius.circular(99),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Text(
-                        "Mon espace",
-                        style: TextStyle(
-                          color: t.textPrimary,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 16,
-                        ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: t.border.withValues(alpha: 0.8),
+                        borderRadius: BorderRadius.circular(99),
                       ),
-                      const Spacer(),
-                      IconButton(
-                        tooltip: t.isDark ? "Thème clair" : "Thème sombre",
-                        onPressed: () =>
-                            context.read<AppThemeProvider>().toggleTheme(),
-                        icon: Icon(
-                          t.isDark
-                              ? Icons.wb_sunny_outlined
-                              : Icons.nightlight_round,
-                          color: t.textPrimary,
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Text(
+                          "Mon espace",
+                          style: TextStyle(
+                            color: t.textPrimary,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 16,
+                          ),
                         ),
+                        const Spacer(),
+                        IconButton(
+                          tooltip: t.isDark ? "Thème clair" : "Thème sombre",
+                          onPressed: () =>
+                              context.read<AppThemeProvider>().toggleTheme(),
+                          icon: Icon(
+                            t.isDark
+                                ? Icons.wb_sunny_outlined
+                                : Icons.nightlight_round,
+                            color: t.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    _menuItem(
+                      ctx,
+                      t,
+                      icon: Icons.local_shipping_outlined,
+                      title: "Transport GP",
+                      subtitle: "Accéder au service Transport",
+                      value: "transport",
+                    ),
+                    _menuItem(
+                      ctx,
+                      t,
+                      icon: Icons.shopping_bag_outlined,
+                      title: "Sama Commande",
+                      subtitle: "Shopping en ligne",
+                      value: "commande",
+                    ),
+                    _menuItem(
+                      ctx,
+                      t,
+                      icon: Icons.storefront_outlined,
+                      title: "Sama Achat",
+                      subtitle: "Achats sur mesure",
+                      value: "achat",
+                    ),
+                    _menuItem(
+                      ctx,
+                      t,
+                      icon: Icons.eco_outlined,
+                      title: "Sama Maad",
+                      subtitle: "Vente de Maad",
+                      value: "maad",
+                    ),
+                    _menuItem(
+                      ctx,
+                      t,
+                      icon: Icons.local_bar_outlined,
+                      title: "Sama Téranga Apéro",
+                      subtitle: "Apéro sénégalais",
+                      value: "teranga",
+                    ),
+                    _menuItem(
+                      ctx,
+                      t,
+                      icon: Icons.computer_outlined,
+                      title: "Sama Tech Digital",
+                      subtitle: "Services digitaux",
+                      value: "techdigital",
+                    ),
+                    _menuItem(
+                      ctx,
+                      t,
+                      icon: Icons.star_outline,
+                      title: "Sama Best Seller",
+                      subtitle: "Articles best seller",
+                      value: "bestseller",
+                    ),
+                    const SizedBox(height: 6),
+                    if (isLogged) ...[
+                      _menuItem(
+                        ctx,
+                        t,
+                        icon: Icons.person_outline,
+                        title: "Profil",
+                        subtitle: "Gérer mes informations",
+                        value: "profile",
+                      ),
+                    ] else ...[
+                      _menuItem(
+                        ctx,
+                        t,
+                        icon: Icons.login_outlined,
+                        title: "Connexion",
+                        subtitle: "Se connecter",
+                        value: "login",
+                      ),
+                      _menuItem(
+                        ctx,
+                        t,
+                        icon: Icons.person_add_alt_1_outlined,
+                        title: "Créer un compte",
+                        subtitle: "Créer un compte gratuitement",
+                        value: "signup",
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 6),
-                  _menuItem(
-                    ctx,
-                    t,
-                    icon: Icons.local_shipping_outlined,
-                    title: "Transport GP",
-                    subtitle: "Accéder au service Transport",
-                    value: "transport",
-                  ),
-                  _menuItem(
-                    ctx,
-                    t,
-                    icon: Icons.shopping_bag_outlined,
-                    title: "Commande",
-                    subtitle: "Accéder au service Commande",
-                    value: "commande",
-                  ),
-                  const SizedBox(height: 6),
-                  if (isLogged) ...[
-                    _menuItem(
-                      ctx,
-                      t,
-                      icon: Icons.person_outline,
-                      title: "Profil",
-                      subtitle: "Gérer mes informations",
-                      value: "profile",
-                    ),
-                    _menuItem(
-                      ctx,
-                      t,
-                      icon: Icons.logout,
-                      title: "Déconnexion",
-                      subtitle: "Se déconnecter",
-                      value: "logout",
-                      danger: true,
-                    ),
-                  ] else ...[
-                    _menuItem(
-                      ctx,
-                      t,
-                      icon: Icons.login_outlined,
-                      title: "Connexion",
-                      subtitle: "Se connecter",
-                      value: "login",
-                    ),
-                    _menuItem(
-                      ctx,
-                      t,
-                      icon: Icons.person_add_alt_1_outlined,
-                      title: "Créer un compte",
-                      subtitle: "Créer un compte gratuitement",
-                      value: "signup",
-                    ),
                   ],
-                ],
+                ),
               ),
             ),
           ),
@@ -168,14 +207,38 @@ class SamaAppTopBar extends StatelessWidget implements PreferredSizeWidget {
         }
         break;
 
-      case "profile":
-        Navigator.pushNamed(context, '/profile');
+      case "achat":
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const SamaAchatScreen()),
+        );
         break;
 
-      case "logout":
-        await AuthService.logout();
-        if (!context.mounted) return;
-        Navigator.of(context).pushNamedAndRemoveUntil('/', (_) => false);
+      case "maad":
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const SamaMaadScreen()),
+        );
+        break;
+
+      case "teranga":
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const SamaTerangaScreen()),
+        );
+        break;
+
+      case "techdigital":
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const SamaTechDigitalScreen()),
+        );
+        break;
+
+      case "bestseller":
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const SamaBestSellerScreen()),
+        );
+        break;
+
+      case "profile":
+        Navigator.pushNamed(context, '/profile');
         break;
 
       case "login":
@@ -255,13 +318,23 @@ class SamaAppTopBar extends StatelessWidget implements PreferredSizeWidget {
         if (!showAccountMenu)
           const SizedBox.shrink()
         else ...[
-          if (isLogged)
+          if (isLogged) ...[
             IconButton(
               tooltip: "Mon espace",
               onPressed: () => _openAccountMenu(context, t),
               icon: const Icon(Icons.dashboard_outlined),
-            )
-          else
+            ),
+            IconButton(
+              tooltip: "Déconnexion",
+              onPressed: () async {
+                await AuthService.logout();
+                if (!context.mounted) return;
+                Navigator.of(context)
+                    .pushNamedAndRemoveUntil('/', (_) => false);
+              },
+              icon: const Icon(Icons.logout),
+            ),
+          ] else
             IconButton(
               tooltip: "Connexion",
               onPressed: () => Navigator.pushNamed(context, '/login'),

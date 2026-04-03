@@ -9,6 +9,8 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../providers/app_theme_provider.dart';
+import '../../../services/auth_service.dart';
+import '../../../widgets/sama_account_menu.dart';
 
 class SamaTechDigitalScreen extends StatelessWidget {
   const SamaTechDigitalScreen({Key? key}) : super(key: key);
@@ -73,6 +75,7 @@ class SamaTechDigitalScreen extends StatelessWidget {
     final w = MediaQuery.of(context).size.width;
     final isDesktop = w >= 900;
 
+    final isLoggedIn = AuthService.isLoggedIn();
     return Scaffold(
       backgroundColor: t.bg,
       appBar: AppBar(
@@ -86,6 +89,22 @@ class SamaTechDigitalScreen extends StatelessWidget {
               style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
         ]),
         actions: [
+          IconButton(
+            tooltip: "Mon espace",
+            icon: const Icon(Icons.dashboard_outlined),
+            onPressed: () => SamaAccountMenu.open(context),
+          ),
+          if (isLoggedIn)
+            IconButton(
+              tooltip: "Déconnexion",
+              icon: const Icon(Icons.logout),
+              onPressed: () async {
+                await AuthService.logout();
+                if (!context.mounted) return;
+                Navigator.of(context)
+                    .pushNamedAndRemoveUntil('/', (_) => false);
+              },
+            ),
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: Container(

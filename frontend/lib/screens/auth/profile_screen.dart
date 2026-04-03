@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../models/logged_user.dart';
 import '../../providers/app_theme_provider.dart';
 import '../../services/auth_service.dart';
+import '../../widgets/sama_account_menu.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -33,6 +34,11 @@ class ProfileScreen extends StatelessWidget {
           style: TextStyle(fontWeight: FontWeight.w800),
         ),
         actions: [
+          IconButton(
+            tooltip: "Mon espace",
+            onPressed: () => SamaAccountMenu.open(context),
+            icon: const Icon(Icons.dashboard_outlined),
+          ),
           IconButton(
             tooltip: t.isDark ? "Thème clair" : "Thème sombre",
             onPressed: () => context.read<AppThemeProvider>().toggleTheme(),

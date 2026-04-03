@@ -8,8 +8,10 @@
 import 'package:flutter/material.dart';
 import 'package:sama/screens/transports_archives_screen.dart';
 import '../models/transport.dart';
+import '../services/auth_service.dart';
 import '../services/transport_service.dart';
 import '../models/logged_user.dart';
+import '../widgets/sama_account_menu.dart';
 import 'transport_form_screen.dart';
 import 'transport_tracking_screen.dart';
 import '../services/gp_service.dart';
@@ -357,6 +359,19 @@ class _TransportListScreenState extends State<TransportListScreen> {
                 fontWeight: FontWeight.w800,
                 fontSize: 16)),
         actions: [
+          IconButton(
+              tooltip: "Mon espace",
+              onPressed: () => SamaAccountMenu.open(context),
+              icon: const Icon(Icons.dashboard_outlined, color: _textPrimary)),
+          IconButton(
+              tooltip: "Déconnexion",
+              onPressed: () async {
+                await AuthService.logout();
+                if (!context.mounted) return;
+                Navigator.of(context)
+                    .pushNamedAndRemoveUntil('/', (_) => false);
+              },
+              icon: const Icon(Icons.logout, color: _textPrimary)),
           IconButton(
               onPressed: _refresh,
               icon: const Icon(Icons.refresh, color: _textPrimary)),

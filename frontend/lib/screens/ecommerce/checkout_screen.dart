@@ -10,6 +10,7 @@ import '../../providers/panier_provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/ecommerce_service.dart';
 import '../../widgets/phone_input_field.dart';
+import '../../widgets/sama_account_menu.dart';
 import 'ecommerce_hub_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
@@ -145,6 +146,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         elevation: 0,
         title: const Text('Finaliser la commande',
             style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+        actions: [
+          IconButton(
+            tooltip: "Mon espace",
+            onPressed: () => SamaAccountMenu.open(context),
+            icon: const Icon(Icons.dashboard_outlined),
+          ),
+          IconButton(
+            tooltip: "Déconnexion",
+            onPressed: () async {
+              await AuthService.logout();
+              if (!context.mounted) return;
+              Navigator.of(context)
+                  .pushNamedAndRemoveUntil('/', (_) => false);
+            },
+            icon: const Icon(Icons.logout),
+          ),
+        ],
       ),
       body: Center(
         child: SingleChildScrollView(

@@ -13,6 +13,7 @@ import '../models/article_item.dart';
 import '../services/commande_service.dart';
 import '../services/auth_service.dart';
 import '../widgets/phone_input_field.dart';
+import '../widgets/sama_account_menu.dart';
 
 // ── Classe interne représentant un article en cours d'édition ──────────────
 
@@ -473,6 +474,23 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
                 color: Colors.white,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.3)),
+        actions: [
+          IconButton(
+            tooltip: "Mon espace",
+            onPressed: () => SamaAccountMenu.open(context),
+            icon: const Icon(Icons.dashboard_outlined, color: Colors.white),
+          ),
+          IconButton(
+            tooltip: "Déconnexion",
+            onPressed: () async {
+              await AuthService.logout();
+              if (!context.mounted) return;
+              Navigator.of(context)
+                  .pushNamedAndRemoveUntil('/', (_) => false);
+            },
+            icon: const Icon(Icons.logout, color: Colors.white),
+          ),
+        ],
       ),
       body: Center(
         child: SingleChildScrollView(

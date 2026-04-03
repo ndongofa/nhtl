@@ -7,7 +7,9 @@ import 'package:provider/provider.dart';
 import '../../models/commande_ecommerce.dart';
 import '../../providers/app_theme_provider.dart';
 import '../../providers/panier_provider.dart';
+import '../../services/auth_service.dart';
 import '../../services/ecommerce_service.dart';
+import '../../widgets/sama_account_menu.dart';
 import 'ecommerce_tracking_screen.dart';
 import 'catalogue_screen.dart';
 import 'ecommerce_archives_screen.dart';
@@ -60,6 +62,21 @@ class _EcommerceHubScreenState extends State<EcommerceHubScreen> {
             style: const TextStyle(
                 fontWeight: FontWeight.w800, fontSize: 16)),
         actions: [
+          IconButton(
+            tooltip: "Mon espace",
+            icon: const Icon(Icons.dashboard_outlined),
+            onPressed: () => SamaAccountMenu.open(context),
+          ),
+          IconButton(
+            tooltip: "Déconnexion",
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await AuthService.logout();
+              if (!context.mounted) return;
+              Navigator.of(context)
+                  .pushNamedAndRemoveUntil('/', (_) => false);
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.archive_outlined),
             tooltip: 'Archives',

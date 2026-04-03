@@ -5,9 +5,10 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
 import '../models/transport.dart';
-import '../services/transport_service.dart';
 import '../services/auth_service.dart';
+import '../services/transport_service.dart';
 import '../widgets/phone_input_field.dart';
+import '../widgets/sama_account_menu.dart';
 
 class TransportFormScreen extends StatefulWidget {
   final Transport? transport;
@@ -193,6 +194,23 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
                 color: Colors.white,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.3)),
+        actions: [
+          IconButton(
+            tooltip: "Mon espace",
+            onPressed: () => SamaAccountMenu.open(context),
+            icon: const Icon(Icons.dashboard_outlined, color: Colors.white),
+          ),
+          IconButton(
+            tooltip: "Déconnexion",
+            onPressed: () async {
+              await AuthService.logout();
+              if (!context.mounted) return;
+              Navigator.of(context)
+                  .pushNamedAndRemoveUntil('/', (_) => false);
+            },
+            icon: const Icon(Icons.logout, color: Colors.white),
+          ),
+        ],
       ),
       body: Center(
         child: SingleChildScrollView(

@@ -381,6 +381,7 @@ class _TopBar extends StatelessWidget {
     final selected = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (ctx) {
         return Container(
           decoration: BoxDecoration(
@@ -392,100 +393,129 @@ class _TopBar extends StatelessWidget {
             top: false,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 42,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: t.border.withValues(alpha: 0.8),
-                      borderRadius: BorderRadius.circular(99),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: t.border.withValues(alpha: 0.8),
+                        borderRadius: BorderRadius.circular(99),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Text(
-                        "Mon espace",
-                        style: TextStyle(
-                          color: t.textPrimary,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 16,
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Text(
+                          "Mon espace",
+                          style: TextStyle(
+                            color: t.textPrimary,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 16,
+                          ),
                         ),
-                      ),
-                      const Spacer(),
-                      IconButton(
-                        tooltip: t.isDark ? "Thème clair" : "Thème sombre",
-                        onPressed: () =>
-                            context.read<AppThemeProvider>().toggleTheme(),
-                        icon: Icon(
-                          t.isDark
-                              ? Icons.wb_sunny_outlined
-                              : Icons.nightlight_round,
-                          color: t.textPrimary,
+                        const Spacer(),
+                        IconButton(
+                          tooltip: t.isDark ? "Thème clair" : "Thème sombre",
+                          onPressed: () =>
+                              context.read<AppThemeProvider>().toggleTheme(),
+                          icon: Icon(
+                            t.isDark
+                                ? Icons.wb_sunny_outlined
+                                : Icons.nightlight_round,
+                            color: t.textPrimary,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  _menuItem(
-                    ctx,
-                    icon: Icons.local_shipping_outlined,
-                    title: "Transport GP",
-                    subtitle: "Accéder au service Transport",
-                    value: "transport",
-                  ),
-                  _menuItem(
-                    ctx,
-                    icon: Icons.shopping_bag_outlined,
-                    title: "Commande",
-                    subtitle: "Accéder au service Commande",
-                    value: "commande",
-                  ),
-                  const SizedBox(height: 6),
-                  if (isLogged) ...[
+                      ],
+                    ),
+                    const SizedBox(height: 6),
                     _menuItem(
                       ctx,
-                      icon: Icons.person_outline,
-                      title: "Profil",
-                      subtitle: "Gérer mes informations",
-                      value: "profile",
+                      icon: Icons.local_shipping_outlined,
+                      title: "Transport GP",
+                      subtitle: "Accéder au service Transport",
+                      value: "transport",
                     ),
-                    if (isAdmin)
+                    _menuItem(
+                      ctx,
+                      icon: Icons.shopping_bag_outlined,
+                      title: "Sama Commande",
+                      subtitle: "Shopping en ligne",
+                      value: "commande",
+                    ),
+                    _menuItem(
+                      ctx,
+                      icon: Icons.storefront_outlined,
+                      title: "Sama Achat",
+                      subtitle: "Achats sur mesure",
+                      value: "achat",
+                    ),
+                    _menuItem(
+                      ctx,
+                      icon: Icons.eco_outlined,
+                      title: "Sama Maad",
+                      subtitle: "Vente de Maad",
+                      value: "maad",
+                    ),
+                    _menuItem(
+                      ctx,
+                      icon: Icons.local_bar_outlined,
+                      title: "Sama Téranga Apéro",
+                      subtitle: "Apéro sénégalais",
+                      value: "teranga",
+                    ),
+                    _menuItem(
+                      ctx,
+                      icon: Icons.computer_outlined,
+                      title: "Sama Tech Digital",
+                      subtitle: "Services digitaux",
+                      value: "techdigital",
+                    ),
+                    _menuItem(
+                      ctx,
+                      icon: Icons.star_outline,
+                      title: "Sama Best Seller",
+                      subtitle: "Articles best seller",
+                      value: "bestseller",
+                    ),
+                    const SizedBox(height: 6),
+                    if (isLogged) ...[
                       _menuItem(
                         ctx,
-                        icon: Icons.admin_panel_settings_outlined,
-                        title: "Espace Admin",
-                        subtitle: "Tableau de bord administrateur",
-                        value: "admin",
+                        icon: Icons.person_outline,
+                        title: "Profil",
+                        subtitle: "Gérer mes informations",
+                        value: "profile",
                       ),
-                    _menuItem(
-                      ctx,
-                      icon: Icons.logout,
-                      title: "Déconnexion",
-                      subtitle: "Se déconnecter",
-                      value: "logout",
-                      danger: true,
-                    ),
-                  ] else ...[
-                    _menuItem(
-                      ctx,
-                      icon: Icons.login_outlined,
-                      title: "Connexion",
-                      subtitle: "Se connecter",
-                      value: "login",
-                    ),
-                    _menuItem(
-                      ctx,
-                      icon: Icons.person_add_alt_1_outlined,
-                      title: "Créer un compte",
-                      subtitle: "Créer un compte gratuitement",
-                      value: "signup",
-                    ),
+                      if (isAdmin)
+                        _menuItem(
+                          ctx,
+                          icon: Icons.admin_panel_settings_outlined,
+                          title: "Espace Admin",
+                          subtitle: "Tableau de bord administrateur",
+                          value: "admin",
+                        ),
+                    ] else ...[
+                      _menuItem(
+                        ctx,
+                        icon: Icons.login_outlined,
+                        title: "Connexion",
+                        subtitle: "Se connecter",
+                        value: "login",
+                      ),
+                      _menuItem(
+                        ctx,
+                        icon: Icons.person_add_alt_1_outlined,
+                        title: "Créer un compte",
+                        subtitle: "Créer un compte gratuitement",
+                        value: "signup",
+                      ),
+                    ],
+                    const SizedBox(height: 6),
                   ],
-                  const SizedBox(height: 6),
-                ],
+                ),
               ),
             ),
           ),
@@ -520,18 +550,42 @@ class _TopBar extends StatelessWidget {
         }
         break;
 
+      case "achat":
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const SamaAchatScreen()),
+        );
+        break;
+
+      case "maad":
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const SamaMaadScreen()),
+        );
+        break;
+
+      case "teranga":
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const SamaTerangaScreen()),
+        );
+        break;
+
+      case "techdigital":
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const SamaTechDigitalScreen()),
+        );
+        break;
+
+      case "bestseller":
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const SamaBestSellerScreen()),
+        );
+        break;
+
       case "profile":
         Navigator.pushNamed(context, '/profile');
         break;
 
       case "admin":
         Navigator.pushNamed(context, '/admin');
-        break;
-
-      case "logout":
-        await AuthService.logout();
-        if (!context.mounted) return;
-        Navigator.of(context).pushNamedAndRemoveUntil('/', (_) => false);
         break;
 
       case "login":
@@ -624,6 +678,12 @@ class _TopBar extends StatelessWidget {
                   case 'signup':
                     Navigator.pushNamed(context, '/signup');
                     break;
+                  case 'logout':
+                    await AuthService.logout();
+                    if (!context.mounted) return;
+                    Navigator.of(context)
+                        .pushNamedAndRemoveUntil('/', (_) => false);
+                    break;
                 }
               },
               itemBuilder: (ctx) => [
@@ -649,7 +709,7 @@ class _TopBar extends StatelessWidget {
                     ),
                   ]),
                 ),
-                if (isLogged)
+                if (isLogged) ...[
                   PopupMenuItem<String>(
                     value: 'account',
                     child: Row(children: [
@@ -665,24 +725,52 @@ class _TopBar extends StatelessWidget {
                       ),
                     ]),
                   ),
-                if (isAdmin)
+                  if (isAdmin)
+                    PopupMenuItem<String>(
+                      value: 'admin',
+                      child: Row(children: [
+                        Icon(Icons.admin_panel_settings_outlined,
+                            size: 18, color: AppThemeProvider.amber),
+                        const SizedBox(width: 10),
+                        Text(
+                          "Espace Admin",
+                          style: TextStyle(
+                            color: t.textPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ]),
+                    ),
                   PopupMenuItem<String>(
-                    value: 'admin',
+                    value: 'logout',
                     child: Row(children: [
-                      Icon(Icons.admin_panel_settings_outlined,
-                          size: 18, color: AppThemeProvider.amber),
+                      const Icon(Icons.logout, size: 18, color: Colors.red),
                       const SizedBox(width: 10),
                       Text(
-                        "Espace Admin",
+                        "Déconnexion",
+                        style: TextStyle(
+                          color: Colors.red.shade700,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ]),
+                  ),
+                ] else ...[
+                  PopupMenuItem<String>(
+                    value: 'account',
+                    child: Row(children: [
+                      Icon(Icons.dashboard_outlined,
+                          size: 18, color: AppThemeProvider.appBlue),
+                      const SizedBox(width: 10),
+                      Text(
+                        "Mon espace",
                         style: TextStyle(
                           color: t.textPrimary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                     ]),
-                  )
-                // Non-admin non-logged: show login/signup
-                else if (!isLogged) ...[
+                  ),
                   PopupMenuItem<String>(
                     value: 'login',
                     child: Row(children: [
@@ -780,7 +868,7 @@ class _TopBar extends StatelessWidget {
             ],
 
             // Mon espace (menu)
-            if (isLogged)
+            if (isLogged) ...[
               ElevatedButton.icon(
                 icon: const Icon(Icons.dashboard_outlined, size: 14),
                 label: const Text(
@@ -800,8 +888,57 @@ class _TopBar extends StatelessWidget {
                   ),
                 ),
                 onPressed: () => SamaAccountMenu.open(context),
-              )
-            else ...[
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.logout, size: 14),
+                label: const Text(
+                  "Déconnexion",
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red.withValues(alpha: 0.15),
+                  foregroundColor: Colors.red.shade300,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: BorderSide(
+                        color: Colors.red.withValues(alpha: 0.35)),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 9,
+                  ),
+                ),
+                onPressed: () async {
+                  await AuthService.logout();
+                  if (!context.mounted) return;
+                  Navigator.of(context)
+                      .pushNamedAndRemoveUntil('/', (_) => false);
+                },
+              ),
+            ] else ...[
+              ElevatedButton.icon(
+                icon: const Icon(Icons.dashboard_outlined, size: 14),
+                label: const Text(
+                  "Mon espace",
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white.withValues(alpha: 0.14),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 9,
+                  ),
+                ),
+                onPressed: () => SamaAccountMenu.open(context),
+              ),
+              const SizedBox(width: 8),
               OutlinedButton(
                 onPressed: () => Navigator.pushNamed(context, '/login'),
                 style: OutlinedButton.styleFrom(
