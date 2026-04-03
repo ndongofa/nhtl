@@ -268,28 +268,53 @@ class _LandingTransportScreenState extends State<LandingTransportScreen> {
     if (upcoming.isEmpty) return const SizedBox.shrink();
     final dep = upcoming[_tickerIndex % upcoming.length];
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 400),
+      duration: const Duration(milliseconds: 500),
+      transitionBuilder: (child, anim) => FadeTransition(
+          opacity: anim,
+          child: SlideTransition(
+              position:
+                  Tween<Offset>(begin: const Offset(0, -0.4), end: Offset.zero)
+                      .animate(CurvedAnimation(
+                          parent: anim, curve: Curves.easeOut)),
+              child: child)),
       child: Container(
         key: ValueKey(_tickerIndex),
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        color: AppThemeProvider.amber,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [AppThemeProvider.amberDeep, AppThemeProvider.amber, AppThemeProvider.amberBright],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
         child: Row(children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: t.bg,
+              color: Colors.white.withValues(alpha: 0.22),
               borderRadius: BorderRadius.circular(5),
             ),
-            child: Text(
-              "DÉPARTS",
-              style: TextStyle(
-                color: AppThemeProvider.amber,
-                fontSize: 9,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.5,
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Container(
+                width: 6,
+                height: 6,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
               ),
-            ),
+              const SizedBox(width: 5),
+              const Text(
+                "DÉPARTS",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ]),
           ),
           const SizedBox(width: 10),
           Text(dep.flag, style: const TextStyle(fontSize: 16)),
@@ -298,8 +323,8 @@ class _LandingTransportScreenState extends State<LandingTransportScreen> {
             child: Text(
               "${dep.route}  ·  ${dep.date}",
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: t.bg,
+              style: const TextStyle(
+                color: AppThemeProvider.textDark,
                 fontWeight: FontWeight.w800,
                 fontSize: 13,
               ),
@@ -309,12 +334,12 @@ class _LandingTransportScreenState extends State<LandingTransportScreen> {
           GestureDetector(
             onTap: () => _handleCTA(context),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
               decoration: BoxDecoration(
-                color: t.bg,
+                color: AppThemeProvider.textDark,
                 borderRadius: BorderRadius.circular(6),
               ),
-              child: Text(
+              child: const Text(
                 "Réserver →",
                 style: TextStyle(
                   color: AppThemeProvider.amber,
@@ -419,8 +444,6 @@ class _LandingTransportScreenState extends State<LandingTransportScreen> {
     );
   }
 
-  // Les méthodes ci-dessous sont celles de ton fichier actuel (inchangées)
-  // Je les laisse telles quelles pour ne pas casser ton rendu existant.
   Widget _buildCountdownSection(AppThemeProvider t, bool isDesktop,
       DepartureCountdownService svc, BuildContext context) {
     final dep = svc.currentDeparture;
@@ -428,131 +451,249 @@ class _LandingTransportScreenState extends State<LandingTransportScreen> {
     return Container(
       color: t.bgSection,
       padding:
-          EdgeInsets.symmetric(horizontal: isDesktop ? 64 : 20, vertical: 36),
+          EdgeInsets.symmetric(horizontal: isDesktop ? 64 : 20, vertical: 40),
       child: Center(
           child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 800),
         child: Column(children: [
-          Text("PROCHAINS DÉPARTS",
-              style: TextStyle(
-                  color: t.textMuted,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 11,
-                  letterSpacing: 1.5)),
-          const SizedBox(height: 16),
+          // ── Section header ──────────────────────────────────────────────
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Container(
+                width: 28,
+                height: 1.5,
+                color: AppThemeProvider.amber.withValues(alpha: 0.45)),
+            const SizedBox(width: 10),
+            const Icon(Icons.flight_takeoff_rounded,
+                color: AppThemeProvider.amber, size: 14),
+            const SizedBox(width: 6),
+            Text("PROCHAINS DÉPARTS",
+                style: TextStyle(
+                    color: t.textMuted,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 11,
+                    letterSpacing: 2.0)),
+            const SizedBox(width: 10),
+            Container(
+                width: 28,
+                height: 1.5,
+                color: AppThemeProvider.amber.withValues(alpha: 0.45)),
+          ]),
+          const SizedBox(height: 20),
+          // ── Main countdown card ──────────────────────────────────────────
           Container(
-            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
                 color: t.bgCard,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                    color: AppThemeProvider.amber.withValues(alpha: 0.4)),
+                    color: AppThemeProvider.amber.withValues(alpha: 0.35),
+                    width: 1.5),
                 boxShadow: [
                   BoxShadow(
-                      color: AppThemeProvider.amber.withValues(alpha: 0.08),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4))
+                      color: AppThemeProvider.amber.withValues(alpha: 0.12),
+                      blurRadius: 28,
+                      spreadRadius: 0,
+                      offset: const Offset(0, 6)),
+                  BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.06),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2)),
                 ]),
             child: Column(children: [
-              Text(dep.route,
-                  style: TextStyle(
-                      color: t.textPrimary,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 20)),
-              const SizedBox(height: 4),
-              Text(dep.date.toUpperCase(),
-                  style: const TextStyle(
-                      color: AppThemeProvider.amber,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
-                      letterSpacing: 1.5)),
-              const SizedBox(height: 16),
-              Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                _cu(t, svc.days, "JOURS", AppThemeProvider.amber),
-                _sp(t),
-                _cu(t, svc.hours, "HEURES", AppThemeProvider.appBlue),
-                _sp(t),
-                _cu(t, svc.minutes, "MIN", AppThemeProvider.appBlue),
-                _sp(t),
-                _cu(t, svc.seconds, "SEC", t.textMuted),
-              ]),
-              const SizedBox(height: 16),
-              SizedBox(
+              // Route header band
+              Container(
                 width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: AppThemeProvider.amber,
-                      foregroundColor: AppThemeProvider.textDark,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 13)),
-                  onPressed: () => _handleCTA(context),
-                  child: Text("Réserver ce départ — ${dep.route}",
-                      style: const TextStyle(fontWeight: FontWeight.w800)),
-                ),
+                padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+                decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                        colors: [
+                          AppThemeProvider.amber.withValues(alpha: 0.14),
+                          AppThemeProvider.amber.withValues(alpha: 0.03),
+                        ],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight),
+                    borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(18),
+                        topRight: Radius.circular(18))),
+                child: Column(children: [
+                  Text(dep.route,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          color: t.textPrimary,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 22,
+                          letterSpacing: 0.3)),
+                  const SizedBox(height: 6),
+                  Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    const Icon(Icons.calendar_today_rounded,
+                        size: 11, color: AppThemeProvider.amber),
+                    const SizedBox(width: 5),
+                    Text(dep.date.toUpperCase(),
+                        style: const TextStyle(
+                            color: AppThemeProvider.amber,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                            letterSpacing: 1.5)),
+                  ]),
+                ]),
+              ),
+              Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: AppThemeProvider.amber.withValues(alpha: 0.15)),
+              // Countdown + CTA
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 22, horizontal: 16),
+                child: Column(children: [
+                  Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    _cu(t, svc.days, "JOURS", AppThemeProvider.amber),
+                    _sp(t),
+                    _cu(t, svc.hours, "HEURES", AppThemeProvider.appBlue),
+                    _sp(t),
+                    _cu(t, svc.minutes, "MIN", AppThemeProvider.appBlue),
+                    _sp(t),
+                    _cu(t, svc.seconds, "SEC", AppThemeProvider.teal),
+                  ]),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: AppThemeProvider.amber,
+                          foregroundColor: AppThemeProvider.textDark,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(vertical: 14)),
+                      onPressed: () => _handleCTA(context),
+                      icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+                      label: Text("Réserver ce départ — ${dep.route}",
+                          style:
+                              const TextStyle(fontWeight: FontWeight.w800)),
+                    ),
+                  ),
+                ]),
               ),
             ]),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
+          // ── Departure list ───────────────────────────────────────────────
           ...allDeps.map((d) {
             final isPast = d.dateTime.isBefore(DateTime.now());
             final isCurrent = d.route == dep.route && d.date == dep.date;
             return Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              margin: const EdgeInsets.only(bottom: 10),
               decoration: BoxDecoration(
                   color: isCurrent
-                      ? AppThemeProvider.amber.withValues(alpha: 0.08)
+                      ? AppThemeProvider.amber.withValues(alpha: 0.07)
                       : isPast
                           ? t.bgCard.withValues(alpha: 0.5)
                           : t.bgCard,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                       color: isCurrent
-                          ? AppThemeProvider.amber.withValues(alpha: 0.35)
-                          : t.border.withValues(alpha: isPast ? 0.4 : 1))),
-              child: Row(children: [
-                Text(d.flag, style: const TextStyle(fontSize: 18)),
-                const SizedBox(width: 12),
-                Expanded(
-                    child: Text("${d.route}  ·  ${d.date}",
-                        style: TextStyle(
-                            color: isPast
-                                ? t.textMuted
-                                : isCurrent
-                                    ? AppThemeProvider.amber
-                                    : t.textPrimary,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13))),
-                if (isPast)
-                  Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                          color: t.border,
-                          borderRadius: BorderRadius.circular(20)),
-                      child: Text("PASSÉ",
-                          style: TextStyle(
-                              color: t.textMuted,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700)))
-                else
-                  GestureDetector(
-                    onTap: () => _handleCTA(context),
-                    child: Container(
+                          ? AppThemeProvider.amber.withValues(alpha: 0.45)
+                          : t.border.withValues(alpha: isPast ? 0.4 : 1),
+                      width: isCurrent ? 1.5 : 1)),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: IntrinsicHeight(
+                  child: Row(children: [
+                    // Left accent bar
+                    Container(
+                        width: 4,
+                        color: isCurrent
+                            ? AppThemeProvider.amber
+                            : isPast
+                                ? Colors.transparent
+                                : AppThemeProvider.appBlue
+                                    .withValues(alpha: 0.45)),
+                    // Content
+                    Expanded(
+                      child: Padding(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                            color: AppThemeProvider.amber,
-                            borderRadius: BorderRadius.circular(7)),
-                        child: const Text("Réserver",
-                            style: TextStyle(
-                                color: AppThemeProvider.textDark,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 11))),
-                  ),
-              ]),
+                            horizontal: 14, vertical: 12),
+                        child: Row(children: [
+                          Text(d.flag,
+                              style: const TextStyle(fontSize: 20)),
+                          const SizedBox(width: 12),
+                          Expanded(
+                              child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                Text(d.route,
+                                    style: TextStyle(
+                                        color: isPast
+                                            ? t.textMuted
+                                            : isCurrent
+                                                ? AppThemeProvider.amber
+                                                : t.textPrimary,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 14)),
+                                const SizedBox(height: 2),
+                                Text(d.date,
+                                    style: TextStyle(
+                                        color: t.textMuted,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w500)),
+                              ])),
+                          const SizedBox(width: 8),
+                          if (isPast)
+                            Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                    color: t.border.withValues(alpha: 0.7),
+                                    borderRadius: BorderRadius.circular(20)),
+                                child: Text("PASSÉ",
+                                    style: TextStyle(
+                                        color: t.textMuted,
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.8)))
+                          else if (isCurrent)
+                            GestureDetector(
+                              onTap: () => _handleCTA(context),
+                              child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                      color: AppThemeProvider.amber,
+                                      borderRadius:
+                                          BorderRadius.circular(8)),
+                                  child: const Text("Réserver",
+                                      style: TextStyle(
+                                          color: AppThemeProvider.textDark,
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 11))),
+                            )
+                          else
+                            GestureDetector(
+                              onTap: () => _handleCTA(context),
+                              child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                      color: AppThemeProvider.appBlue
+                                          .withValues(alpha: 0.10),
+                                      borderRadius:
+                                          BorderRadius.circular(8),
+                                      border: Border.all(
+                                          color: AppThemeProvider.appBlue
+                                              .withValues(alpha: 0.3))),
+                                  child: Text("Réserver",
+                                      style: TextStyle(
+                                          color: AppThemeProvider.appBlue,
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 11))),
+                            ),
+                        ]),
+                      ),
+                    ),
+                  ]),
+                ),
+              ),
             );
           }),
         ]),
@@ -846,31 +987,43 @@ class _LandingTransportScreenState extends State<LandingTransportScreen> {
   Widget _cu(AppThemeProvider t, String v, String label, Color color) =>
       Column(children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          constraints: const BoxConstraints(minWidth: 58),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.11),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: color.withValues(alpha: 0.28))),
+              gradient: LinearGradient(
+                  colors: [
+                    color.withValues(alpha: 0.18),
+                    color.withValues(alpha: 0.05),
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: color.withValues(alpha: 0.35))),
           child: Text(v,
+              textAlign: TextAlign.center,
               style: TextStyle(
                   color: color,
                   fontWeight: FontWeight.w900,
-                  fontSize: 20,
-                  letterSpacing: 1)),
+                  fontSize: 28,
+                  letterSpacing: 2,
+                  height: 1)),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
         Text(label,
             style: TextStyle(
                 color: t.textMuted,
                 fontSize: 9,
                 fontWeight: FontWeight.w700,
-                letterSpacing: 0.8)),
+                letterSpacing: 1.0)),
       ]);
 
   Widget _sp(AppThemeProvider t) => Padding(
-        padding: const EdgeInsets.only(bottom: 16, left: 4, right: 4),
+        padding: const EdgeInsets.only(bottom: 24, left: 6, right: 6),
         child: Text(":",
             style: TextStyle(
-                color: t.textMuted, fontSize: 18, fontWeight: FontWeight.w700)),
+                color: AppThemeProvider.amber.withValues(alpha: 0.6),
+                fontSize: 26,
+                fontWeight: FontWeight.w900,
+                height: 1)),
       );
 }
