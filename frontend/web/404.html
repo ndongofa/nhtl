@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>sama</title>
+  <script>
+    // Single Page App redirect for GitHub Pages.
+    // When GitHub Pages serves a 404 for a path like /transport,
+    // this script encodes the path into a query parameter and redirects
+    // to the root index.html, which then restores the original URL.
+    (function () {
+      var l = window.location;
+      l.replace(
+        l.protocol + '//' + l.host + '/?p=' + encodeURIComponent(l.pathname + l.search) + l.hash
+      );
+    })();
+  </script>
+</head>
+<body></body>
+</html>
