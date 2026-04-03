@@ -57,7 +57,7 @@ class AuthService {
     }
 
     // IMPORTANT (Flutter Web + hash routing):
-    final redirectTo = kIsWeb ? '${Uri.base.origin}/#/auth/callback' : null;
+    final redirectTo = kIsWeb ? '${Uri.base.origin}/auth/callback' : null;
 
     // ignore: avoid_print
     print("[AuthService][signup] start identifier=$cleanIdentifier role=$role "
@@ -279,7 +279,7 @@ class AuthService {
     try {
       await _supabase.auth.resetPasswordForEmail(
         cleanEmail,
-        redirectTo: kIsWeb ? '${Uri.base.origin}/#/reset-password' : null,
+        redirectTo: kIsWeb ? '${Uri.base.origin}/reset-password' : null,
       );
       // ignore: avoid_print
       print("[AuthService][resetPassword] OK");
