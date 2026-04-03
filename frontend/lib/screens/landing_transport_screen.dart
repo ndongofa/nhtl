@@ -343,9 +343,9 @@ class _LandingTransportScreenState extends State<LandingTransportScreen> {
           children: [
             ElevatedButton.icon(
               icon: Icon(
-                  isLoggedIn ? Icons.dashboard_outlined : Icons.login_outlined,
+                  isLoggedIn ? Icons.local_shipping_outlined : Icons.login_outlined,
                   size: 16),
-              label: Text(isLoggedIn ? "Mon espace Transport" : "Se connecter",
+              label: Text(isLoggedIn ? "Créer un transport" : "Se connecter",
                   style: const TextStyle(fontWeight: FontWeight.w800)),
               style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
@@ -768,11 +768,11 @@ class _LandingTransportScreenState extends State<LandingTransportScreen> {
                 ElevatedButton.icon(
                   icon: Icon(
                       isLoggedIn
-                          ? Icons.dashboard_outlined
+                          ? Icons.local_shipping_outlined
                           : Icons.login_outlined,
                       size: 16),
                   label: Text(
-                      isLoggedIn ? "Mon espace Transport" : "Se connecter",
+                      isLoggedIn ? "Créer un transport" : "Se connecter",
                       style: const TextStyle(fontWeight: FontWeight.w800)),
                   style: ElevatedButton.styleFrom(
                       backgroundColor: AppThemeProvider.appBlue,
