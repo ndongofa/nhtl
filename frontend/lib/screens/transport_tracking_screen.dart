@@ -17,9 +17,11 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/logged_user.dart';
 import '../models/transport.dart';
 import '../providers/app_theme_provider.dart';
+import '../services/auth_service.dart';
 import '../services/postal_tracking_service.dart';
 import '../services/transport_service.dart';
 import '../services/postal_cache_service.dart';
+import '../widgets/sama_account_menu.dart';
 
 class TransportTrackingScreen extends StatefulWidget {
   final Transport transport;
@@ -143,6 +145,21 @@ class _TransportTrackingScreenState extends State<TransportTrackingScreen> {
         ]),
         // ✅ Bouton admin visible uniquement pour l'admin
         actions: [
+          IconButton(
+            tooltip: "Mon espace",
+            onPressed: () => SamaAccountMenu.open(context),
+            icon: const Icon(Icons.dashboard_outlined),
+          ),
+          IconButton(
+            tooltip: "Déconnexion",
+            onPressed: () async {
+              await AuthService.logout();
+              if (!context.mounted) return;
+              Navigator.of(context)
+                  .pushNamedAndRemoveUntil('/', (_) => false);
+            },
+            icon: const Icon(Icons.logout),
+          ),
           if (_isAdmin && !_transport.isDeposePoste)
             Padding(
               padding: const EdgeInsets.only(right: 8),

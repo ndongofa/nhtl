@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 import '../../models/panier_item.dart';
 import '../../providers/app_theme_provider.dart';
 import '../../providers/panier_provider.dart';
+import '../../services/auth_service.dart';
+import '../../widgets/sama_account_menu.dart';
 import 'checkout_screen.dart';
 
 class PanierScreen extends StatelessWidget {
@@ -41,6 +43,21 @@ class PanierScreen extends StatelessWidget {
                   fontWeight: FontWeight.w800, fontSize: 16)),
         ]),
         actions: [
+          IconButton(
+            tooltip: "Mon espace",
+            onPressed: () => SamaAccountMenu.open(context),
+            icon: const Icon(Icons.dashboard_outlined),
+          ),
+          IconButton(
+            tooltip: "Déconnexion",
+            onPressed: () async {
+              await AuthService.logout();
+              if (!context.mounted) return;
+              Navigator.of(context)
+                  .pushNamedAndRemoveUntil('/', (_) => false);
+            },
+            icon: const Icon(Icons.logout),
+          ),
           if (!panier.isEmpty)
             TextButton(
               onPressed: () async {

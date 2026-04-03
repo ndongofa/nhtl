@@ -1,8 +1,10 @@
 // lib/screens/commandes_archives_screen.dart
 
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
 import '../services/commande_service.dart';
 import '../models/commande.dart';
+import '../widgets/sama_account_menu.dart';
 import 'commande_tracking_screen.dart';
 import 'commandes_list_screen.dart';
 
@@ -198,6 +200,21 @@ class _CommandesArchivesScreenState extends State<CommandesArchivesScreen> {
                 fontWeight: FontWeight.w800,
                 fontSize: 16)),
         actions: [
+          IconButton(
+            tooltip: "Mon espace",
+            onPressed: () => SamaAccountMenu.open(context),
+            icon: const Icon(Icons.dashboard_outlined, color: _textPrimary),
+          ),
+          IconButton(
+            tooltip: "Déconnexion",
+            onPressed: () async {
+              await AuthService.logout();
+              if (!context.mounted) return;
+              Navigator.of(context)
+                  .pushNamedAndRemoveUntil('/', (_) => false);
+            },
+            icon: const Icon(Icons.logout, color: _textPrimary),
+          ),
           IconButton(
               onPressed: _refresh,
               icon: const Icon(Icons.refresh, color: _textPrimary)),

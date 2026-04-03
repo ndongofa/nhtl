@@ -5,7 +5,9 @@
 
 import 'package:flutter/material.dart';
 import '../services/achat_service.dart';
+import '../services/auth_service.dart';
 import '../models/achat.dart';
+import '../widgets/sama_account_menu.dart';
 import 'achat_tracking_screen.dart';
 
 // ── Couleurs UI ────────────────────────────────────────────────────────────
@@ -80,6 +82,21 @@ class _AchatsArchivesScreenState extends State<AchatsArchivesScreen> {
                 : 'Mes achats archivés',
             style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
         actions: [
+          IconButton(
+            tooltip: "Mon espace",
+            onPressed: () => SamaAccountMenu.open(context),
+            icon: const Icon(Icons.dashboard_outlined),
+          ),
+          IconButton(
+            tooltip: "Déconnexion",
+            onPressed: () async {
+              await AuthService.logout();
+              if (!context.mounted) return;
+              Navigator.of(context)
+                  .pushNamedAndRemoveUntil('/', (_) => false);
+            },
+            icon: const Icon(Icons.logout),
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _refresh,

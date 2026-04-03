@@ -10,7 +10,9 @@ import 'package:provider/provider.dart';
 import '../../models/produit.dart';
 import '../../providers/app_theme_provider.dart';
 import '../../providers/panier_provider.dart';
+import '../../services/auth_service.dart';
 import '../../services/ecommerce_service.dart';
+import '../../widgets/sama_account_menu.dart';
 import 'product_detail_screen.dart';
 import 'panier_screen.dart';
 
@@ -95,6 +97,7 @@ class _CatalogueScreenState extends State<CatalogueScreen> {
     final t = context.watch<AppThemeProvider>();
     final panier = context.watch<PanierProvider>();
 
+    final isLoggedIn = AuthService.isLoggedIn();
     return Scaffold(
       backgroundColor: t.bg,
       appBar: AppBar(
@@ -109,6 +112,22 @@ class _CatalogueScreenState extends State<CatalogueScreen> {
                   fontWeight: FontWeight.w800, fontSize: 17)),
         ]),
         actions: [
+          IconButton(
+            tooltip: "Mon espace",
+            icon: const Icon(Icons.dashboard_outlined),
+            onPressed: () => SamaAccountMenu.open(context),
+          ),
+          if (isLoggedIn)
+            IconButton(
+              tooltip: "Déconnexion",
+              icon: const Icon(Icons.logout),
+              onPressed: () async {
+                await AuthService.logout();
+                if (!context.mounted) return;
+                Navigator.of(context)
+                    .pushNamedAndRemoveUntil('/', (_) => false);
+              },
+            ),
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Actualiser',

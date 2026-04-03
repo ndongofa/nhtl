@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:sama/models/app_notification.dart';
+import 'package:sama/services/auth_service.dart';
 import 'package:sama/services/notification_service.dart';
 import 'package:sama/services/notification_sound.dart';
+import 'package:sama/widgets/sama_account_menu.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({Key? key}) : super(key: key);
@@ -157,6 +159,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ],
         ]),
         actions: [
+          IconButton(
+            tooltip: "Mon espace",
+            onPressed: () => SamaAccountMenu.open(context),
+            icon: const Icon(Icons.dashboard_outlined, color: _textPrimary),
+          ),
+          IconButton(
+            tooltip: "Déconnexion",
+            onPressed: () async {
+              await AuthService.logout();
+              if (!context.mounted) return;
+              Navigator.of(context)
+                  .pushNamedAndRemoveUntil('/', (_) => false);
+            },
+            icon: const Icon(Icons.logout, color: _textPrimary),
+          ),
           IconButton(
             onPressed: () => _load(playSound: true),
             icon: const Icon(Icons.refresh, color: _textPrimary),

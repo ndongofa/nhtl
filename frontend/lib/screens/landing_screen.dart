@@ -7,7 +7,9 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../providers/app_theme_provider.dart';
+import '../services/auth_service.dart';
 import '../services/departure_countdown_service.dart';
+import '../widgets/sama_account_menu.dart';
 
 class LandingScreenSamaServicesInternational extends StatefulWidget {
   const LandingScreenSamaServicesInternational({Key? key}) : super(key: key);
@@ -348,15 +350,36 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
           // Mobile : thème + menu hamburger uniquement
           _themeToggle(t),
           const SizedBox(width: 4),
-          // Connexion rapide (icône)
-          IconButton(
-            icon:
-                const Icon(Icons.login_outlined, color: Colors.white, size: 20),
-            tooltip: "Connexion",
-            onPressed: () => _push('/login'),
-            padding: const EdgeInsets.all(6),
-            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-          ),
+          // Mon espace ou Connexion rapide selon auth
+          if (AuthService.isLoggedIn())
+            IconButton(
+              icon: const Icon(Icons.dashboard_outlined, color: Colors.white, size: 20),
+              tooltip: "Mon espace",
+              onPressed: () => SamaAccountMenu.open(context),
+              padding: const EdgeInsets.all(6),
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            )
+          else
+            IconButton(
+              icon:
+                  const Icon(Icons.login_outlined, color: Colors.white, size: 20),
+              tooltip: "Connexion",
+              onPressed: () => _push('/login'),
+              padding: const EdgeInsets.all(6),
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            ),
+          if (AuthService.isLoggedIn())
+            IconButton(
+              icon: const Icon(Icons.logout, color: Colors.white, size: 20),
+              tooltip: "Déconnexion",
+              onPressed: () async {
+                await AuthService.logout();
+                if (!mounted) return;
+                _push('/');
+              },
+              padding: const EdgeInsets.all(6),
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            ),
           _menuButton(t),
         ] else ...[
           _navLink("Tarifs", () => _scroll(_pricingKey)),
@@ -365,9 +388,19 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
           const SizedBox(width: 12),
           _themeToggle(t),
           const SizedBox(width: 12),
-          _outlineBtn("Connexion", () => _push('/login')),
-          const SizedBox(width: 10),
-          _solidWhiteBtn("Créer un compte", () => _push('/signup')),
+          if (AuthService.isLoggedIn()) ...[
+            _outlineBtn("Mon espace", () => SamaAccountMenu.open(context)),
+            const SizedBox(width: 10),
+            _solidWhiteBtn("Déconnexion", () async {
+              await AuthService.logout();
+              if (!mounted) return;
+              _push('/');
+            }),
+          ] else ...[
+            _outlineBtn("Connexion", () => _push('/login')),
+            const SizedBox(width: 10),
+            _solidWhiteBtn("Créer un compte", () => _push('/signup')),
+          ],
         ],
       ]),
     );

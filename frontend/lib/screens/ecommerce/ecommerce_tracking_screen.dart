@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 
 import '../../models/commande_ecommerce.dart';
 import '../../providers/app_theme_provider.dart';
+import '../../services/auth_service.dart';
+import '../../widgets/sama_account_menu.dart';
 
 class _Step {
   final String key;
@@ -60,6 +62,23 @@ class EcommerceTrackingScreen extends StatelessWidget {
                   color: Colors.white.withValues(alpha: 0.65),
                   fontSize: 12)),
         ]),
+        actions: [
+          IconButton(
+            tooltip: "Mon espace",
+            onPressed: () => SamaAccountMenu.open(context),
+            icon: const Icon(Icons.dashboard_outlined),
+          ),
+          IconButton(
+            tooltip: "Déconnexion",
+            onPressed: () async {
+              await AuthService.logout();
+              if (!context.mounted) return;
+              Navigator.of(context)
+                  .pushNamedAndRemoveUntil('/', (_) => false);
+            },
+            icon: const Icon(Icons.logout),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),

@@ -149,6 +149,17 @@ class LandingCommandeScreen extends StatelessWidget {
                   ),
                   onPressed: () => SamaAccountMenu.open(context),
                 ),
+                if (isLoggedIn)
+                  IconButton(
+                    tooltip: "Déconnexion",
+                    onPressed: () async {
+                      await AuthService.logout();
+                      if (!context.mounted) return;
+                      Navigator.of(context)
+                          .pushNamedAndRemoveUntil('/', (_) => false);
+                    },
+                    icon: const Icon(Icons.logout, color: Colors.white),
+                  ),
                 IconButton(
                   tooltip: t.isDark ? "Thème clair" : "Thème sombre",
                   onPressed: () =>
@@ -166,10 +177,16 @@ class LandingCommandeScreen extends StatelessWidget {
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.menu, color: Colors.white),
                   tooltip: "Menu",
-                  onSelected: (value) {
+                  onSelected: (value) async {
                     if (value == 'account') SamaAccountMenu.open(context);
                     if (value == 'theme')
                       context.read<AppThemeProvider>().toggleTheme();
+                    if (value == 'logout') {
+                      await AuthService.logout();
+                      if (!context.mounted) return;
+                      Navigator.of(context)
+                          .pushNamedAndRemoveUntil('/', (_) => false);
+                    }
                   },
                   itemBuilder: (ctx) => [
                     const PopupMenuItem<String>(
@@ -193,6 +210,16 @@ class LandingCommandeScreen extends StatelessWidget {
                         Text(t.isDark ? "Thème clair" : "Thème sombre"),
                       ]),
                     ),
+                    if (isLoggedIn)
+                      const PopupMenuItem<String>(
+                        value: 'logout',
+                        child: Row(children: [
+                          Icon(Icons.logout, size: 18, color: Colors.red),
+                          SizedBox(width: 10),
+                          Text("Déconnexion",
+                              style: TextStyle(color: Colors.red)),
+                        ]),
+                      ),
                   ],
                 ),
               ],

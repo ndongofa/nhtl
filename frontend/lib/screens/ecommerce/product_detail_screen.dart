@@ -8,6 +8,8 @@ import 'package:provider/provider.dart';
 import '../../models/produit.dart';
 import '../../providers/app_theme_provider.dart';
 import '../../providers/panier_provider.dart';
+import '../../services/auth_service.dart';
+import '../../widgets/sama_account_menu.dart';
 import 'panier_screen.dart';
 
 class ProductDetailScreen extends StatefulWidget {
@@ -47,6 +49,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
         actions: [
+          IconButton(
+            tooltip: "Mon espace",
+            onPressed: () => SamaAccountMenu.open(context),
+            icon: const Icon(Icons.dashboard_outlined),
+          ),
+          IconButton(
+            tooltip: "Déconnexion",
+            onPressed: () async {
+              await AuthService.logout();
+              if (!context.mounted) return;
+              Navigator.of(context)
+                  .pushNamedAndRemoveUntil('/', (_) => false);
+            },
+            icon: const Icon(Icons.logout),
+          ),
           Stack(
             alignment: Alignment.topRight,
             children: [

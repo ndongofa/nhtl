@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:sama/services/auth_service.dart';
 import 'package:sama/services/gp_service.dart';
 import 'package:sama/widgets/gp_form_dialog.dart';
+import 'package:sama/widgets/sama_account_menu.dart';
 import '../../models/gp_agent.dart';
 import '../../models/logged_user.dart';
 
@@ -151,6 +153,21 @@ class _GpListScreenState extends State<GpListScreen> {
                 fontWeight: FontWeight.w800,
                 fontSize: 16)),
         actions: [
+          IconButton(
+            tooltip: "Mon espace",
+            onPressed: () => SamaAccountMenu.open(context),
+            icon: const Icon(Icons.dashboard_outlined, color: _textPrimary),
+          ),
+          IconButton(
+            tooltip: "Déconnexion",
+            onPressed: () async {
+              await AuthService.logout();
+              if (!context.mounted) return;
+              Navigator.of(context)
+                  .pushNamedAndRemoveUntil('/', (_) => false);
+            },
+            icon: const Icon(Icons.logout, color: _textPrimary),
+          ),
           IconButton(
               onPressed: _load,
               icon: const Icon(Icons.refresh, color: _textPrimary)),

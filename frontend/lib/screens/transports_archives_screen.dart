@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:sama/screens/transports_list_screen.dart';
 import '../models/transport.dart';
+import '../services/auth_service.dart';
 import '../services/transport_service.dart';
+import '../widgets/sama_account_menu.dart';
 
 // Réutilise statutColors/statutIcons définis dans transports_list_screen.dart
 // (EN_ATTENTE, EN_COURS, LIVRE, ANNULE)
@@ -141,6 +143,21 @@ class _TransportArchivesScreenState extends State<TransportArchivesScreen> {
           },
         ),
         actions: [
+          IconButton(
+            tooltip: "Mon espace",
+            onPressed: () => SamaAccountMenu.open(context),
+            icon: const Icon(Icons.dashboard_outlined),
+          ),
+          IconButton(
+            tooltip: "Déconnexion",
+            onPressed: () async {
+              await AuthService.logout();
+              if (!context.mounted) return;
+              Navigator.of(context)
+                  .pushNamedAndRemoveUntil('/', (_) => false);
+            },
+            icon: const Icon(Icons.logout),
+          ),
           IconButton(onPressed: _refresh, icon: const Icon(Icons.refresh)),
         ],
       ),
