@@ -6,6 +6,7 @@ import '../../models/logged_user.dart';
 import '../../services/auth_service.dart';
 import '../achats_archives_screen.dart';
 import '../achats_list_screen.dart';
+import '../admin_ecommerce/admin_commande_ecommerce_list_screen.dart';
 import '../admin_ecommerce/admin_produit_list_screen.dart';
 import '../commandes_archives_screen.dart';
 import '../commandes_list_screen.dart';
@@ -168,6 +169,19 @@ class AdminDashboardScreen extends StatelessWidget {
             ),
           ),
           _DashCard(
+            icon: Icons.receipt_long_outlined,
+            label: 'Commandes Maad',
+            sub: 'Commandes Sama Maad',
+            color: const Color(0xFF16A34A),
+            onTap: () => _go(
+              context,
+              const AdminCommandeEcommerceListScreen(
+                  serviceType: 'maad',
+                  serviceLabel: 'Sama Maad',
+                  accentColor: Color(0xFF16A34A)),
+            ),
+          ),
+          _DashCard(
             icon: Icons.wine_bar_outlined,
             label: 'Produits Téranga',
             sub: 'Catalogue Téranga Apéro',
@@ -180,6 +194,19 @@ class AdminDashboardScreen extends StatelessWidget {
             ),
           ),
           _DashCard(
+            icon: Icons.receipt_long_outlined,
+            label: 'Commandes Téranga',
+            sub: 'Commandes Téranga Apéro',
+            color: const Color(0xFFDC2626),
+            onTap: () => _go(
+              context,
+              const AdminCommandeEcommerceListScreen(
+                  serviceType: 'teranga',
+                  serviceLabel: 'Sama Téranga Apéro',
+                  accentColor: Color(0xFFDC2626)),
+            ),
+          ),
+          _DashCard(
             icon: Icons.star_outline,
             label: 'Produits Best Seller',
             sub: 'Catalogue Best Seller',
@@ -189,6 +216,19 @@ class AdminDashboardScreen extends StatelessWidget {
               const AdminProduitListScreen(
                   serviceType: 'bestseller',
                   serviceLabel: 'Sama Best Seller'),
+            ),
+          ),
+          _DashCard(
+            icon: Icons.receipt_long_outlined,
+            label: 'Commandes Best Seller',
+            sub: 'Commandes Best Seller',
+            color: const Color(0xFF7C3AED),
+            onTap: () => _go(
+              context,
+              const AdminCommandeEcommerceListScreen(
+                  serviceType: 'bestseller',
+                  serviceLabel: 'Sama Best Seller',
+                  accentColor: Color(0xFF7C3AED)),
             ),
           ),
         ],
