@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Sama Achat, Best Seller & Tech Digital — Flyer</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Poppins', Arial, sans-serif;
+      background: #f5f0e8;
+      display: flex; justify-content: center; align-items: center;
+      min-height: 100vh; padding: 20px;
+    }
+    .flyer {
+      width: 794px; min-height: 1123px;
+      background: linear-gradient(160deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      border-radius: 16px; overflow: hidden; position: relative; color: white;
+    }
+    .accent-bar { height: 8px; background: linear-gradient(90deg, #e94560, #f5a623, #00c8ff); }
+    .header { padding: 40px 48px 28px; position: relative; z-index: 1; }
+    .header-badge {
+      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px; padding: 6px 16px;
+      display: inline-block; font-size: 11px; font-weight: 700;
+      color: rgba(255,255,255,0.8); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 16px;
+    }
+    .header-title { font-size: 40px; font-weight: 900; line-height: 1.2; margin-bottom: 8px; }
+    .header-sub { font-size: 15px; color: rgba(255,255,255,0.6); margin-bottom: 24px; }
+    .header-url { font-size: 14px; color: #00c8ff; font-weight: 600; }
+    .header-url a { color: inherit; text-decoration: none; }
+
+    .services-list { padding: 0 48px 36px; z-index: 1; position: relative; display: flex; flex-direction: column; gap: 20px; }
+
+    .svc {
+      border-radius: 16px; overflow: hidden;
+      display: flex; min-height: 140px;
+    }
+    .svc-accent { width: 6px; flex-shrink: 0; }
+    .svc.achat .svc-accent { background: linear-gradient(180deg, #f5a623, #e94560); }
+    .svc.best .svc-accent { background: linear-gradient(180deg, #FFD700, #FFA500); }
+    .svc.tech .svc-accent { background: linear-gradient(180deg, #00c8ff, #0080ff); }
+    .svc-body { padding: 20px 24px; flex: 1; }
+    .svc.achat .svc-body { background: rgba(245,166,35,0.08); border: 1px solid rgba(245,166,35,0.2); border-left: none; border-radius: 0 12px 12px 0; }
+    .svc.best .svc-body { background: rgba(255,215,0,0.08); border: 1px solid rgba(255,215,0,0.2); border-left: none; border-radius: 0 12px 12px 0; }
+    .svc.tech .svc-body { background: rgba(0,200,255,0.08); border: 1px solid rgba(0,200,255,0.2); border-left: none; border-radius: 0 12px 12px 0; }
+
+    .svc-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+    .svc-emoji { font-size: 28px; }
+    .svc-name { font-size: 20px; font-weight: 800; }
+    .svc.achat .svc-name { color: #f5a623; }
+    .svc.best .svc-name { color: #FFD700; }
+    .svc.tech .svc-name { color: #00c8ff; }
+
+    .svc-desc { font-size: 13px; color: rgba(255,255,255,0.7); line-height: 1.6; margin-bottom: 12px; }
+    .svc-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+    .chip { background: rgba(255,255,255,0.08); border-radius: 50px; padding: 4px 12px; font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.75); }
+    .svc-link { font-size: 12px; font-weight: 700; text-decoration: none; }
+    .svc.achat .svc-link { color: #f5a623; }
+    .svc.best .svc-link { color: #FFD700; }
+    .svc.tech .svc-link { color: #00c8ff; }
+
+    .divider { height: 1px; background: rgba(255,255,255,0.08); margin: 0 48px 28px; }
+
+    .all-cta { margin: 0 48px 40px; text-align: center; z-index: 1; position: relative; }
+    .all-cta-title { font-size: 17px; font-weight: 700; color: rgba(255,255,255,0.85); margin-bottom: 12px; }
+    .all-cta-url {
+      display: inline-block;
+      background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.2);
+      border-radius: 50px; padding: 14px 40px;
+      font-size: 20px; font-weight: 900; color: white; text-decoration: none;
+      margin-bottom: 16px;
+    }
+    .all-cta-sub { font-size: 13px; color: rgba(255,255,255,0.45); }
+
+    .footer { background: rgba(0,0,0,0.4); padding: 16px 48px; display: flex; justify-content: space-between; align-items: center; }
+    .footer-left { font-size: 11px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; }
+    .footer-right { font-size: 11px; color: rgba(255,255,255,0.4); }
+
+    @media print { body { background: white; padding: 0; } .flyer { border-radius: 0; width: 100%; } }
+  </style>
+</head>
+<body>
+<div class="flyer">
+  <div class="accent-bar"></div>
+  <div class="header">
+    <div class="header-badge">🏪 Services Spécialisés SAMA</div>
+    <h1 class="header-title">Sama Achat · Best Seller<br>& Tech Digital</h1>
+    <p class="header-sub">Des services pensés pour simplifier votre quotidien — Paris · Casablanca · Dakar</p>
+    <div class="header-url">🌐 <a href="https://www.sama-services-intl.com/">www.sama-services-intl.com</a></div>
+  </div>
+
+  <div class="services-list">
+
+    <!-- SAMA ACHAT -->
+    <div class="svc achat">
+      <div class="svc-accent"></div>
+      <div class="svc-body">
+        <div class="svc-header">
+          <span class="svc-emoji">🏪</span>
+          <span class="svc-name">Sama Achat</span>
+        </div>
+        <p class="svc-desc">
+          Un produit introuvable en ligne ? Tissu, habit taille africaine, article de marché ?
+          Sama Achat se déplace dans les marchés et boutiques spécialisées pour vous trouver
+          exactement ce que vous cherchez.
+        </p>
+        <div class="svc-chips">
+          <span class="chip">📸 Envoyez la photo</span>
+          <span class="chip">🏪 Achat en marché</span>
+          <span class="chip">📦 Expédition incluse</span>
+          <span class="chip">✅ Vérification qualité</span>
+        </div>
+        <a class="svc-link" href="https://www.sama-services-intl.com/achat">→ sama-services-intl.com/achat</a>
+      </div>
+    </div>
+
+    <!-- SAMA BEST SELLER -->
+    <div class="svc best">
+      <div class="svc-accent"></div>
+      <div class="svc-body">
+        <div class="svc-header">
+          <span class="svc-emoji">⭐</span>
+          <span class="svc-name">Sama Best Seller</span>
+        </div>
+        <p class="svc-desc">
+          Découvrez notre sélection des articles les plus commandés du moment par
+          la communauté. Une liste curatée, mise à jour régulièrement, pour trouver
+          facilement les produits les plus populaires.
+        </p>
+        <div class="svc-chips">
+          <span class="chip">⭐ Produits tendance</span>
+          <span class="chip">🔄 Mis à jour régulièrement</span>
+          <span class="chip">👥 Sélection communauté</span>
+          <span class="chip">🚀 Livraison rapide</span>
+        </div>
+        <a class="svc-link" href="https://www.sama-services-intl.com/">→ sama-services-intl.com</a>
+      </div>
+    </div>
+
+    <!-- SAMA TECH DIGITAL -->
+    <div class="svc tech">
+      <div class="svc-accent"></div>
+      <div class="svc-body">
+        <div class="svc-header">
+          <span class="svc-emoji">💻</span>
+          <span class="svc-name">Sama Tech Digital</span>
+        </div>
+        <p class="svc-desc">
+          Vous avez besoin d'une présence en ligne ? Sama Tech Digital vous accompagne
+          dans la création de votre site web, boutique e-commerce ou solution digitale
+          sur mesure adaptée à votre activité.
+        </p>
+        <div class="svc-chips">
+          <span class="chip">🌐 Création site web</span>
+          <span class="chip">🛒 Boutique en ligne</span>
+          <span class="chip">📱 Application mobile</span>
+          <span class="chip">🔧 Solutions sur mesure</span>
+        </div>
+        <a class="svc-link" href="https://www.sama-services-intl.com/">→ sama-services-intl.com | tech@ngom-holding.com</a>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="all-cta">
+    <p class="all-cta-title">Accédez à tous les services SAMA depuis votre navigateur</p>
+    <a class="all-cta-url" href="https://www.sama-services-intl.com/">www.sama-services-intl.com</a>
+    <p class="all-cta-sub">🗼 Paris · 🕌 Casablanca · 🌍 Dakar — Accessible sur le web, sans application</p>
+  </div>
+
+  <div class="footer">
+    <div class="footer-left">Ngom Holding Transport & Logistics</div>
+    <div class="footer-right">tech@ngom-holding.com</div>
+  </div>
+</div>
+</body>
+</html>

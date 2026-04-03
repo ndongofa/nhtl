@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Sama Maad & Téranga Apéro — Flyer Produits</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Poppins', Arial, sans-serif;
+      background: #f0f5ee;
+      display: flex; justify-content: center; align-items: center;
+      min-height: 100vh; padding: 20px;
+    }
+    .flyer {
+      width: 794px; min-height: 1123px;
+      background: linear-gradient(160deg, #0a2218 0%, #1a4a2a 50%, #0a2218 100%);
+      border-radius: 16px; overflow: hidden; position: relative; color: white;
+    }
+    .accent-bar { height: 8px; background: linear-gradient(90deg, #4CAF50, #8BC34A, #CDDC39); }
+    .header { padding: 48px 48px 32px; position: relative; z-index: 1; }
+    .service-badge {
+      background: linear-gradient(90deg, #4CAF50, #2E7D32);
+      border-radius: 8px; padding: 8px 20px;
+      display: inline-block; font-size: 12px; font-weight: 700;
+      color: white; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 20px;
+    }
+    .main-title { font-size: 52px; font-weight: 900; line-height: 1.1; margin-bottom: 8px; }
+    .main-title .green { color: #4CAF50; }
+    .main-title .gold { color: #FFD700; }
+    .main-subtitle { font-size: 16px; color: rgba(255,255,255,0.7); margin-bottom: 32px; line-height: 1.5; }
+
+    .duo-section { padding: 0 48px 36px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; z-index: 1; position: relative; }
+
+    .service-block {
+      border-radius: 16px; overflow: hidden;
+    }
+    .service-block.maad {
+      background: linear-gradient(160deg, rgba(76,175,80,0.15), rgba(46,125,50,0.08));
+      border: 1px solid rgba(76,175,80,0.3);
+    }
+    .service-block.teranga {
+      background: linear-gradient(160deg, rgba(255,215,0,0.1), rgba(255,165,0,0.05));
+      border: 1px solid rgba(255,215,0,0.3);
+    }
+    .block-header { padding: 20px 20px 12px; }
+    .block-emoji { font-size: 40px; margin-bottom: 8px; display: block; }
+    .block-name { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
+    .block-name.green { color: #4CAF50; }
+    .block-name.gold { color: #FFD700; }
+    .block-desc { font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.5; padding: 0 20px 16px; }
+    .block-items { padding: 0 20px 20px; display: flex; flex-wrap: wrap; gap: 8px; }
+    .item-chip {
+      background: rgba(255,255,255,0.08); border-radius: 50px;
+      padding: 5px 12px; font-size: 11.5px; font-weight: 600; color: rgba(255,255,255,0.85);
+    }
+
+    .origin-section { padding: 0 48px 36px; z-index: 1; position: relative; }
+    .origin-card {
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px; padding: 20px 24px;
+      display: flex; align-items: center; gap: 20px;
+    }
+    .origin-flag { font-size: 48px; }
+    .origin-text {}
+    .origin-title { font-size: 15px; font-weight: 700; color: white; margin-bottom: 4px; }
+    .origin-desc { font-size: 12.5px; color: rgba(255,255,255,0.6); line-height: 1.5; }
+
+    .delivery-section { padding: 0 48px 36px; z-index: 1; position: relative; }
+    .delivery-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; color: rgba(255,255,255,0.9); }
+    .delivery-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .delivery-card { background: rgba(255,255,255,0.06); border-radius: 10px; padding: 16px; text-align: center; }
+    .delivery-icon { font-size: 26px; margin-bottom: 6px; }
+    .delivery-label { font-size: 12px; color: rgba(255,255,255,0.7); font-weight: 600; }
+
+    .cta {
+      margin: 0 48px 48px;
+      background: linear-gradient(90deg, rgba(76,175,80,0.15), rgba(255,215,0,0.08));
+      border: 2px solid #4CAF50; border-radius: 16px; padding: 28px 36px; text-align: center;
+    }
+    .cta-text { font-size: 15px; color: rgba(255,255,255,0.8); margin-bottom: 16px; }
+    .cta-url { font-size: 22px; font-weight: 900; color: #4CAF50; text-decoration: none; display: block; margin-bottom: 8px; }
+    .cta-sub { font-size: 12px; color: rgba(255,255,255,0.5); }
+
+    .footer { background: rgba(0,0,0,0.4); padding: 16px 48px; display: flex; justify-content: space-between; align-items: center; }
+    .footer-left { font-size: 11px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; }
+    .footer-right { font-size: 11px; color: rgba(255,255,255,0.4); }
+
+    @media print { body { background: white; padding: 0; } .flyer { border-radius: 0; width: 100%; } }
+  </style>
+</head>
+<body>
+<div class="flyer">
+  <div class="accent-bar"></div>
+  <div class="header">
+    <div class="service-badge">🌿 Produits Sénégalais</div>
+    <h1 class="main-title">
+      <span class="green">Sama Maad</span><br>& <span class="gold">Téranga Apéro</span>
+    </h1>
+    <p class="main-subtitle">Le goût authentique du Sénégal,<br>directement chez vous à Paris, Casablanca ou Dakar 🇸🇳❤️</p>
+  </div>
+
+  <div class="duo-section">
+    <div class="service-block maad">
+      <div class="block-header">
+        <span class="block-emoji">🌿</span>
+        <div class="block-name green">Sama Maad</div>
+      </div>
+      <div class="block-desc">
+        Le Maad frais de qualité, soigneusement sélectionné et livré directement depuis le Sénégal.
+        Retrouvez ce fruit emblématique dans toute sa fraîcheur.
+      </div>
+      <div class="block-items">
+        <span class="item-chip">🌿 Maad frais</span>
+        <span class="item-chip">✅ Qualité sélectionnée</span>
+        <span class="item-chip">🇸🇳 Origine Sénégal</span>
+        <span class="item-chip">📦 Emballage soigné</span>
+      </div>
+    </div>
+
+    <div class="service-block teranga">
+      <div class="block-header">
+        <span class="block-emoji">🍹</span>
+        <div class="block-name gold">Téranga Apéro</div>
+      </div>
+      <div class="block-desc">
+        Les boissons et spécialités préférées de la diaspora, livrées à domicile.
+        Partagez les saveurs du Sénégal où que vous soyez.
+      </div>
+      <div class="block-items">
+        <span class="item-chip">🌺 Bissap</span>
+        <span class="item-chip">🍋 Gnamakoudji</span>
+        <span class="item-chip">🍒 Ditax</span>
+        <span class="item-chip">🍶 Bouye</span>
+        <span class="item-chip">🌿 Kinkeliba</span>
+        <span class="item-chip">& plus...</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="origin-section">
+    <div class="origin-card">
+      <div class="origin-flag">🇸🇳</div>
+      <div class="origin-text">
+        <div class="origin-title">Produits 100% d'origine sénégalaise</div>
+        <div class="origin-desc">
+          Sélectionnés directement au Sénégal par notre équipe, conditionnés avec soin
+          et expédiés vers la France et le Maroc. Authenticité garantie.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="delivery-section">
+    <div class="delivery-title">Nous livrons partout :</div>
+    <div class="delivery-grid">
+      <div class="delivery-card">
+        <div class="delivery-icon">🗼</div>
+        <div class="delivery-label">Paris & Île-de-France</div>
+      </div>
+      <div class="delivery-card">
+        <div class="delivery-icon">🕌</div>
+        <div class="delivery-label">Casablanca & Maroc</div>
+      </div>
+      <div class="delivery-card">
+        <div class="delivery-icon">🌍</div>
+        <div class="delivery-label">Dakar & Sénégal</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cta">
+    <p class="cta-text">Commandez vos produits sénégalais maintenant</p>
+    <a class="cta-url" href="https://www.sama-services-intl.com/">sama-services-intl.com</a>
+    <p class="cta-sub">Accessible sur le web depuis votre navigateur — Paris · Casablanca · Dakar</p>
+  </div>
+
+  <div class="footer">
+    <div class="footer-left">Ngom Holding Transport & Logistics</div>
+    <div class="footer-right">tech@ngom-holding.com</div>
+  </div>
+</div>
+</body>
+</html>
