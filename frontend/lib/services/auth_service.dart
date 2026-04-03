@@ -56,7 +56,7 @@ class AuthService {
       throw Exception("Le mot de passe doit contenir au moins 8 caractères.");
     }
 
-    // IMPORTANT (Flutter Web + hash routing):
+    // IMPORTANT (Flutter Web + path routing):
     final redirectTo = kIsWeb ? '${Uri.base.origin}/auth/callback' : null;
 
     // ignore: avoid_print
