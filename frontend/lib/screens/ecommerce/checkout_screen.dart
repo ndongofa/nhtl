@@ -104,22 +104,122 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         if (mounted) {
           await context.read<PanierProvider>().vider();
         }
-        Fluttertoast.showToast(
-            msg: '✅ Commande envoyée ! Référence #${result.id}',
-            backgroundColor: Colors.green,
-            toastLength: Toast.LENGTH_LONG);
         if (mounted) {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(
-              builder: (_) => EcommerceHubScreen(
-                serviceType: widget.serviceType,
-                serviceLabel: widget.serviceLabel,
-                accentColor: widget.accentColor,
-              ),
-            ),
-            (route) => route.isFirst,
+          await showDialog<void>(
+            context: context,
+            barrierDismissible: false,
+            builder: (ctx) {
+              final t = ctx.watch<AppThemeProvider>();
+              return AlertDialog(
+                backgroundColor: t.bgCard,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18)),
+                title: Column(
+                  children: [
+                    Icon(Icons.check_circle_rounded,
+                        color: widget.accentColor, size: 52),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Commande confirmée !',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          color: t.textPrimary,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 18),
+                    ),
+                  ],
+                ),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Référence : #${result.id}',
+                      style: TextStyle(
+                          color: widget.accentColor,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13),
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      'Votre commande a bien été enregistrée. '
+                      'Notre équipe vous contactera très prochainement par téléphone pour confirmer les détails et convenir d\'un rendez-vous.',
+                      style:
+                          TextStyle(color: t.textPrimary, fontSize: 14, height: 1.5),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                          color: widget.accentColor.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                              color:
+                                  widget.accentColor.withValues(alpha: 0.25))),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.info_outline,
+                              color: widget.accentColor, size: 16),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Le règlement s\'effectuera directement avec notre équipe, '
+                              'en dehors de la plateforme, une fois la prestation réalisée.',
+                              style: TextStyle(
+                                  color: t.textMuted,
+                                  fontSize: 12,
+                                  height: 1.5),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      'Merci pour votre confiance ! 🙏',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          color: t.textPrimary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13),
+                    ),
+                  ],
+                ),
+                actionsAlignment: MainAxisAlignment.center,
+                actions: [
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: widget.accentColor,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          padding:
+                              const EdgeInsets.symmetric(vertical: 12)),
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      child: const Text('Compris, merci !',
+                          style: TextStyle(fontWeight: FontWeight.w800)),
+                    ),
+                  ),
+                ],
+              );
+            },
           );
+          if (mounted) {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                builder: (_) => EcommerceHubScreen(
+                  serviceType: widget.serviceType,
+                  serviceLabel: widget.serviceLabel,
+                  accentColor: widget.accentColor,
+                ),
+              ),
+              (route) => route.isFirst,
+            );
+          }
         }
       } else {
         Fluttertoast.showToast(

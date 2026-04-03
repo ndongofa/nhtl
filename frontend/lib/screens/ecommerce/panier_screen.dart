@@ -149,12 +149,15 @@ class PanierScreen extends StatelessWidget {
                       onPressed: () => Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => CheckoutScreen(
-                            serviceType: serviceType,
-                            serviceLabel: serviceLabel,
-                            accentColor: accentColor,
-                            totalAmount: panier.total,
-                            devise: panier.devise,
+                          builder: (_) => ChangeNotifierProvider.value(
+                            value: context.read<PanierProvider>(),
+                            child: CheckoutScreen(
+                              serviceType: serviceType,
+                              serviceLabel: serviceLabel,
+                              accentColor: accentColor,
+                              totalAmount: panier.total,
+                              devise: panier.devise,
+                            ),
                           ),
                         ),
                       ),
