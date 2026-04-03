@@ -142,8 +142,9 @@ class DepartureCountdownService extends ChangeNotifier {
     // Tick 1s — compte à rebours
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       _updateRemaining();
-      if (_remaining == Duration.zero && _groups.isNotEmpty) {
-        // Retirer les départs expirés du groupe courant
+      // Retirer les départs expirés du groupe courant (indépendant de _remaining)
+      if (_groups.isNotEmpty &&
+          !_groups[_groupIndex].first.dateTime.isAfter(DateTime.now())) {
         _groups[_groupIndex]
             .removeWhere((d) => !d.dateTime.isAfter(DateTime.now()));
         if (_groups[_groupIndex].isEmpty) {
@@ -158,22 +159,22 @@ class DepartureCountdownService extends ChangeNotifier {
     });
 
     // ✅ Alternance auto toutes les 5s entre les prochains départs
-    // Fonctionne même si plusieurs départs sont le même jour (sameDayCount > 1)
-    // ou si les départs sont sur des jours différents (groupCount > 1)
+    // Parcourt TOUS les départs dans l'ordre : d'abord les départs du même jour,
+    // puis passe au jour suivant — fonctionne dans tous les cas.
     _autoSwitchTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (_groups.isEmpty) return;
-      if (sameDayCount > 1) {
-        // Plusieurs départs le même jour → cycler dans le groupe
-        _inGroupIndex = (_inGroupIndex + 1) % sameDayCount;
-        notifyListeners();
-      } else if (_groups.length > 1) {
-        // Départs sur des jours différents → cycler entre les groupes
-        _groupIndex = (_groupIndex + 1) % _groups.length;
+      final totalDepartures =
+          _groups.fold<int>(0, (sum, g) => sum + g.length);
+      if (totalDepartures <= 1) return; // Un seul départ : rien à cycler
+
+      // Avancer dans le groupe courant, ou passer au groupe suivant
+      _inGroupIndex++;
+      if (_inGroupIndex >= sameDayCount) {
         _inGroupIndex = 0;
-        _updateRemaining();
-        notifyListeners();
+        _groupIndex = (_groupIndex + 1) % _groups.length;
       }
-      // Si un seul départ : pas d'alternance, le ticker reste sur ce départ
+      _updateRemaining();
+      notifyListeners();
     });
 
     // Rechargement API toutes les 5 minutes
@@ -199,8 +200,8 @@ class DepartureCountdownService extends ChangeNotifier {
     } else if (_groups.length > 1) {
       _groupIndex = (_groupIndex + 1) % _groups.length;
       _inGroupIndex = 0;
-      _updateRemaining();
     }
+    _updateRemaining();
     notifyListeners();
   }
 
@@ -211,8 +212,8 @@ class DepartureCountdownService extends ChangeNotifier {
     } else if (_groups.length > 1) {
       _groupIndex = (_groupIndex - 1 + _groups.length) % _groups.length;
       _inGroupIndex = 0;
-      _updateRemaining();
     }
+    _updateRemaining();
     notifyListeners();
   }
 
@@ -247,7 +248,8 @@ class DepartureCountdownService extends ChangeNotifier {
       _remaining = Duration.zero;
       return;
     }
-    final target = _groups[_groupIndex].first.dateTime;
+    // Compte à rebours vers le départ ACTUELLEMENT affiché
+    final target = currentDeparture.dateTime;
     final diff = target.difference(DateTime.now());
     _remaining = diff.isNegative ? Duration.zero : diff;
   }

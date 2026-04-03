@@ -9,8 +9,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../../../models/departure_model.dart';
 import '../../../services/departure_api_service.dart';
+import '../../../services/departure_countdown_service.dart';
 
 class AdminDeparturesScreen extends StatefulWidget {
   const AdminDeparturesScreen({Key? key}) : super(key: key);
@@ -92,7 +94,13 @@ class _AdminDeparturesScreenState extends State<AdminDeparturesScreen> {
         content: Text(ok
             ? '✅ Statut mis à jour → ${_statusLabel(newStatus)}'
             : '❌ Erreur changement statut')));
-    if (ok) _load();
+    if (ok) {
+      _load();
+      // ✅ Si le départ est publié ou dépublié, mettre à jour le ticker/compte à rebours immédiatement
+      if (newStatus == 'PUBLISHED' || newStatus == 'DRAFT' || newStatus == 'ARCHIVED') {
+        context.read<DepartureCountdownService>().reload();
+      }
+    }
   }
 
   Future<void> _delete(DepartureModel dep) async {
