@@ -188,7 +188,7 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
         backgroundColor: _appBlue,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
-        title: Text(isEdit ? 'Modifier le transport' : 'Nouveau transport',
+        title: Text(isEdit ? 'Modifier le transport par GP' : 'Nouveau transport par GP',
             style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w800,
@@ -378,7 +378,7 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
                           ? "Envoi en cours..."
                           : isEdit
                               ? "Enregistrer les modifications"
-                              : "Envoyer la demande de transport",
+                              : "Envoyer la demande de transport par GP",
                       style: const TextStyle(
                           fontWeight: FontWeight.w800, fontSize: 15),
                     ),
