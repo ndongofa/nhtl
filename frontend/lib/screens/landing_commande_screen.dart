@@ -253,10 +253,10 @@ class LandingCommandeScreen extends StatelessWidget {
               ElevatedButton.icon(
                 icon: Icon(
                     isLoggedIn
-                        ? Icons.dashboard_outlined
+                        ? Icons.add_shopping_cart_outlined
                         : Icons.login_outlined,
                     size: 16),
-                label: Text(isLoggedIn ? "Mon espace Commande" : "Se connecter",
+                label: Text(isLoggedIn ? "Passer une commande" : "Se connecter",
                     style: const TextStyle(fontWeight: FontWeight.w800)),
                 style: ElevatedButton.styleFrom(
                     backgroundColor: t.isDark
@@ -570,9 +570,9 @@ class LandingCommandeScreen extends StatelessWidget {
           const SizedBox(height: 24),
           ElevatedButton.icon(
             icon: Icon(
-                isLoggedIn ? Icons.dashboard_outlined : Icons.login_outlined,
+                isLoggedIn ? Icons.add_shopping_cart_outlined : Icons.login_outlined,
                 size: 16),
-            label: Text(isLoggedIn ? "Mon espace Commande" : "Se connecter",
+            label: Text(isLoggedIn ? "Passer une commande" : "Se connecter",
                 style: const TextStyle(fontWeight: FontWeight.w800)),
             style: ElevatedButton.styleFrom(
                 backgroundColor: AppThemeProvider.amber,
