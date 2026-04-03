@@ -82,11 +82,14 @@ class SamaTechDigitalScreen extends StatelessWidget {
         backgroundColor: t.topBarBg,
         foregroundColor: Colors.white,
         elevation: 0,
-        title: const Row(children: [
-          Text("💻", style: TextStyle(fontSize: 20)),
-          SizedBox(width: 8),
-          Text("Sama Tech Digital",
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+        title: Row(children: [
+          const Text("💻", style: TextStyle(fontSize: 20)),
+          const SizedBox(width: 8),
+          const Flexible(
+            child: Text("Sama Tech Digital",
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+          ),
         ]),
         actions: [
           IconButton(
@@ -105,21 +108,22 @@ class SamaTechDigitalScreen extends StatelessWidget {
                     .pushNamedAndRemoveUntil('/', (_) => false);
               },
             ),
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                  color: _cyan.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: _cyan.withValues(alpha: 0.5))),
-              child: const Text("● Disponible",
-                  style: TextStyle(
-                      color: _cyan,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700)),
+          if (isDesktop)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                    color: _cyan.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: _cyan.withValues(alpha: 0.5))),
+                child: const Text("● Disponible",
+                    style: TextStyle(
+                        color: _cyan,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700)),
+              ),
             ),
-          ),
         ],
       ),
       body: SingleChildScrollView(
