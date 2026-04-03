@@ -189,12 +189,15 @@ class ServicesHubScreen extends StatelessWidget {
                 ),
               ),
               // ── Bannière publicitaire fixe en bas ──────────────────────
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: isDesktop ? 24 : 16,
-                  vertical: 8,
+              SafeArea(
+                top: false,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isDesktop ? 24 : 16,
+                    vertical: 8,
+                  ),
+                  child: _AdsBannerCard(t: t, isDesktop: isDesktop),
                 ),
-                child: _AdsBannerCard(t: t, isDesktop: isDesktop),
               ),
             ],
           ),
