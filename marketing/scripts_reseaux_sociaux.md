@@ -14,10 +14,10 @@
 | ✈️ Sama GP (Transport groupage) | https://www.sama-services-intl.com/transport |
 | 🛒 Sama Commande (Amazon, Temu, Shein…) | https://www.sama-services-intl.com/commande |
 | 🏪 Sama Achat (Marchés & boutiques) | https://www.sama-services-intl.com/achat |
-| 🌿 Sama Maad (Maad frais) | https://www.sama-services-intl.com/ |
-| 🥂 Sama Téranga Apéro (Bissap, Gnamakoudji…) | https://www.sama-services-intl.com/ |
-| ⭐ Sama Best Seller (Articles populaires) | https://www.sama-services-intl.com/ |
-| 💻 Sama Tech Digital (Solutions web & IT) | https://www.sama-services-intl.com/ |
+| 🌿 Sama Maad (Maad frais) | https://www.sama-services-intl.com/maad |
+| 🥂 Sama Téranga Apéro (Bissap, Gnamakoudji…) | https://www.sama-services-intl.com/teranga |
+| ⭐ Sama Best Seller (Articles populaires) | https://www.sama-services-intl.com/bestseller |
+| 💻 Sama Tech Digital (Solutions web & IT) | https://www.sama-services-intl.com/tech |
 
 ---
 
@@ -103,7 +103,7 @@ Avec Sama Téranga Apéro et Sama Maad,
 on vous apporte l'authentique à votre porte 🇸🇳❤️
 
 🌐 Découvrir nos produits :
-👉 https://www.sama-services-intl.com/
+👉 https://www.sama-services-intl.com/teranga
 
 #TerangaApero #SamaMaad #ProduitsAfricains #Bissap #DiasporaParis #Casablanca
 ```
@@ -119,7 +119,7 @@ Sama Best Seller, c'est la liste des produits les plus demandés du moment —
 sélectionnés par la communauté, livrés partout !
 
 🌐 Voir la sélection :
-👉 https://www.sama-services-intl.com/
+👉 https://www.sama-services-intl.com/bestseller
 
 #SamaBestSeller #TopProduits #Senegal #Diaspora
 ```
@@ -136,7 +136,7 @@ Sama Tech Digital vous accompagne de A à Z —
 création, développement, mise en ligne.
 
 🌐 Nous contacter :
-👉 https://www.sama-services-intl.com/
+👉 https://www.sama-services-intl.com/tech
 📧 tech@ngom-holding.com
 
 #SamaTechDigital #CreationSiteWeb #DigitalAfrique #Senegal
@@ -228,13 +228,13 @@ NOS SERVICES :
 • Sama Achat — Achats sur mesure en marchés et boutiques spécialisées
   ↳ https://www.sama-services-intl.com/achat
 • Sama Maad — Maad frais directement depuis le Sénégal
-  ↳ https://www.sama-services-intl.com/
+  ↳ https://www.sama-services-intl.com/maad
 • Sama Téranga Apéro — Bissap, Gnamakoudji, Ditax et spécialités sénégalaises
-  ↳ https://www.sama-services-intl.com/
+  ↳ https://www.sama-services-intl.com/teranga
 • Sama Best Seller — Les articles les plus demandés du moment
-  ↳ https://www.sama-services-intl.com/
+  ↳ https://www.sama-services-intl.com/bestseller
 • Sama Tech Digital — Création de sites web et solutions digitales sur mesure
-  ↳ https://www.sama-services-intl.com/
+  ↳ https://www.sama-services-intl.com/tech
 
 🌐 https://www.sama-services-intl.com/
 📧 tech@ngom-holding.com
@@ -263,16 +263,16 @@ Accessible depuis votre navigateur, SAMA regroupe 7 services essentiels :
    → https://www.sama-services-intl.com/achat
 
 🌿 Sama Maad — Du Maad frais de qualité, directement depuis le Sénégal.
-   → https://www.sama-services-intl.com/
+   → https://www.sama-services-intl.com/maad
 
 🍹 Sama Téranga Apéro — Bissap, Gnamakoudji, Ditax et spécialités à portée de main.
-   → https://www.sama-services-intl.com/
+   → https://www.sama-services-intl.com/teranga
 
 ⭐ Sama Best Seller — Les articles les plus populaires du moment.
-   → https://www.sama-services-intl.com/
+   → https://www.sama-services-intl.com/bestseller
 
 💻 Sama Tech Digital — Solutions web et digitales sur mesure.
-   → https://www.sama-services-intl.com/
+   → https://www.sama-services-intl.com/tech
 
 🌐 https://www.sama-services-intl.com/
 📧 tech@ngom-holding.com
@@ -320,10 +320,10 @@ services intégrées :
   → https://www.sama-services-intl.com/commande
 ✔ Service d'achat personnalisé en marchés spécialisés
   → https://www.sama-services-intl.com/achat
-✔ Distribution de produits frais et spécialités sénégalaises
-  → https://www.sama-services-intl.com/
+✔ Distribution de produits frais et spécialités sénégalaises (Maad, Téranga Apéro)
+  → https://www.sama-services-intl.com/maad | https://www.sama-services-intl.com/teranga
 ✔ Services digitaux sur mesure (création web, solutions IT)
-  → https://www.sama-services-intl.com/
+  → https://www.sama-services-intl.com/tech
 
 🌐 https://www.sama-services-intl.com/
 📧 tech@ngom-holding.com

@@ -20,6 +20,10 @@ import 'screens/services_hub_screen.dart';
 import 'screens/transport_hub_screen.dart';
 import 'screens/achat_hub_screen.dart';
 import 'screens/services/sama_achat_screen.dart';
+import 'screens/services/sama_best_seller_screen.dart';
+import 'screens/services/sama_maad_screen.dart';
+import 'screens/services/sama_tech_digital_screen.dart';
+import 'screens/services/sama_teranga_screen.dart';
 import 'services/departure_countdown_service.dart';
 import 'ui/app_brand.dart';
 
@@ -94,6 +98,10 @@ class MyApp extends StatelessWidget {
         '/commande/hub': (context) => const CommandeHubScreen(),
         '/achat': (context) => const SamaAchatScreen(),
         '/achat/hub': (context) => const AchatHubScreen(),
+        '/maad': (context) => const SamaMaadScreen(),
+        '/teranga': (context) => const SamaTerangaScreen(),
+        '/bestseller': (context) => const SamaBestSellerScreen(),
+        '/tech': (context) => const SamaTechDigitalScreen(),
       },
       debugShowCheckedModeBanner: false,
     );
