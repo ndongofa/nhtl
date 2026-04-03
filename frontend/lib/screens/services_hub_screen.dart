@@ -171,9 +171,7 @@ class ServicesHubScreen extends StatelessWidget {
                                 isDesktop
                                     ? _gridDesktop(context, t)
                                     : _gridMobile(context, t),
-                                const SizedBox(height: 8),
-                                // ── 4. Bandeau annonces / promotions ──────
-                                _AdsBannerCard(t: t, isDesktop: isDesktop),
+
                               ],
                             ),
                           ),
@@ -189,6 +187,14 @@ class ServicesHubScreen extends StatelessWidget {
                     ],
                   ),
                 ),
+              ),
+              // ── Bannière publicitaire fixe en bas ──────────────────────
+              Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: isDesktop ? 24 : 16,
+                  vertical: 8,
+                ),
+                child: _AdsBannerCard(t: t, isDesktop: isDesktop),
               ),
             ],
           ),
