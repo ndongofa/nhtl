@@ -255,7 +255,7 @@ class _LandingTransportScreenState extends State<LandingTransportScreen> {
         width: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFFF8F00), AppThemeProvider.amber, Color(0xFFFFCA28)],
+            colors: [AppThemeProvider.amberDeep, AppThemeProvider.amber, AppThemeProvider.amberBright],
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
           ),

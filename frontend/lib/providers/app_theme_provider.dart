@@ -22,6 +22,8 @@ class AppThemeProvider extends ChangeNotifier {
   static const Color blueBright = Color(0xFF42AAFE);
   static const Color blueMid = Color(0xFF1A7ED4);
   static const Color amber = Color(0xFFFFB300);
+  static const Color amberDeep = Color(0xFFFF8F00);
+  static const Color amberBright = Color(0xFFFFCA28);
   static const Color amberLight = Color(0xFFFFF3CD);
   static const Color teal = Color(0xFF00D4C8);
   static const Color green = Color(0xFF22C55E);
