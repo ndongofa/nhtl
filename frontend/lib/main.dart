@@ -20,7 +20,9 @@ import 'screens/services_hub_screen.dart';
 import 'screens/transport_hub_screen.dart';
 import 'screens/achat_hub_screen.dart';
 import 'screens/services/sama_achat_screen.dart';
+import 'screens/notifications/notifications_screen.dart';
 import 'services/departure_countdown_service.dart';
+import 'services/notification_polling_service.dart';
 import 'ui/app_brand.dart';
 
 void main() async {
@@ -38,6 +40,9 @@ void main() async {
         ChangeNotifierProvider(create: (_) => AppThemeProvider()),
         ChangeNotifierProvider(
           create: (_) => DepartureCountdownService()..start(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => NotificationPollingService()..start(),
         ),
       ],
       child: const MyApp(),
@@ -94,6 +99,7 @@ class MyApp extends StatelessWidget {
         '/commande/hub': (context) => const CommandeHubScreen(),
         '/achat': (context) => const SamaAchatScreen(),
         '/achat/hub': (context) => const AchatHubScreen(),
+        '/notifications': (context) => const NotificationsScreen(),
       },
       debugShowCheckedModeBanner: false,
     );
