@@ -384,10 +384,10 @@ class _FeaturedGpCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
       ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: const [
-        Text("⭐", style: TextStyle(fontSize: 11)),
-        SizedBox(width: 5),
-        Text(
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        const Text("⭐", style: TextStyle(fontSize: 11)),
+        const SizedBox(width: 5),
+        const Text(
           "Service phare",
           style: TextStyle(
             color: Colors.white,
@@ -780,7 +780,8 @@ class _AdsBannerCard extends StatefulWidget {
   State<_AdsBannerCard> createState() => _AdsBannerCardState();
 }
 
-class _AdsBannerCardState extends State<_AdsBannerCard> {
+class _AdsBannerCardState extends State<_AdsBannerCard>
+    with WidgetsBindingObserver {
   static const List<_AdItem> _ads = [
     _AdItem(
       emoji: "✈️",
@@ -811,6 +812,12 @@ class _AdsBannerCardState extends State<_AdsBannerCard> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _startTimer();
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (mounted) {
         setState(() => _index = (_index + 1) % _ads.length);
@@ -819,7 +826,18 @@ class _AdsBannerCardState extends State<_AdsBannerCard> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      _timer?.cancel();
+    } else if (state == AppLifecycleState.resumed) {
+      _startTimer();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _timer?.cancel();
     super.dispose();
   }
@@ -899,7 +917,7 @@ class _AdsBannerCardState extends State<_AdsBannerCard> {
                     width: _index == i ? 18 : 6,
                     height: 6,
                     decoration: BoxDecoration(
-                      color: (_index == i ? Colors.white : Colors.white)
+                      color: Colors.white
                           .withValues(alpha: _index == i ? 0.95 : 0.38),
                       borderRadius: BorderRadius.circular(3),
                     ),
