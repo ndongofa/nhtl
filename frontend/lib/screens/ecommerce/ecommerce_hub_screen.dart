@@ -31,6 +31,8 @@ class EcommerceHubScreen extends StatefulWidget {
 }
 
 class _EcommerceHubScreenState extends State<EcommerceHubScreen> {
+  static const double _fabBottomPadding = 96;
+
   late EcommerceService _service;
   List<CommandeEcommerce> _commandes = [];
   bool _loading = false;
@@ -48,6 +50,23 @@ class _EcommerceHubScreenState extends State<EcommerceHubScreen> {
     if (mounted) setState(() => _loading = false);
   }
 
+  void _ouvrirCatalogue() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChangeNotifierProvider(
+          create: (_) => PanierProvider(serviceType: widget.serviceType),
+          child: CatalogueScreen(
+            serviceType: widget.serviceType,
+            serviceLabel: widget.serviceLabel,
+            serviceEmoji: '🛍️',
+            accentColor: widget.accentColor,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = context.watch<AppThemeProvider>();
@@ -58,7 +77,7 @@ class _EcommerceHubScreenState extends State<EcommerceHubScreen> {
         backgroundColor: t.topBarBg,
         foregroundColor: Colors.white,
         elevation: 0,
-        title: Text('Mes commandes — ${widget.serviceLabel}',
+        title: Text(widget.serviceLabel,
             style: const TextStyle(
                 fontWeight: FontWeight.w800, fontSize: 16)),
         actions: [
@@ -92,55 +111,109 @@ class _EcommerceHubScreenState extends State<EcommerceHubScreen> {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.store_outlined),
-            tooltip: 'Catalogue',
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ChangeNotifierProvider(
-                  create: (_) =>
-                      PanierProvider(serviceType: widget.serviceType),
-                  child: CatalogueScreen(
-                    serviceType: widget.serviceType,
-                    serviceLabel: widget.serviceLabel,
-                    serviceEmoji: '🛍️',
-                    accentColor: widget.accentColor,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _load,
           ),
         ],
       ),
-      body: _loading
-          ? Center(
-              child: CircularProgressIndicator(
-                  color: widget.accentColor))
-          : _commandes.isEmpty
-              ? _emptyState(t)
-              : RefreshIndicator(
-                  onRefresh: _load,
-                  color: widget.accentColor,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _commandes.length,
-                    itemBuilder: (ctx, i) => _CommandeTile(
-                      commande: _commandes[i],
-                      accentColor: widget.accentColor,
-                      t: t,
-                    ),
-                  ),
-                ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _ouvrirCatalogue,
+        backgroundColor: widget.accentColor,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.store_outlined),
+        label: const Text('Catalogue',
+            style: TextStyle(fontWeight: FontWeight.w700)),
+      ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _catalogueBanner(t),
+          Expanded(
+            child: _loading
+                ? Center(
+                    child: CircularProgressIndicator(
+                        color: widget.accentColor))
+                : _commandes.isEmpty
+                    ? _emptyState(t)
+                    : RefreshIndicator(
+                        onRefresh: _load,
+                        color: widget.accentColor,
+                        child: ListView(
+                          padding: const EdgeInsets.fromLTRB(
+                              16, 0, 16, _fabBottomPadding),
+                          children: [
+                            Padding(
+                              padding:
+                                  const EdgeInsets.only(bottom: 12, top: 4),
+                              child: Text('Mes commandes en cours',
+                                  style: TextStyle(
+                                      color: t.textPrimary,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 14)),
+                            ),
+                            ..._commandes.map((c) => _CommandeTile(
+                                  commande: c,
+                                  accentColor: widget.accentColor,
+                                  t: t,
+                                )),
+                          ],
+                        ),
+                      ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _catalogueBanner(AppThemeProvider t) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: InkWell(
+        onTap: _ouvrirCatalogue,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                widget.accentColor,
+                widget.accentColor.withValues(alpha: 0.75),
+              ],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(children: [
+            const Icon(Icons.store_outlined, color: Colors.white, size: 26),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                const Text('Parcourir le catalogue',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15)),
+                const SizedBox(height: 2),
+                Text('Découvrez tous les produits disponibles',
+                    style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        fontSize: 12)),
+              ]),
+            ),
+            const Icon(Icons.arrow_forward_ios,
+                color: Colors.white, size: 16),
+          ]),
+        ),
+      ),
     );
   }
 
   Widget _emptyState(AppThemeProvider t) => Center(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Text('🛍️', style: TextStyle(fontSize: 52)),
+          const Text('📦', style: TextStyle(fontSize: 52)),
           const SizedBox(height: 16),
           Text('Aucune commande en cours',
               style: TextStyle(
@@ -150,34 +223,6 @@ class _EcommerceHubScreenState extends State<EcommerceHubScreen> {
           const SizedBox(height: 8),
           Text('Commandez depuis le catalogue',
               style: TextStyle(color: t.textMuted, fontSize: 13)),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            icon: const Icon(Icons.store_outlined, size: 18),
-            label: const Text('Aller au catalogue',
-                style: TextStyle(fontWeight: FontWeight.w700)),
-            style: ElevatedButton.styleFrom(
-                backgroundColor: widget.accentColor,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 12)),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ChangeNotifierProvider(
-                  create: (_) =>
-                      PanierProvider(serviceType: widget.serviceType),
-                  child: CatalogueScreen(
-                    serviceType: widget.serviceType,
-                    serviceLabel: widget.serviceLabel,
-                    serviceEmoji: '🛍️',
-                    accentColor: widget.accentColor,
-                  ),
-                ),
-              ),
-            ),
-          ),
         ]),
       );
 }
