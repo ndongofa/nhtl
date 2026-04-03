@@ -158,22 +158,22 @@ class DepartureCountdownService extends ChangeNotifier {
     });
 
     // ✅ Alternance auto toutes les 5s entre les prochains départs
-    // Fonctionne même si plusieurs départs sont le même jour (sameDayCount > 1)
-    // ou si les départs sont sur des jours différents (groupCount > 1)
+    // Parcourt TOUS les départs dans l'ordre : d'abord les départs du même jour,
+    // puis passe au jour suivant — fonctionne dans tous les cas.
     _autoSwitchTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (_groups.isEmpty) return;
-      if (sameDayCount > 1) {
-        // Plusieurs départs le même jour → cycler dans le groupe
-        _inGroupIndex = (_inGroupIndex + 1) % sameDayCount;
-        notifyListeners();
-      } else if (_groups.length > 1) {
-        // Départs sur des jours différents → cycler entre les groupes
-        _groupIndex = (_groupIndex + 1) % _groups.length;
+      final totalDepartures =
+          _groups.fold<int>(0, (sum, g) => sum + g.length);
+      if (totalDepartures <= 1) return; // Un seul départ : rien à cycler
+
+      // Avancer dans le groupe courant, ou passer au groupe suivant
+      _inGroupIndex++;
+      if (_inGroupIndex >= sameDayCount) {
         _inGroupIndex = 0;
+        _groupIndex = (_groupIndex + 1) % _groups.length;
         _updateRemaining();
-        notifyListeners();
       }
-      // Si un seul départ : pas d'alternance, le ticker reste sur ce départ
+      notifyListeners();
     });
 
     // Rechargement API toutes les 5 minutes

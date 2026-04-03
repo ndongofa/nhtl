@@ -656,13 +656,15 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
                 child: _emojiText(dep.flag, 32,
-                    key: ValueKey("flag_${dep.flag}_$groupIndex")),
+                    key: ValueKey(
+                        "flag_${dep.flag}_${groupIndex}_$inGroupIndex")),
               ),
               const SizedBox(height: 6),
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 350),
                 child: Text(
-                  key: ValueKey("route_${dep.route}_$groupIndex"),
+                  key: ValueKey(
+                      "route_${dep.route}_${groupIndex}_$inGroupIndex"),
                   dep.route,
                   style: TextStyle(
                       color: t.textPrimary,
@@ -686,7 +688,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
           child: Text(
-            key: ValueKey("date_${dep.date}_$groupIndex"),
+            key: ValueKey("date_${dep.date}_${groupIndex}_$inGroupIndex"),
             dep.date.toUpperCase(),
             style: TextStyle(
                 color: svc.isExpired ? t.textMuted : _amber,
