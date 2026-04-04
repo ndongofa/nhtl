@@ -1,6 +1,5 @@
 package com.nhtl.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDateTime;
 
 public class AdDTO {
@@ -40,11 +39,9 @@ public class AdDTO {
     public int getPosition() { return position; }
     public void setPosition(int position) { this.position = position; }
 
-    @JsonProperty("isActive")
-    public boolean isActive() { return isActive; }
+    public boolean getIsActive() { return isActive; }
 
-    @JsonProperty("isActive")
-    public void setActive(boolean active) { isActive = active; }
+    public void setIsActive(boolean isActive) { this.isActive = isActive; }
 
     public String getAdType() { return adType; }
     public void setAdType(String adType) { this.adType = adType; }
