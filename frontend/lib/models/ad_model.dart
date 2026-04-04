@@ -2,6 +2,10 @@
 
 import 'package:flutter/material.dart';
 
+/// Type d'une publicité dans le carousel.
+/// - `'text'`    : emoji + texte sur fond dégradé (comportement actuel)
+/// - `'image'`   : image/GIF depuis une URL, texte en overlay
+/// - `'youtube'` : lecteur YouTube intégré (muet, autoplay)
 class AdModel {
   final int? id;
   final String emoji;
@@ -11,6 +15,9 @@ class AdModel {
   final String colorEndHex;
   final int position;
   final bool isActive;
+  final String adType;
+  final String? imageUrl;
+  final String? youtubeId;
 
   const AdModel({
     this.id,
@@ -21,6 +28,9 @@ class AdModel {
     required this.colorEndHex,
     this.position = 0,
     this.isActive = true,
+    this.adType = 'text',
+    this.imageUrl,
+    this.youtubeId,
   });
 
   Color get color => _hexToColor(colorHex);
@@ -45,6 +55,9 @@ class AdModel {
         colorEndHex: json['colorEndHex'] as String? ?? '#0D5BBF',
         position: json['position'] as int? ?? 0,
         isActive: json['isActive'] as bool? ?? true,
+        adType: json['adType'] as String? ?? 'text',
+        imageUrl: json['imageUrl'] as String?,
+        youtubeId: json['youtubeId'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
@@ -56,6 +69,9 @@ class AdModel {
         'colorEndHex': colorEndHex,
         'position': position,
         'isActive': isActive,
+        'adType': adType,
+        if (imageUrl != null) 'imageUrl': imageUrl,
+        if (youtubeId != null) 'youtubeId': youtubeId,
       };
 
   AdModel copyWith({
@@ -67,6 +83,9 @@ class AdModel {
     String? colorEndHex,
     int? position,
     bool? isActive,
+    String? adType,
+    String? imageUrl,
+    String? youtubeId,
   }) =>
       AdModel(
         id: id ?? this.id,
@@ -77,5 +96,8 @@ class AdModel {
         colorEndHex: colorEndHex ?? this.colorEndHex,
         position: position ?? this.position,
         isActive: isActive ?? this.isActive,
+        adType: adType ?? this.adType,
+        imageUrl: imageUrl ?? this.imageUrl,
+        youtubeId: youtubeId ?? this.youtubeId,
       );
 }

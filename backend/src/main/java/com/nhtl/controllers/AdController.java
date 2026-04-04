@@ -60,6 +60,9 @@ public class AdController {
             ad.setColorEndHex(dto.getColorEndHex());
             ad.setPosition(dto.getPosition());
             ad.setActive(dto.isActive());
+            ad.setAdType(dto.getAdType() != null ? dto.getAdType() : "text");
+            ad.setImageUrl(dto.getImageUrl());
+            ad.setYoutubeId(dto.getYoutubeId());
             Ad saved = repo.save(ad);
             log.info("[AD] Updated id={}", id);
             return ResponseEntity.ok(toDTO(saved));
@@ -98,6 +101,9 @@ public class AdController {
         dto.setColorEndHex(ad.getColorEndHex());
         dto.setPosition(ad.getPosition());
         dto.setActive(ad.isActive());
+        dto.setAdType(ad.getAdType() != null ? ad.getAdType() : "text");
+        dto.setImageUrl(ad.getImageUrl());
+        dto.setYoutubeId(ad.getYoutubeId());
         dto.setCreatedAt(ad.getCreatedAt());
         dto.setUpdatedAt(ad.getUpdatedAt());
         return dto;
@@ -112,6 +118,9 @@ public class AdController {
         ad.setColorEndHex(dto.getColorEndHex() != null ? dto.getColorEndHex() : "#0D5BBF");
         ad.setPosition(dto.getPosition());
         ad.setActive(dto.isActive());
+        ad.setAdType(dto.getAdType() != null ? dto.getAdType() : "text");
+        ad.setImageUrl(dto.getImageUrl());
+        ad.setYoutubeId(dto.getYoutubeId());
         return ad;
     }
 }

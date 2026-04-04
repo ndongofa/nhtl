@@ -15,6 +15,9 @@ import '../services/auth_service.dart';
 import '../services/departure_countdown_service.dart';
 import '../services/notification_polling_service.dart';
 import '../services/ad_service.dart';
+import '../models/ad_model.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import '../models/logged_user.dart';
 
 class ServicesHubScreen extends StatelessWidget {
@@ -798,11 +801,13 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
   void _startTimer() {
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 5), (_) {
-      if (mounted) {
-        final ads = context.read<AdService>().ads;
-        if (ads.isEmpty) return;
-        setState(() => _index = (_index + 1) % ads.length);
-      }
+      if (!mounted) return;
+      final ads = context.read<AdService>().ads;
+      if (ads.isEmpty) return;
+      // Don't auto-advance while a YouTube ad is playing
+      final current = ads[_index % ads.length];
+      if (current.adType == 'youtube') return;
+      setState(() => _index = (_index + 1) % ads.length);
     });
   }
 
@@ -823,6 +828,260 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
     super.dispose();
   }
 
+  // ── Dot indicators shared by all ad types ──────────────────────────────────
+  Widget _buildDots(int safeIndex, int total) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(
+        total,
+        (i) => GestureDetector(
+          onTap: () => setState(() => _index = i),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            margin: const EdgeInsets.symmetric(vertical: 3),
+            width: safeIndex == i ? 18 : 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color:
+                  Colors.white.withValues(alpha: safeIndex == i ? 0.95 : 0.38),
+              borderRadius: BorderRadius.circular(3),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Text ad (emoji + gradient background) ──────────────────────────────────
+  Widget _buildTextContent(AdModel ad, int safeIndex, int total) {
+    final p = widget.isDesktop ? 22.0 : 18.0;
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(p),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: widget.t.isDark
+              ? [
+                  ad.color.withValues(alpha: 0.22),
+                  ad.colorEnd.withValues(alpha: 0.14),
+                ]
+              : [
+                  ad.color.withValues(alpha: 0.9),
+                  ad.colorEnd,
+                ],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+      ),
+      child: Row(
+        children: [
+          Text(ad.emoji,
+              style: TextStyle(fontSize: widget.isDesktop ? 32 : 26)),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  ad.title,
+                  style: TextStyle(
+                    color: widget.t.isDark
+                        ? widget.t.textPrimary
+                        : Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: widget.isDesktop ? 15 : 13,
+                  ),
+                ),
+                if (ad.subtitle.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    ad.subtitle,
+                    style: TextStyle(
+                      color: widget.t.isDark
+                          ? widget.t.textMuted
+                          : Colors.white.withValues(alpha: 0.82),
+                      fontWeight: FontWeight.w400,
+                      fontSize: widget.isDesktop ? 13 : 11,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          _buildDots(safeIndex, total),
+        ],
+      ),
+    );
+  }
+
+  // ── Image ad (CachedNetworkImage + gradient overlay + text) ────────────────
+  Widget _buildImageContent(AdModel ad, int safeIndex, int total) {
+    final p = widget.isDesktop ? 22.0 : 18.0;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: AspectRatio(
+        aspectRatio: 16 / 7,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Background image
+            CachedNetworkImage(
+              imageUrl: ad.imageUrl!,
+              fit: BoxFit.cover,
+              placeholder: (_, __) => Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      ad.color.withValues(alpha: 0.5),
+                      ad.colorEnd.withValues(alpha: 0.3),
+                    ],
+                  ),
+                ),
+              ),
+              errorWidget: (_, __, ___) => Container(
+                color: ad.color.withValues(alpha: 0.3),
+                child: Center(
+                  child: Text(ad.emoji,
+                      style: const TextStyle(fontSize: 40)),
+                ),
+              ),
+            ),
+            // Gradient overlay for text readability
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.transparent, Colors.black87],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+            ),
+            // Text + dots
+            Padding(
+              padding: EdgeInsets.all(p),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              ad.title,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                fontSize: widget.isDesktop ? 15 : 13,
+                              ),
+                            ),
+                            if (ad.subtitle.isNotEmpty) ...[
+                              const SizedBox(height: 3),
+                              Text(
+                                ad.subtitle,
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.82),
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: widget.isDesktop ? 13 : 11,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      _buildDots(safeIndex, total),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── YouTube ad (inline player + text strip below) ──────────────────────────
+  Widget _buildYoutubeContent(AdModel ad, int safeIndex, int total) {
+    final p = widget.isDesktop ? 22.0 : 18.0;
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // YouTube player
+          ClipRRect(
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(16)),
+            child: _YoutubeAdWidget(
+              youtubeId: ad.youtubeId!,
+            ),
+          ),
+          // Title + subtitle + dots
+          Container(
+            padding: EdgeInsets.symmetric(
+                horizontal: p, vertical: widget.isDesktop ? 14 : 10),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF111111), Color(0xFF1A1A1A)],
+              ),
+              borderRadius:
+                  BorderRadius.vertical(bottom: Radius.circular(16)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        ad.title,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: widget.isDesktop ? 14 : 12,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (ad.subtitle.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          ad.subtitle,
+                          style: TextStyle(
+                            color: Colors.white54,
+                            fontSize: widget.isDesktop ? 12 : 10,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                _buildDots(safeIndex, total),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final ads = context.watch<AdService>().ads;
@@ -838,85 +1097,67 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
         opacity: animation,
         child: child,
       ),
-      child: Container(
+      child: KeyedSubtree(
         key: ValueKey(safeIndex),
-        width: double.infinity,
-        padding: EdgeInsets.all(widget.isDesktop ? 22 : 18),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            colors: widget.t.isDark
-                ? [
-                    ad.color.withValues(alpha: 0.22),
-                    ad.colorEnd.withValues(alpha: 0.14),
-                  ]
-                : [
-                    ad.color.withValues(alpha: 0.9),
-                    ad.colorEnd,
-                  ],
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-          ),
-        ),
-        child: Row(
-          children: [
-            Text(ad.emoji,
-                style: TextStyle(fontSize: widget.isDesktop ? 32 : 26)),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    ad.title,
-                    style: TextStyle(
-                      color: widget.t.isDark
-                          ? widget.t.textPrimary
-                          : Colors.white,
-                      fontWeight: FontWeight.w800,
-                      fontSize: widget.isDesktop ? 15 : 13,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    ad.subtitle,
-                    style: TextStyle(
-                      color: widget.t.isDark
-                          ? widget.t.textMuted
-                          : Colors.white.withValues(alpha: 0.82),
-                      fontWeight: FontWeight.w400,
-                      fontSize: widget.isDesktop ? 13 : 11,
-                      height: 1.4,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            // Dot indicators
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: List.generate(
-                ads.length,
-                (i) => GestureDetector(
-                  onTap: () => setState(() => _index = i),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    margin: const EdgeInsets.symmetric(vertical: 3),
-                    width: safeIndex == i ? 18 : 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: Colors.white
-                          .withValues(alpha: safeIndex == i ? 0.95 : 0.38),
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+        child: switch (ad.adType) {
+          'image' when (ad.imageUrl ?? '').isNotEmpty =>
+            _buildImageContent(ad, safeIndex, ads.length),
+          'youtube' when (ad.youtubeId ?? '').isNotEmpty =>
+            _buildYoutubeContent(ad, safeIndex, ads.length),
+          _ => _buildTextContent(ad, safeIndex, ads.length),
+        },
       ),
+    );
+  }
+}
+
+// ── YouTube inline player widget ──────────────────────────────────────────────
+
+class _YoutubeAdWidget extends StatefulWidget {
+  final String youtubeId;
+  const _YoutubeAdWidget({required this.youtubeId});
+
+  @override
+  State<_YoutubeAdWidget> createState() => _YoutubeAdWidgetState();
+}
+
+class _YoutubeAdWidgetState extends State<_YoutubeAdWidget> {
+  late YoutubePlayerController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = YoutubePlayerController.fromVideoId(
+      videoId: widget.youtubeId,
+      autoPlay: true,
+      params: const YoutubePlayerParams(
+        mute: true,
+        showControls: true,
+        showFullscreenButton: true,
+        loop: true,
+      ),
+    );
+  }
+
+  @override
+  void didUpdateWidget(_YoutubeAdWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.youtubeId != widget.youtubeId) {
+      _controller.loadVideoById(videoId: widget.youtubeId);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.close();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return YoutubePlayer(
+      controller: _controller,
+      aspectRatio: 16 / 9,
     );
   }
 }

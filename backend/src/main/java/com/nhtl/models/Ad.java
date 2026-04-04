@@ -32,6 +32,15 @@ public class Ad {
     @Column(nullable = false)
     private boolean isActive = true;
 
+    @Column(nullable = false, length = 20)
+    private String adType = "text";
+
+    @Column(columnDefinition = "TEXT")
+    private String imageUrl;
+
+    @Column(length = 20)
+    private String youtubeId;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -69,6 +78,15 @@ public class Ad {
 
     public boolean isActive() { return isActive; }
     public void setActive(boolean active) { isActive = active; }
+
+    public String getAdType() { return adType; }
+    public void setAdType(String adType) { this.adType = adType; }
+
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+
+    public String getYoutubeId() { return youtubeId; }
+    public void setYoutubeId(String youtubeId) { this.youtubeId = youtubeId; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

@@ -8,6 +8,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../models/ad_model.dart';
 import '../../../services/ad_api_service.dart';
 import '../../../services/ad_service.dart';
@@ -215,6 +216,59 @@ class _AdTile extends StatelessWidget {
     required this.onDelete,
   });
 
+  String _adTypeLabel(String adType) {
+    switch (adType) {
+      case 'image':
+        return '🖼️ Image';
+      case 'youtube':
+        return '▶️ YouTube';
+      default:
+        return '📝 Texte';
+    }
+  }
+
+  Widget _buildPreviewSwatch() {
+    if (ad.adType == 'image' && (ad.imageUrl ?? '').isNotEmpty) {
+      return SizedBox(
+        width: 54,
+        child: CachedNetworkImage(
+          imageUrl: ad.imageUrl!,
+          fit: BoxFit.cover,
+          placeholder: (_, __) => Container(
+            color: ad.color.withValues(alpha: 0.18),
+            child: const Center(
+              child: Icon(Icons.image_outlined, color: Colors.white54, size: 24),
+            ),
+          ),
+          errorWidget: (_, __, ___) => Container(
+            color: ad.color.withValues(alpha: 0.18),
+            child: const Center(
+              child: Icon(Icons.broken_image_outlined, color: Colors.white38, size: 22),
+            ),
+          ),
+        ),
+      );
+    }
+    if (ad.adType == 'youtube') {
+      return Container(
+        width: 54,
+        color: Colors.red.withValues(alpha: 0.15),
+        child: const Center(
+          child: Icon(Icons.smart_display_outlined,
+              color: Colors.redAccent, size: 28),
+        ),
+      );
+    }
+    // Default: emoji on gradient swatch
+    return Container(
+      width: 54,
+      color: ad.color.withValues(alpha: 0.18),
+      child: Center(
+        child: Text(ad.emoji, style: const TextStyle(fontSize: 26)),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isActive = ad.isActive;
@@ -243,14 +297,8 @@ class _AdTile extends StatelessWidget {
                     ? _green.withValues(alpha: 0.8)
                     : _textMuted.withValues(alpha: 0.3),
               ),
-              // Ad preview gradient swatch
-              Container(
-                width: 54,
-                color: ad.color.withValues(alpha: 0.18),
-                child: Center(
-                  child: Text(ad.emoji, style: const TextStyle(fontSize: 26)),
-                ),
-              ),
+              // Ad preview swatch: image thumbnail, YouTube icon, or emoji
+              _buildPreviewSwatch(),
               // Content
               Expanded(
                 child: Padding(
@@ -305,7 +353,7 @@ class _AdTile extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Position: ${ad.position} · ${ad.colorHex}',
+                        'Position: ${ad.position} · ${_adTypeLabel(ad.adType)}',
                         style: const TextStyle(
                             color: _textMuted,
                             fontSize: 10,
@@ -378,7 +426,10 @@ class _AdFormSheetState extends State<_AdFormSheet> {
   late final TextEditingController _colorCtrl;
   late final TextEditingController _colorEndCtrl;
   late final TextEditingController _positionCtrl;
+  late final TextEditingController _imageUrlCtrl;
+  late final TextEditingController _youtubeIdCtrl;
   late bool _isActive;
+  late String _adType;
   bool _saving = false;
 
   @override
@@ -392,7 +443,10 @@ class _AdFormSheetState extends State<_AdFormSheet> {
     _colorEndCtrl = TextEditingController(text: ad?.colorEndHex ?? '#0D5BBF');
     _positionCtrl =
         TextEditingController(text: '${ad?.position ?? 0}');
+    _imageUrlCtrl = TextEditingController(text: ad?.imageUrl ?? '');
+    _youtubeIdCtrl = TextEditingController(text: ad?.youtubeId ?? '');
     _isActive = ad?.isActive ?? true;
+    _adType = ad?.adType ?? 'text';
   }
 
   @override
@@ -403,6 +457,8 @@ class _AdFormSheetState extends State<_AdFormSheet> {
     _colorCtrl.dispose();
     _colorEndCtrl.dispose();
     _positionCtrl.dispose();
+    _imageUrlCtrl.dispose();
+    _youtubeIdCtrl.dispose();
     super.dispose();
   }
 
@@ -413,7 +469,21 @@ class _AdFormSheetState extends State<_AdFormSheet> {
       );
       return;
     }
+    if (_adType == 'image' && _imageUrlCtrl.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("L'URL de l'image est obligatoire pour ce type")),
+      );
+      return;
+    }
+    if (_adType == 'youtube' && _youtubeIdCtrl.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("L'ID YouTube est obligatoire pour ce type")),
+      );
+      return;
+    }
     setState(() => _saving = true);
+    final imageUrl = _imageUrlCtrl.text.trim();
+    final youtubeId = _youtubeIdCtrl.text.trim();
     final ad = AdModel(
       id: widget.existing?.id,
       emoji: _emojiCtrl.text.trim().isEmpty ? '📢' : _emojiCtrl.text.trim(),
@@ -426,8 +496,40 @@ class _AdFormSheetState extends State<_AdFormSheet> {
           : _colorEndCtrl.text.trim(),
       position: int.tryParse(_positionCtrl.text.trim()) ?? 0,
       isActive: _isActive,
+      adType: _adType,
+      imageUrl: imageUrl.isNotEmpty ? imageUrl : null,
+      youtubeId: youtubeId.isNotEmpty ? youtubeId : null,
     );
     Navigator.pop(context, ad);
+  }
+
+  Widget _typeChip(String type, String label) {
+    final selected = _adType == type;
+    return GestureDetector(
+      onTap: () => setState(() => _adType = type),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected
+              ? _appBlue.withValues(alpha: 0.18)
+              : _bg.withValues(alpha: 0.8),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected ? _appBlue : _border,
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? _appBlue : _textMuted,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+            fontSize: 12,
+          ),
+        ),
+      ),
+    );
   }
 
   InputDecoration _inputDeco(String label, {String? hint}) => InputDecoration(
@@ -486,18 +588,61 @@ class _AdFormSheetState extends State<_AdFormSheet> {
                   fontSize: 18),
             ),
             const SizedBox(height: 20),
-            Row(children: [
-              SizedBox(
-                width: 80,
-                child: TextField(
-                  controller: _emojiCtrl,
-                  style: const TextStyle(
-                      color: _textPrimary, fontSize: 22),
-                  textAlign: TextAlign.center,
-                  decoration: _inputDeco('Emoji'),
-                ),
+            // ── Type selector ───────────────────────────────────────────────
+            Text('Type de publicité',
+                style: const TextStyle(color: _textMuted, fontSize: 12)),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                _typeChip('text', '📝 Texte'),
+                const SizedBox(width: 8),
+                _typeChip('image', '🖼️ Image'),
+                const SizedBox(width: 8),
+                _typeChip('youtube', '▶️ YouTube'),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // ── Media URL fields (conditional) ──────────────────────────────
+            if (_adType == 'image') ...[
+              TextField(
+                controller: _imageUrlCtrl,
+                style: const TextStyle(color: _textPrimary),
+                keyboardType: TextInputType.url,
+                decoration: _inputDeco('URL de l\'image',
+                    hint: 'https://example.com/image.jpg'),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(height: 12),
+            ],
+            if (_adType == 'youtube') ...[
+              TextField(
+                controller: _youtubeIdCtrl,
+                style: const TextStyle(color: _textPrimary),
+                decoration: _inputDeco('ID de la vidéo YouTube',
+                    hint: 'Ex: dQw4w9WgXcQ'),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Copiez l\'ID depuis l\'URL YouTube : youtube.com/watch?v=ID_ICI',
+                style: TextStyle(
+                    color: _textMuted.withValues(alpha: 0.7), fontSize: 11),
+              ),
+              const SizedBox(height: 12),
+            ],
+            // ── Title row (emoji shown only for text/image types) ───────────
+            Row(children: [
+              if (_adType != 'youtube') ...[
+                SizedBox(
+                  width: 80,
+                  child: TextField(
+                    controller: _emojiCtrl,
+                    style: const TextStyle(
+                        color: _textPrimary, fontSize: 22),
+                    textAlign: TextAlign.center,
+                    decoration: _inputDeco('Emoji'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+              ],
               Expanded(
                 child: TextField(
                   controller: _titleCtrl,

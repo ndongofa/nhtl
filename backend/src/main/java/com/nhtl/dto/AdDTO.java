@@ -13,6 +13,9 @@ public class AdDTO {
     private String colorEndHex;
     private int position;
     private boolean isActive;
+    private String adType;
+    private String imageUrl;
+    private String youtubeId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -42,6 +45,15 @@ public class AdDTO {
 
     @JsonProperty("isActive")
     public void setActive(boolean active) { isActive = active; }
+
+    public String getAdType() { return adType; }
+    public void setAdType(String adType) { this.adType = adType; }
+
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+
+    public String getYoutubeId() { return youtubeId; }
+    public void setYoutubeId(String youtubeId) { this.youtubeId = youtubeId; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

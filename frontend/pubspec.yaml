@@ -27,6 +27,7 @@ dependencies:
   # ✅ Suivi postal — upload photos + affichage
   image_picker: ^1.1.2
   cached_network_image: ^3.4.1
+  youtube_player_iframe: ^5.1.1
 
 dev_dependencies:
   flutter_test:
