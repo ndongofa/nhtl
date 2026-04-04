@@ -695,18 +695,7 @@ class _CountdownBannerCard extends StatelessWidget {
                   children: List.generate(totalCount, (i) {
                     final isActive = i == safeIndex;
                     return GestureDetector(
-                      onTap: () {
-                        // Navigate to specific departure
-                        if (i < safeIndex) {
-                          for (int k = 0; k < safeIndex - i; k++) {
-                            svc.prevSameDay();
-                          }
-                        } else if (i > safeIndex) {
-                          for (int k = 0; k < i - safeIndex; k++) {
-                            svc.nextSameDay();
-                          }
-                        }
-                      },
+                      onTap: () => svc.goToUpcomingIndex(i),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 250),
                         margin: const EdgeInsets.symmetric(horizontal: 3),
@@ -1843,9 +1832,7 @@ class _ContactBand extends StatelessWidget {
                         Text(
                           "NOUS CONTACTER",
                           style: TextStyle(
-                            color: t.isDark
-                                ? AppThemeProvider.appBlue
-                                : AppThemeProvider.appBlue,
+                            color: AppThemeProvider.appBlue,
                             fontWeight: FontWeight.w800,
                             fontSize: 12,
                             letterSpacing: 2.0,
