@@ -15,6 +15,7 @@ import '../notifications/notifications_screen.dart';
 import '../transports_archives_screen.dart';
 import '../transports_list_screen.dart';
 import 'admin_departures_screen.dart';
+import 'admin_ads_screen.dart';
 import 'admin_user_screen.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
@@ -144,6 +145,13 @@ class AdminDashboardScreen extends StatelessWidget {
             sub: 'Planifier les départs GP',
             color: _amber,
             onTap: () => _go(context, const AdminDeparturesScreen()),
+          ),
+          _DashCard(
+            icon: Icons.campaign_outlined,
+            label: 'Publicités',
+            sub: 'Gérer le carousel pub',
+            color: const Color(0xFFEC4899),
+            onTap: () => _go(context, const AdminAdsScreen()),
           ),
           _DashCard(
             icon: Icons.notifications_outlined,
