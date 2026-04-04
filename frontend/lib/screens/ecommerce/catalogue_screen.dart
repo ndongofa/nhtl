@@ -395,7 +395,7 @@ class _ProduitCardState extends State<_ProduitCard> {
         SnackBar(
           content: Text(ok
               ? '${widget.produit.nom} ajouté au panier'
-              : 'Impossible d\'ajouter au panier'),
+              : 'Erreur lors de l\'ajout — veuillez réessayer'),
           backgroundColor: ok ? widget.accentColor : Colors.red,
           duration: const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,

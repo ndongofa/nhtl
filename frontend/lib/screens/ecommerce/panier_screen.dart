@@ -67,6 +67,10 @@ class _PanierScreenState extends State<PanierScreen> {
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(ctx);
+                // Crée un nouveau PanierProvider qui rechargera depuis le
+                // cache SharedPreferences (le panier actuel est toujours
+                // persisté). On ne réutilise pas le provider existant car
+                // il sera disposé lors du pushAndRemoveUntil dans LoginScreen.
                 Navigator.push(
                   context,
                   MaterialPageRoute(
