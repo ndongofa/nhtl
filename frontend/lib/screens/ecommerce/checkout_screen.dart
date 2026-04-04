@@ -236,8 +236,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             toastLength: Toast.LENGTH_LONG);
       }
     } catch (e) {
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      final isUserFriendly = !msg.contains('Exception') &&
+          !msg.contains('Error') &&
+          !msg.contains('null') &&
+          msg.length < 200;
       Fluttertoast.showToast(
-          msg: '❌ Erreur : ${e.toString().replaceFirst('Exception: ', '')}',
+          msg: isUserFriendly
+              ? '❌ $msg'
+              : '❌ Une erreur inattendue s\'est produite. Veuillez réessayer.',
           backgroundColor: Colors.red,
           toastLength: Toast.LENGTH_LONG);
     } finally {

@@ -48,7 +48,8 @@ class AuthService {
     if (m.contains('token has expired') ||
         m.contains('token expired') ||
         m.contains('otp expired') ||
-        m.contains('expired')) {
+        m.contains('otp has expired') ||
+        m.contains('verification token expired')) {
       return "Code expiré. Veuillez en demander un nouveau.";
     }
     if (m.contains('invalid otp') ||
@@ -76,7 +77,10 @@ class AuthService {
         m.contains('signups not allowed')) {
       return "Les inscriptions sont temporairement désactivées. Contactez le support.";
     }
-    if (m.contains('email') && (m.contains('invalid') || m.contains('format'))) {
+    if (m.contains('invalid email address') ||
+        m.contains('email must be valid') ||
+        m.contains('email address is invalid') ||
+        m.contains('valid email address is required')) {
       return "Adresse email invalide.";
     }
     if (m.contains('phone') && m.contains('invalid')) {
