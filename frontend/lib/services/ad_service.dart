@@ -50,19 +50,24 @@ class AdService extends ChangeNotifier {
   Future<void> load() async {
     final result = await _api.getPublicAds();
     // null means the request failed — keep the current list intact
+    _applyResult(result);
+    _loaded = true;
+    notifyListeners();
+    // ??= ensures only one timer is ever created even if load() is called again
+    _refreshTimer ??= Timer.periodic(const Duration(minutes: 5), (_) => _silentRefresh());
+  }
+
+  // Updates _ads and notifies listeners when result is non-null (success).
+  void _applyResult(List<AdModel>? result) {
     if (result != null) {
       _ads = result;
     }
-    _loaded = true;
-    notifyListeners();
-    // Start the periodic refresh once the first load has completed
-    _refreshTimer ??= Timer.periodic(const Duration(minutes: 5), (_) => _silentRefresh());
   }
 
   Future<void> _silentRefresh() async {
     final result = await _api.getPublicAds();
     if (result != null) {
-      _ads = result;
+      _applyResult(result);
       notifyListeners();
     }
   }
