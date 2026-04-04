@@ -68,16 +68,17 @@ class EcommerceTrackingScreen extends StatelessWidget {
             onPressed: () => SamaAccountMenu.open(context),
             icon: const Icon(Icons.dashboard_outlined),
           ),
-          IconButton(
-            tooltip: "Déconnexion",
-            onPressed: () async {
-              await AuthService.logout();
-              if (!context.mounted) return;
-              Navigator.of(context)
-                  .pushNamedAndRemoveUntil('/', (_) => false);
-            },
-            icon: const Icon(Icons.logout),
-          ),
+          if (AuthService.isLoggedIn())
+            IconButton(
+              tooltip: "Déconnexion",
+              onPressed: () async {
+                await AuthService.logout();
+                if (!context.mounted) return;
+                Navigator.of(context)
+                    .pushNamedAndRemoveUntil('/', (_) => false);
+              },
+              icon: const Icon(Icons.logout),
+            ),
         ],
       ),
       body: SingleChildScrollView(

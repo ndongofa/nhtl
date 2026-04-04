@@ -52,18 +52,54 @@ class PanierProvider extends ChangeNotifier {
 
   Future<bool> ajouter(int produitId, int quantite,
       {String? nom, String? imageUrl, double? prix, String? devise}) async {
-    final item = await _service.ajouterAuPanier(produitId, quantite);
-    if (item == null) return false;
+    try {
+      final item = await _service.ajouterAuPanier(produitId, quantite);
+      if (item != null) {
+        final idx = _items.indexWhere((i) => i.produitId == produitId);
+        if (idx >= 0) {
+          _items[idx] = item;
+        } else {
+          _items.add(item);
+        }
+        _saveToCache();
+        notifyListeners();
+        return true;
+      }
+    } catch (_) {}
 
-    final idx = _items.indexWhere((i) => i.produitId == produitId);
-    if (idx >= 0) {
-      _items[idx] = item;
-    } else {
-      _items.add(item);
+    // Fallback local (utilisateur non connecté) — nécessite les infos produit
+    if (nom != null && prix != null) {
+      final idx = _items.indexWhere((i) => i.produitId == produitId);
+      if (idx >= 0) {
+        final existing = _items[idx];
+        _items[idx] = PanierItem(
+          id: existing.id,
+          userId: existing.userId,
+          produitId: existing.produitId,
+          serviceType: existing.serviceType,
+          quantite: existing.quantite + quantite,
+          prixUnitaire: existing.prixUnitaire,
+          devise: existing.devise,
+          produitNom: existing.produitNom,
+          produitImageUrl: existing.produitImageUrl,
+        );
+      } else {
+        _items.add(PanierItem(
+          userId: '',
+          produitId: produitId,
+          serviceType: serviceType,
+          quantite: quantite,
+          prixUnitaire: prix,
+          devise: devise ?? 'EUR',
+          produitNom: nom,
+          produitImageUrl: imageUrl,
+        ));
+      }
+      _saveToCache();
+      notifyListeners();
+      return true;
     }
-    _saveToCache();
-    notifyListeners();
-    return true;
+    return false;
   }
 
   // ── Retirer ────────────────────────────────────────────────────────────────

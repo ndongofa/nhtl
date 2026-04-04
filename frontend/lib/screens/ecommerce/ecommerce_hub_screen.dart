@@ -10,6 +10,7 @@ import '../../providers/panier_provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/ecommerce_service.dart';
 import '../../widgets/sama_account_menu.dart';
+import '../auth/login_screen.dart';
 import 'ecommerce_tracking_screen.dart';
 import 'catalogue_screen.dart';
 import 'ecommerce_archives_screen.dart';
@@ -45,6 +46,10 @@ class _EcommerceHubScreenState extends State<EcommerceHubScreen> {
   }
 
   Future<void> _load() async {
+    if (!AuthService.isLoggedIn()) {
+      if (mounted) setState(() => _loading = false);
+      return;
+    }
     setState(() => _loading = true);
     _commandes = await _service.getMesCommandes();
     if (mounted) setState(() => _loading = false);
@@ -86,16 +91,17 @@ class _EcommerceHubScreenState extends State<EcommerceHubScreen> {
             icon: const Icon(Icons.dashboard_outlined),
             onPressed: () => SamaAccountMenu.open(context),
           ),
-          IconButton(
-            tooltip: "Déconnexion",
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await AuthService.logout();
-              if (!context.mounted) return;
-              Navigator.of(context)
-                  .pushNamedAndRemoveUntil('/', (_) => false);
-            },
-          ),
+          if (AuthService.isLoggedIn())
+            IconButton(
+              tooltip: "Déconnexion",
+              icon: const Icon(Icons.logout),
+              onPressed: () async {
+                await AuthService.logout();
+                if (!context.mounted) return;
+                Navigator.of(context)
+                    .pushNamedAndRemoveUntil('/', (_) => false);
+              },
+            ),
           IconButton(
             icon: const Icon(Icons.archive_outlined),
             tooltip: 'Archives',
@@ -133,7 +139,9 @@ class _EcommerceHubScreenState extends State<EcommerceHubScreen> {
                 ? Center(
                     child: CircularProgressIndicator(
                         color: widget.accentColor))
-                : _commandes.isEmpty
+                : !AuthService.isLoggedIn()
+                    ? _loginPrompt(t)
+                    : _commandes.isEmpty
                     ? _emptyState(t)
                     : RefreshIndicator(
                         onRefresh: _load,
@@ -210,6 +218,49 @@ class _EcommerceHubScreenState extends State<EcommerceHubScreen> {
       ),
     );
   }
+
+  Widget _loginPrompt(AppThemeProvider t) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const Text('🔐', style: TextStyle(fontSize: 52)),
+            const SizedBox(height: 16),
+            Text('Connectez-vous pour voir vos commandes',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    color: t.textPrimary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16)),
+            const SizedBox(height: 8),
+            Text('Vos commandes en cours et votre historique\napparaîtront ici.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: t.textMuted, fontSize: 13)),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.login, size: 18),
+              label: const Text('Se connecter',
+                  style: TextStyle(fontWeight: FontWeight.w700)),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: widget.accentColor,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 24, vertical: 12)),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => LoginScreen(redirectTo: EcommerceHubScreen(
+                    serviceType: widget.serviceType,
+                    serviceLabel: widget.serviceLabel,
+                    accentColor: widget.accentColor,
+                  )),
+                ),
+              ),
+            ),
+          ]),
+        ),
+      );
 
   Widget _emptyState(AppThemeProvider t) => Center(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
