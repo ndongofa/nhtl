@@ -113,47 +113,13 @@ class _CatalogueScreenState extends State<CatalogueScreen> {
                   fontWeight: FontWeight.w800, fontSize: 17)),
         ]),
         actions: [
-          IconButton(
-            tooltip: "Mon espace",
-            icon: const Icon(Icons.dashboard_outlined),
-            onPressed: () => SamaAccountMenu.open(context),
-          ),
-          if (isLoggedIn)
-            IconButton(
-              tooltip: "Mes commandes",
-              icon: const Icon(Icons.receipt_long_outlined),
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => EcommerceHubScreen(
-                    serviceType: widget.serviceType,
-                    serviceLabel: widget.serviceLabel,
-                    accentColor: widget.accentColor,
-                  ),
-                ),
-              ),
-            ),
-          if (isLoggedIn)
-            IconButton(
-              tooltip: "Déconnexion",
-              icon: const Icon(Icons.logout),
-              onPressed: () async {
-                await AuthService.logout();
-                if (!context.mounted) return;
-                Navigator.of(context)
-                    .pushNamedAndRemoveUntil('/', (_) => false);
-              },
-            ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Actualiser',
-            onPressed: _loading ? null : _loadProduits,
-          ),
+          // Panier (toujours visible, avec badge article)
           Stack(
             alignment: Alignment.topRight,
             children: [
               IconButton(
                 icon: const Icon(Icons.shopping_cart_outlined),
+                tooltip: 'Mon panier',
                 onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -188,6 +154,79 @@ class _CatalogueScreenState extends State<CatalogueScreen> {
                             fontWeight: FontWeight.w900),
                       ),
                     ),
+                  ),
+                ),
+            ],
+          ),
+          // Menu burger : actions secondaires
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            tooltip: 'Menu',
+            onSelected: (value) async {
+              switch (value) {
+                case 'mon_espace':
+                  SamaAccountMenu.open(context);
+                  break;
+                case 'commandes':
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => EcommerceHubScreen(
+                        serviceType: widget.serviceType,
+                        serviceLabel: widget.serviceLabel,
+                        accentColor: widget.accentColor,
+                      ),
+                    ),
+                  );
+                  break;
+                case 'actualiser':
+                  if (!_loading) _loadProduits();
+                  break;
+                case 'deconnexion':
+                  await AuthService.logout();
+                  if (!context.mounted) return;
+                  Navigator.of(context)
+                      .pushNamedAndRemoveUntil('/', (_) => false);
+                  break;
+              }
+            },
+            itemBuilder: (_) => [
+              const PopupMenuItem(
+                value: 'mon_espace',
+                child: ListTile(
+                  leading: Icon(Icons.dashboard_outlined),
+                  title: Text('Mon espace'),
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                ),
+              ),
+              if (isLoggedIn)
+                const PopupMenuItem(
+                  value: 'commandes',
+                  child: ListTile(
+                    leading: Icon(Icons.receipt_long_outlined),
+                    title: Text('Mes commandes'),
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                  ),
+                ),
+              const PopupMenuItem(
+                value: 'actualiser',
+                child: ListTile(
+                  leading: Icon(Icons.refresh),
+                  title: Text('Actualiser'),
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                ),
+              ),
+              if (isLoggedIn)
+                const PopupMenuItem(
+                  value: 'deconnexion',
+                  child: ListTile(
+                    leading: Icon(Icons.logout),
+                    title: Text('Déconnexion'),
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
                   ),
                 ),
             ],
