@@ -217,6 +217,23 @@ class DepartureCountdownService extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Jump directly to a departure by its flat index in upcomingDepartures
+  void goToUpcomingIndex(int flatIndex) {
+    if (_groups.isEmpty) return;
+    int pos = 0;
+    for (int g = 0; g < _groups.length; g++) {
+      final groupSize = _groups[g].length;
+      if (flatIndex < pos + groupSize) {
+        _groupIndex = g;
+        _inGroupIndex = flatIndex - pos;
+        _updateRemaining();
+        notifyListeners();
+        return;
+      }
+      pos += groupSize;
+    }
+  }
+
   // ── Helpers internes ──────────────────────────────────────────────────────
 
   void _buildGroups() {

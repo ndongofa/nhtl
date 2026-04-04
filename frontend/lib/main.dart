@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'providers/app_theme_provider.dart';
 import 'screens/admin/admin_dashboard_screen.dart';
 import 'screens/admin/admin_departures_screen.dart';
+import 'screens/admin/admin_ads_screen.dart';
 import 'screens/admin/admin_user_screen.dart';
 import 'screens/gp/gp_list_screen.dart';
 import 'screens/auth/auth_callback_screen.dart';
@@ -26,6 +27,7 @@ import 'screens/services/sama_teranga_screen.dart';
 import 'screens/services/sama_best_seller_screen.dart';
 import 'screens/services/sama_tech_digital_screen.dart';
 import 'screens/notifications/notifications_screen.dart';
+import 'services/ad_service.dart';
 import 'services/departure_countdown_service.dart';
 import 'services/notification_polling_service.dart';
 import 'ui/app_brand.dart';
@@ -49,6 +51,9 @@ void main() async {
         ),
         ChangeNotifierProvider(
           create: (_) => NotificationPollingService()..start(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => AdService()..load(),
         ),
       ],
       child: const MyApp(),
@@ -95,6 +100,7 @@ class MyApp extends StatelessWidget {
         '/admin': (context) => const AdminDashboardScreen(),
         '/admin/users': (context) => const AdminUserScreen(),
         '/admin/departures': (context) => const AdminDeparturesScreen(),
+        '/admin/ads': (context) => const AdminAdsScreen(),
         '/admin/gps': (context) => const GpListScreen(),
         '/profile': (context) => const ProfileScreen(),
         '/auth/callback': (context) => const AuthCallbackScreen(),

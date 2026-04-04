@@ -14,6 +14,10 @@ import '../providers/app_theme_provider.dart';
 import '../services/auth_service.dart';
 import '../services/departure_countdown_service.dart';
 import '../services/notification_polling_service.dart';
+import '../services/ad_service.dart';
+import '../models/ad_model.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import '../models/logged_user.dart';
 
 class ServicesHubScreen extends StatelessWidget {
@@ -505,239 +509,266 @@ class _CountdownBannerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final svc = context.watch<DepartureCountdownService>();
     final dep = svc.currentDeparture;
-    final hasCountdown = !svc.isExpired;
+    final upcoming = svc.upcomingDepartures;
+    final totalCount = upcoming.length;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: EdgeInsets.symmetric(
-          horizontal: isDesktop ? 24 : 16,
-          vertical: 16,
+    // Find the current departure's index in the flat upcoming list
+    final currentFlatIndex = totalCount > 1
+        ? upcoming.indexWhere(
+            (d) => d.route == dep.route && d.date == dep.date)
+        : 0;
+    final safeIndex = currentFlatIndex.clamp(0, totalCount > 0 ? totalCount - 1 : 0);
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: t.bgCard,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppThemeProvider.amber.withValues(alpha: 0.35),
+          width: 1.5,
         ),
-        decoration: BoxDecoration(
-          color: t.bgCard,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: AppThemeProvider.amber.withValues(alpha: 0.38),
+        boxShadow: [
+          BoxShadow(
+            color: AppThemeProvider.amber.withValues(alpha: 0.12),
+            blurRadius: 28,
+            spreadRadius: 0,
+            offset: const Offset(0, 6),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: AppThemeProvider.amber.withValues(alpha: 0.06),
-              blurRadius: 12,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: isDesktop
-            ? _desktopLayout(context, svc, dep, hasCountdown)
-            : _mobileLayout(context, svc, dep, hasCountdown),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-    );
-  }
-
-  Widget _desktopLayout(BuildContext context, DepartureCountdownService svc,
-      Departure dep, bool hasCountdown) {
-    return Row(
-      children: [
-        // Label
-        _label(t),
-        const SizedBox(width: 20),
-        // Route + flag
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(children: [
-                Text(dep.flag, style: const TextStyle(fontSize: 18)),
-                const SizedBox(width: 8),
-                Text(
-                  dep.route,
-                  style: TextStyle(
-                    color: t.textPrimary,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15,
+      child: Column(
+        children: [
+          // ── Route header band ──────────────────────────────────────────
+          GestureDetector(
+            onTap: onTap,
+            child: Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(
+                vertical: 16,
+                horizontal: isDesktop ? 24 : 18,
+              ),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppThemeProvider.amber.withValues(alpha: 0.14),
+                    AppThemeProvider.amber.withValues(alpha: 0.03),
+                  ],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(18),
+                  topRight: Radius.circular(18),
+                ),
+              ),
+              child: Row(
+                children: [
+                  // Label badge
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: AppThemeProvider.amber.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                          color: AppThemeProvider.amber.withValues(alpha: 0.4)),
+                    ),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      const Icon(Icons.flight_takeoff_rounded,
+                          color: AppThemeProvider.amber, size: 13),
+                      const SizedBox(width: 5),
+                      const Text(
+                        "PROCHAIN DÉPART",
+                        style: TextStyle(
+                          color: AppThemeProvider.amber,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 10,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ]),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(children: [
+                          Text(dep.flag,
+                              style: const TextStyle(fontSize: 18)),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              dep.route,
+                              style: TextStyle(
+                                color: t.textPrimary,
+                                fontWeight: FontWeight.w900,
+                                fontSize: isDesktop ? 18 : 15,
+                                letterSpacing: 0.2,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ]),
+                        const SizedBox(height: 4),
+                        Row(children: [
+                          const Icon(Icons.calendar_today_rounded,
+                              size: 11, color: AppThemeProvider.amber),
+                          const SizedBox(width: 5),
+                          Text(
+                            dep.date.toUpperCase(),
+                            style: const TextStyle(
+                              color: AppThemeProvider.amber,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 11,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ]),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // ── Divider ────────────────────────────────────────────────────
+          Divider(
+            height: 1,
+            thickness: 1,
+            color: AppThemeProvider.amber.withValues(alpha: 0.15),
+          ),
+          // ── Countdown + CTA ────────────────────────────────────────────
+          Padding(
+            padding: EdgeInsets.symmetric(
+              vertical: 18,
+              horizontal: isDesktop ? 24 : 14,
+            ),
+            child: Column(children: [
+              // Countdown units row
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _cu(t, svc.days, "JOURS", AppThemeProvider.amber),
+                    _sp(t),
+                    _cu(t, svc.hours, "HEURES", AppThemeProvider.appBlue),
+                    _sp(t),
+                    _cu(t, svc.minutes, "MIN", AppThemeProvider.appBlue),
+                    _sp(t),
+                    _cu(t, svc.seconds, "SEC", AppThemeProvider.teal),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              // CTA full-width
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppThemeProvider.amber,
+                    foregroundColor: AppThemeProvider.textDark,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  onPressed: onTap,
+                  icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+                  label: Text(
+                    "Réserver ce départ — ${dep.route}",
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              ]),
-              const SizedBox(height: 2),
-              Text(
-                dep.date,
-                style: TextStyle(
-                  color: AppThemeProvider.amber,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12,
+              ),
+              // ── Departure progress dots ─────────────────────────────
+              if (totalCount > 1) ...[
+                const SizedBox(height: 14),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(totalCount, (i) {
+                    final isActive = i == safeIndex;
+                    return GestureDetector(
+                      onTap: () => svc.goToUpcomingIndex(i),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        margin: const EdgeInsets.symmetric(horizontal: 3),
+                        width: isActive ? 20 : 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          color: isActive
+                              ? AppThemeProvider.amber
+                              : AppThemeProvider.amber.withValues(alpha: 0.28),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    );
+                  }),
                 ),
-              ),
-            ],
-          ),
-        ),
-        // Countdown digits
-        if (hasCountdown) ...[
-          _countdownRow(svc, t),
-          const SizedBox(width: 20),
-        ],
-        // CTA
-        _ctaButton(t),
-      ],
-    );
-  }
-
-  Widget _mobileLayout(BuildContext context, DepartureCountdownService svc,
-      Departure dep, bool hasCountdown) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            _label(t),
-            const Spacer(),
-            _ctaButton(t),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(children: [
-          Text(dep.flag, style: const TextStyle(fontSize: 18)),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              dep.route,
-              style: TextStyle(
-                color: t.textPrimary,
-                fontWeight: FontWeight.w800,
-                fontSize: 14,
-              ),
-            ),
-          ),
-        ]),
-        const SizedBox(height: 2),
-        Text(
-          dep.date,
-          style: const TextStyle(
-            color: AppThemeProvider.amber,
-            fontWeight: FontWeight.w600,
-            fontSize: 12,
-          ),
-        ),
-        if (hasCountdown) ...[
-          const SizedBox(height: 12),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: _countdownRow(svc, t),
+              ],
+            ]),
           ),
         ],
-      ],
-    );
-  }
-
-  Widget _label(AppThemeProvider t) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: AppThemeProvider.amber.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-            color: AppThemeProvider.amber.withValues(alpha: 0.35)),
       ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        const Icon(Icons.timer_outlined,
-            color: AppThemeProvider.amber, size: 14),
-        const SizedBox(width: 5),
-        const Text(
-          "PROCHAIN DÉPART",
-          style: TextStyle(
-            color: AppThemeProvider.amber,
-            fontWeight: FontWeight.w800,
-            fontSize: 10,
-            letterSpacing: 0.8,
-          ),
-        ),
-      ]),
     );
   }
 
-  Widget _countdownRow(DepartureCountdownService svc, AppThemeProvider t) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _unit(t, svc.days, "J"),
-        _sep(t),
-        _unit(t, svc.hours, "H"),
-        _sep(t),
-        _unit(t, svc.minutes, "M"),
-        _sep(t),
-        _unit(t, svc.seconds, "S"),
-      ],
-    );
-  }
-
-  Widget _unit(AppThemeProvider t, String value, String label) {
+  // Countdown unit widget (matching landing_transport_screen style)
+  Widget _cu(AppThemeProvider t, String value, String label, Color color) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+          constraints: const BoxConstraints(minWidth: 48),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
-            color: AppThemeProvider.amber.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(
-                color: AppThemeProvider.amber.withValues(alpha: 0.3)),
+            color: color.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: color.withValues(alpha: 0.28)),
           ),
           child: Text(
             value,
-            style: const TextStyle(
-              color: AppThemeProvider.amber,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: color,
               fontWeight: FontWeight.w900,
-              fontSize: 16,
+              fontSize: 22,
               letterSpacing: 0.5,
             ),
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 4),
         Text(
           label,
           style: TextStyle(
             color: t.textMuted,
-            fontSize: 8,
+            fontSize: 9,
             fontWeight: FontWeight.w700,
-            letterSpacing: 0.5,
+            letterSpacing: 0.6,
           ),
         ),
       ],
     );
   }
 
-  Widget _sep(AppThemeProvider t) {
+  Widget _sp(AppThemeProvider t) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12, left: 2, right: 2),
+      padding: const EdgeInsets.only(bottom: 18, left: 4, right: 4),
       child: Text(
         ":",
         style: TextStyle(
           color: t.textMuted,
-          fontSize: 14,
+          fontSize: 20,
           fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-
-  Widget _ctaButton(AppThemeProvider t) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        decoration: BoxDecoration(
-          color: AppThemeProvider.amber,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          "Voir →",
-          style: TextStyle(
-            color: AppThemeProvider.textDark,
-            fontWeight: FontWeight.w800,
-            fontSize: 12,
-          ),
         ),
       ),
     );
@@ -745,21 +776,6 @@ class _CountdownBannerCard extends StatelessWidget {
 }
 
 // ── ADS BANNER CARD ──────────────────────────────────────────────────────────
-
-class _AdItem {
-  final String emoji;
-  final String title;
-  final String subtitle;
-  final Color color;
-  final Color colorEnd;
-  const _AdItem({
-    required this.emoji,
-    required this.title,
-    required this.subtitle,
-    required this.color,
-    required this.colorEnd,
-  });
-}
 
 class _AdsBannerCard extends StatefulWidget {
   final AppThemeProvider t;
@@ -772,30 +788,6 @@ class _AdsBannerCard extends StatefulWidget {
 
 class _AdsBannerCardState extends State<_AdsBannerCard>
     with WidgetsBindingObserver {
-  static const List<_AdItem> _ads = [
-    _AdItem(
-      emoji: "✈️",
-      title: "Prochain départ Paris → Dakar",
-      subtitle: "Envoyez vos colis en 5 à 10 jours · Tarifs compétitifs",
-      color: AppThemeProvider.appBlue,
-      colorEnd: Color(0xFF0D5BBF),
-    ),
-    _AdItem(
-      emoji: "🛒",
-      title: "Commandez depuis Amazon, Temu & Shein",
-      subtitle: "Livraison directe chez vous — Paris · Casablanca · Dakar",
-      color: AppThemeProvider.amber,
-      colorEnd: Color(0xFFE65100),
-    ),
-    _AdItem(
-      emoji: "🌿",
-      title: "Sama Maad — Fraîcheur du Sénégal",
-      subtitle: "Maad de qualité directement depuis le terroir sénégalais",
-      color: Color(0xFF16A34A),
-      colorEnd: Color(0xFF14532D),
-    ),
-  ];
-
   int _index = 0;
   Timer? _timer;
 
@@ -809,9 +801,13 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
   void _startTimer() {
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 5), (_) {
-      if (mounted) {
-        setState(() => _index = (_index + 1) % _ads.length);
-      }
+      if (!mounted) return;
+      final ads = context.read<AdService>().ads;
+      if (ads.isEmpty) return;
+      // Don't auto-advance while a YouTube ad is playing
+      final current = ads[_index % ads.length];
+      if (current.adType == AdModel.typeYoutube) return;
+      setState(() => _index = (_index + 1) % ads.length);
     });
   }
 
@@ -832,52 +828,72 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final ad = _ads[_index];
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 500),
-      transitionBuilder: (child, animation) => FadeTransition(
-        opacity: animation,
-        child: child,
-      ),
-      child: Container(
-        key: ValueKey(_index),
-        width: double.infinity,
-        padding: EdgeInsets.all(widget.isDesktop ? 22 : 18),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            colors: widget.t.isDark
-                ? [
-                    ad.color.withValues(alpha: 0.22),
-                    ad.colorEnd.withValues(alpha: 0.14),
-                  ]
-                : [
-                    ad.color.withValues(alpha: 0.9),
-                    ad.colorEnd,
-                  ],
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
+  // ── Dot indicators shared by all ad types ──────────────────────────────────
+  Widget _buildDots(int safeIndex, int total) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(
+        total,
+        (i) => GestureDetector(
+          onTap: () => setState(() => _index = i),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            margin: const EdgeInsets.symmetric(vertical: 3),
+            width: safeIndex == i ? 18 : 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color:
+                  Colors.white.withValues(alpha: safeIndex == i ? 0.95 : 0.38),
+              borderRadius: BorderRadius.circular(3),
+            ),
           ),
         ),
-        child: Row(
-          children: [
-            Text(ad.emoji,
-                style: TextStyle(fontSize: widget.isDesktop ? 32 : 26)),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    ad.title,
-                    style: TextStyle(
-                      color: widget.t.isDark ? widget.t.textPrimary : Colors.white,
-                      fontWeight: FontWeight.w800,
-                      fontSize: widget.isDesktop ? 15 : 13,
-                    ),
+      ),
+    );
+  }
+
+  // ── Text ad (emoji + gradient background) ──────────────────────────────────
+  Widget _buildTextContent(AdModel ad, int safeIndex, int total) {
+    final p = widget.isDesktop ? 22.0 : 18.0;
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(p),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: widget.t.isDark
+              ? [
+                  ad.color.withValues(alpha: 0.22),
+                  ad.colorEnd.withValues(alpha: 0.14),
+                ]
+              : [
+                  ad.color.withValues(alpha: 0.9),
+                  ad.colorEnd,
+                ],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+      ),
+      child: Row(
+        children: [
+          Text(ad.emoji,
+              style: TextStyle(fontSize: widget.isDesktop ? 32 : 26)),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  ad.title,
+                  style: TextStyle(
+                    color: widget.t.isDark
+                        ? widget.t.textPrimary
+                        : Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: widget.isDesktop ? 15 : 13,
                   ),
+                ),
+                if (ad.subtitle.isNotEmpty) ...[
                   const SizedBox(height: 3),
                   Text(
                     ad.subtitle,
@@ -891,33 +907,257 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
                     ),
                   ),
                 ],
-              ),
+              ],
             ),
-            const SizedBox(width: 12),
-            // Dot indicators
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: List.generate(
-                _ads.length,
-                (i) => GestureDetector(
-                  onTap: () => setState(() => _index = i),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    margin: const EdgeInsets.symmetric(vertical: 3),
-                    width: _index == i ? 18 : 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: Colors.white
-                          .withValues(alpha: _index == i ? 0.95 : 0.38),
-                      borderRadius: BorderRadius.circular(3),
-                    ),
+          ),
+          const SizedBox(width: 12),
+          _buildDots(safeIndex, total),
+        ],
+      ),
+    );
+  }
+
+  // ── Image ad (CachedNetworkImage + gradient overlay + text) ────────────────
+  Widget _buildImageContent(AdModel ad, int safeIndex, int total) {
+    final p = widget.isDesktop ? 22.0 : 18.0;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: AspectRatio(
+        aspectRatio: 16 / 7,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Background image
+            CachedNetworkImage(
+              imageUrl: ad.imageUrl!,
+              fit: BoxFit.cover,
+              placeholder: (_, __) => Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      ad.color.withValues(alpha: 0.5),
+                      ad.colorEnd.withValues(alpha: 0.3),
+                    ],
                   ),
                 ),
+              ),
+              errorWidget: (_, __, ___) => Container(
+                color: ad.color.withValues(alpha: 0.3),
+                child: Center(
+                  child: Text(ad.emoji,
+                      style: const TextStyle(fontSize: 40)),
+                ),
+              ),
+            ),
+            // Gradient overlay for text readability
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.transparent, Colors.black87],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+            ),
+            // Text + dots
+            Padding(
+              padding: EdgeInsets.all(p),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              ad.title,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                fontSize: widget.isDesktop ? 15 : 13,
+                              ),
+                            ),
+                            if (ad.subtitle.isNotEmpty) ...[
+                              const SizedBox(height: 3),
+                              Text(
+                                ad.subtitle,
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.82),
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: widget.isDesktop ? 13 : 11,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      _buildDots(safeIndex, total),
+                    ],
+                  ),
+                ],
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  // ── YouTube ad (inline player + text strip below) ──────────────────────────
+  Widget _buildYoutubeContent(AdModel ad, int safeIndex, int total) {
+    final p = widget.isDesktop ? 22.0 : 18.0;
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // YouTube player
+          ClipRRect(
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(16)),
+            child: _YoutubeAdWidget(
+              youtubeId: ad.youtubeId!,
+            ),
+          ),
+          // Title + subtitle + dots
+          Container(
+            padding: EdgeInsets.symmetric(
+                horizontal: p, vertical: widget.isDesktop ? 14 : 10),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF111111), Color(0xFF1A1A1A)],
+              ),
+              borderRadius:
+                  BorderRadius.vertical(bottom: Radius.circular(16)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        ad.title,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: widget.isDesktop ? 14 : 12,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (ad.subtitle.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          ad.subtitle,
+                          style: TextStyle(
+                            color: Colors.white54,
+                            fontSize: widget.isDesktop ? 12 : 10,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                _buildDots(safeIndex, total),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ads = context.watch<AdService>().ads;
+    if (ads.isEmpty) return const SizedBox.shrink();
+
+    // Keep index in bounds when ad list changes
+    final safeIndex = _index % ads.length;
+    final ad = ads[safeIndex];
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 500),
+      transitionBuilder: (child, animation) => FadeTransition(
+        opacity: animation,
+        child: child,
+      ),
+      child: KeyedSubtree(
+        key: ValueKey(safeIndex),
+        child: switch (ad.adType) {
+          AdModel.typeImage when (ad.imageUrl ?? '').isNotEmpty =>
+            _buildImageContent(ad, safeIndex, ads.length),
+          AdModel.typeYoutube when (ad.youtubeId ?? '').isNotEmpty =>
+            _buildYoutubeContent(ad, safeIndex, ads.length),
+          _ => _buildTextContent(ad, safeIndex, ads.length),
+        },
+      ),
+    );
+  }
+}
+
+// ── YouTube inline player widget ──────────────────────────────────────────────
+
+class _YoutubeAdWidget extends StatefulWidget {
+  final String youtubeId;
+  const _YoutubeAdWidget({required this.youtubeId});
+
+  @override
+  State<_YoutubeAdWidget> createState() => _YoutubeAdWidgetState();
+}
+
+class _YoutubeAdWidgetState extends State<_YoutubeAdWidget> {
+  late YoutubePlayerController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = YoutubePlayerController.fromVideoId(
+      videoId: widget.youtubeId,
+      autoPlay: true,
+      params: const YoutubePlayerParams(
+        mute: true,
+        showControls: true,
+        showFullscreenButton: true,
+        loop: true,
+      ),
+    );
+  }
+
+  @override
+  void didUpdateWidget(_YoutubeAdWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.youtubeId != widget.youtubeId) {
+      _controller.loadVideoById(videoId: widget.youtubeId);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.close();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return YoutubePlayer(
+      controller: _controller,
+      aspectRatio: 16 / 9,
     );
   }
 }
@@ -1773,53 +2013,133 @@ class _ContactBand extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 350),
-      color: t.sectionLightAlt,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
-      child: Column(children: [
-        Text(
-          "NOUS CONTACTER",
-          style: TextStyle(
-            color: t.textMuted,
-            fontWeight: FontWeight.w700,
-            fontSize: 11,
-            letterSpacing: 1.5,
+    final w = MediaQuery.of(context).size.width;
+    final isDesktop = w >= 900;
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: t.isDark
+              ? [const Color(0xFF0A1628), const Color(0xFF0D2240)]
+              : [const Color(0xFFF0F6FF), const Color(0xFFE8F0FC)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border(
+          top: BorderSide(
+            color: AppThemeProvider.appBlue.withValues(alpha: 0.12),
+            width: 1,
           ),
         ),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          alignment: WrapAlignment.center,
-          children: [
-            _chip(
-              const FaIcon(FontAwesomeIcons.whatsapp,
-                  color: AppThemeProvider.green, size: 17),
-              AppThemeProvider.green,
-              "WhatsApp France",
-              "+33 76 891 30 74",
-              onWaFrance,
+      ),
+      child: Column(
+        children: [
+          // ── Header band ─────────────────────────────────────────────────
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(
+              horizontal: isDesktop ? 40 : 20,
+              vertical: 28,
             ),
-            _chip(
-              const FaIcon(FontAwesomeIcons.whatsapp,
-                  color: AppThemeProvider.green, size: 17),
-              AppThemeProvider.green,
-              "WhatsApp Dakar",
-              "+221 78 304 28 38",
-              onWaDakar,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppThemeProvider.appBlue.withValues(alpha: t.isDark ? 0.28 : 0.08),
+                  AppThemeProvider.appBlue.withValues(alpha: 0.0),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
             ),
-            _chip(
-              const Icon(Icons.email_outlined,
-                  color: AppThemeProvider.appBlue, size: 17),
-              AppThemeProvider.appBlue,
-              "Email",
-              "tech@ngom-holding.com",
-              onEmail,
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 800),
+                child: Column(
+                  children: [
+                    // Section title row with decorative lines
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 1.5,
+                          color: AppThemeProvider.appBlue.withValues(alpha: 0.4),
+                        ),
+                        const SizedBox(width: 10),
+                        const Icon(Icons.headset_mic_outlined,
+                            color: AppThemeProvider.appBlue, size: 15),
+                        const SizedBox(width: 8),
+                        Text(
+                          "NOUS CONTACTER",
+                          style: TextStyle(
+                            color: AppThemeProvider.appBlue,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12,
+                            letterSpacing: 2.0,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Container(
+                          width: 32,
+                          height: 1.5,
+                          color: AppThemeProvider.appBlue.withValues(alpha: 0.4),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Notre équipe est disponible pour répondre à toutes vos questions",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: t.textMuted,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Wrap(
+                      spacing: 14,
+                      runSpacing: 14,
+                      alignment: WrapAlignment.center,
+                      children: [
+                        _chip(
+                          const FaIcon(FontAwesomeIcons.whatsapp,
+                              color: AppThemeProvider.green, size: 18),
+                          AppThemeProvider.green,
+                          "WhatsApp France",
+                          "+33 76 891 30 74",
+                          "Disponible 7j/7",
+                          onWaFrance,
+                        ),
+                        _chip(
+                          const FaIcon(FontAwesomeIcons.whatsapp,
+                              color: AppThemeProvider.green, size: 18),
+                          AppThemeProvider.green,
+                          "WhatsApp Dakar",
+                          "+221 78 304 28 38",
+                          "Disponible 7j/7",
+                          onWaDakar,
+                        ),
+                        _chip(
+                          const Icon(Icons.email_outlined,
+                              color: AppThemeProvider.appBlue, size: 18),
+                          AppThemeProvider.appBlue,
+                          "Email",
+                          "tech@ngom-holding.com",
+                          "Réponse sous 24h",
+                          onEmail,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ],
-        ),
-      ]),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1828,42 +2148,65 @@ class _ContactBand extends StatelessWidget {
     Color color,
     String label,
     String sub,
+    String hint,
     VoidCallback onTap,
-  ) =>
-      GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: t.bgCard,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: color.withValues(alpha: 0.22)),
-          ),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(9),
-              ),
-              child: Center(child: icon),
+  ) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        decoration: BoxDecoration(
+          color: t.bgCard,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.07),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
             ),
-            const SizedBox(width: 10),
-            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(
-                label,
-                style: TextStyle(
-                  color: t.textPrimary,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13,
-                ),
-              ),
-              Text(sub, style: TextStyle(color: t.textMuted, fontSize: 11)),
-            ]),
-          ]),
+          ],
         ),
-      );
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Center(child: icon),
+          ),
+          const SizedBox(width: 12),
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(
+              label,
+              style: TextStyle(
+                color: t.textPrimary,
+                fontWeight: FontWeight.w800,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 1),
+            Text(sub,
+                style: TextStyle(
+                    color: color,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600)),
+            const SizedBox(height: 1),
+            Text(hint,
+                style: TextStyle(
+                    color: t.textMuted,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w400)),
+          ]),
+          const SizedBox(width: 10),
+          Icon(Icons.arrow_forward_ios_rounded,
+              size: 13, color: t.textMuted),
+        ]),
+      ),
+    );
+  }
 }
 
 // ── FOOTER ───────────────────────────────────────────────────────────────────
