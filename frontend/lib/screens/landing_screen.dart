@@ -409,7 +409,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
   Widget _brandLogo() => SamaTopBarLogo();
 
   Widget _themeToggle(AppThemeProvider t) => Tooltip(
-        message: t.isDark ? "Thème clair" : "Thème sombre",
+        message: t.themeTooltip,
         child: GestureDetector(
           onTap: () => context.read<AppThemeProvider>().toggleTheme(),
           child: AnimatedContainer(
@@ -427,8 +427,8 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
                   turns: anim,
                   child: FadeTransition(opacity: anim, child: child)),
               child: Icon(
-                  t.isDark ? Icons.wb_sunny_outlined : Icons.nightlight_round,
-                  key: ValueKey(t.isDark),
+                  t.themeIcon,
+                  key: ValueKey(t.mode),
                   color: t.isDark ? _amber : Colors.white,
                   size: 17),
             ),

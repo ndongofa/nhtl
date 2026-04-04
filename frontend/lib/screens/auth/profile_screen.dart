@@ -40,11 +40,9 @@ class ProfileScreen extends StatelessWidget {
             icon: const Icon(Icons.dashboard_outlined),
           ),
           IconButton(
-            tooltip: t.isDark ? "Thème clair" : "Thème sombre",
+            tooltip: t.themeTooltip,
             onPressed: () => context.read<AppThemeProvider>().toggleTheme(),
-            icon: Icon(
-              t.isDark ? Icons.wb_sunny_outlined : Icons.nightlight_round,
-            ),
+            icon: Icon(t.themeIcon),
           ),
           IconButton(
             tooltip: "Déconnexion",

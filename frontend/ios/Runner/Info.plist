@@ -45,5 +45,7 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Votre position est utilisée pour calculer les heures de lever et coucher du soleil afin de basculer automatiquement entre le thème clair et sombre.</string>
 </dict>
 </plist>
