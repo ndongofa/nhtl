@@ -382,7 +382,7 @@ class _ProduitCardState extends State<_ProduitCard> {
     if (!widget.produit.enStock) return;
     setState(() => _addingToCart = true);
     final ok = await widget.panier.ajouter(
-      widget.produit.id,
+      widget.produit.id!,
       1,
       nom: widget.produit.nom,
       imageUrl: widget.produit.imageUrl,
