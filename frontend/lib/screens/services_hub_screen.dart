@@ -817,6 +817,7 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
         state == AppLifecycleState.detached) {
       _timer?.cancel();
     } else if (state == AppLifecycleState.resumed) {
+      context.read<AdService>().reload();
       _startTimer();
     }
   }
