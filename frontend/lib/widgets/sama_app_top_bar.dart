@@ -74,13 +74,11 @@ class SamaAppTopBar extends StatelessWidget implements PreferredSizeWidget {
                         ),
                         const Spacer(),
                         IconButton(
-                          tooltip: t.isDark ? "Thème clair" : "Thème sombre",
+                          tooltip: t.themeTooltip,
                           onPressed: () =>
                               context.read<AppThemeProvider>().toggleTheme(),
                           icon: Icon(
-                            t.isDark
-                                ? Icons.wb_sunny_outlined
-                                : Icons.nightlight_round,
+                            t.themeIcon,
                             color: t.textPrimary,
                           ),
                         ),
@@ -310,10 +308,9 @@ class SamaAppTopBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       actions: [
         IconButton(
-          tooltip: t.isDark ? "Thème clair" : "Thème sombre",
+          tooltip: t.themeTooltip,
           onPressed: () => context.read<AppThemeProvider>().toggleTheme(),
-          icon:
-              Icon(t.isDark ? Icons.wb_sunny_outlined : Icons.nightlight_round),
+          icon: Icon(t.themeIcon),
         ),
         if (!showAccountMenu)
           const SizedBox.shrink()

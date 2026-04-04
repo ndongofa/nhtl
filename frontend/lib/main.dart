@@ -42,10 +42,13 @@ void main() async {
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im91c3dscGt4c3N6cHhyZnl2bGRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzMzYwMTEsImV4cCI6MjA4NjkxMjAxMX0.r43EKDGLX4iahz3cRliwBAQkV4Tgtsu80rTRGpSYP_w',
   );
 
+  final themeProvider = AppThemeProvider();
+  await themeProvider.init();
+
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AppThemeProvider()),
+        ChangeNotifierProvider.value(value: themeProvider),
         ChangeNotifierProvider(
           create: (_) => DepartureCountdownService()..start(),
         ),

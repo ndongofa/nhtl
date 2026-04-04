@@ -161,13 +161,11 @@ class LandingCommandeScreen extends StatelessWidget {
                     icon: const Icon(Icons.logout, color: Colors.white),
                   ),
                 IconButton(
-                  tooltip: t.isDark ? "Thème clair" : "Thème sombre",
+                  tooltip: t.themeTooltip,
                   onPressed: () =>
                       context.read<AppThemeProvider>().toggleTheme(),
                   icon: Icon(
-                    t.isDark
-                        ? Icons.wb_sunny_outlined
-                        : Icons.nightlight_round,
+                    t.themeIcon,
                     color: Colors.white,
                   ),
                 ),
@@ -200,14 +198,9 @@ class LandingCommandeScreen extends StatelessWidget {
                     PopupMenuItem<String>(
                       value: 'theme',
                       child: Row(children: [
-                        Icon(
-                          t.isDark
-                              ? Icons.wb_sunny_outlined
-                              : Icons.nightlight_round,
-                          size: 18,
-                        ),
+                        Icon(t.themeIcon, size: 18),
                         const SizedBox(width: 10),
-                        Text(t.isDark ? "Thème clair" : "Thème sombre"),
+                        Text(t.themeTooltip),
                       ]),
                     ),
                     if (isLoggedIn)

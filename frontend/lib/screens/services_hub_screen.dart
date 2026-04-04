@@ -1309,13 +1309,11 @@ class _TopBar extends StatelessWidget {
                         ),
                         const Spacer(),
                         IconButton(
-                          tooltip: t.isDark ? "Thème clair" : "Thème sombre",
+                          tooltip: t.themeTooltip,
                           onPressed: () =>
                               context.read<AppThemeProvider>().toggleTheme(),
                           icon: Icon(
-                            t.isDark
-                                ? Icons.wb_sunny_outlined
-                                : Icons.nightlight_round,
+                            t.themeIcon,
                             color: t.textPrimary,
                           ),
                         ),
@@ -1569,9 +1567,7 @@ class _TopBar extends StatelessWidget {
                   value: 'theme',
                   child: Row(children: [
                     Icon(
-                      t.isDark
-                          ? Icons.wb_sunny_outlined
-                          : Icons.nightlight_round,
+                      t.themeIcon,
                       size: 18,
                       color: t.isDark
                           ? AppThemeProvider.amber
@@ -1579,7 +1575,7 @@ class _TopBar extends StatelessWidget {
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      t.isDark ? "Thème clair" : "Thème sombre",
+                      t.themeTooltip,
                       style: TextStyle(
                         color: t.textPrimary,
                         fontWeight: FontWeight.w600,
@@ -1705,10 +1701,8 @@ class _TopBar extends StatelessWidget {
                     child: FadeTransition(opacity: anim, child: child),
                   ),
                   child: Icon(
-                    t.isDark
-                        ? Icons.wb_sunny_outlined
-                        : Icons.nightlight_round,
-                    key: ValueKey(t.isDark),
+                    t.themeIcon,
+                    key: ValueKey(t.mode),
                     color: t.isDark ? AppThemeProvider.amber : Colors.white,
                     size: 16,
                   ),
