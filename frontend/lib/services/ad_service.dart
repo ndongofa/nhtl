@@ -1,11 +1,13 @@
 // lib/services/ad_service.dart
 
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/ad_model.dart';
 import 'ad_api_service.dart';
 
 class AdService extends ChangeNotifier {
   final _api = AdApiService();
+  Timer? _refreshTimer;
 
   List<AdModel> _ads = [];
   bool _loaded = false;
@@ -47,13 +49,37 @@ class AdService extends ChangeNotifier {
 
   Future<void> load() async {
     final result = await _api.getPublicAds();
-    _ads = result;
+    // null means the request failed — keep the current list intact
+    _applyResult(result);
     _loaded = true;
     notifyListeners();
+    // ??= ensures only one timer is ever created even if load() is called again
+    _refreshTimer ??= Timer.periodic(const Duration(minutes: 5), (_) => _silentRefresh());
+  }
+
+  // Updates _ads and notifies listeners when result is non-null (success).
+  void _applyResult(List<AdModel>? result) {
+    if (result != null) {
+      _ads = result;
+    }
+  }
+
+  Future<void> _silentRefresh() async {
+    final result = await _api.getPublicAds();
+    if (result != null) {
+      _applyResult(result);
+      notifyListeners();
+    }
   }
 
   Future<void> reload() async {
     _loaded = false;
     await load();
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 }

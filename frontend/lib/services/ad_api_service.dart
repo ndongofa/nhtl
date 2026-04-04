@@ -22,7 +22,10 @@ class AdApiService {
   }
 
   // ── PUBLIC — carousel ─────────────────────────────────────────────────────
-  Future<List<AdModel>> getPublicAds() async {
+  // Returns null when the request fails (network error, non-200 status), so
+  // callers can distinguish "no active ads" (empty list) from "request failed"
+  // (null) and avoid overwriting a previously loaded ad list with stale data.
+  Future<List<AdModel>?> getPublicAds() async {
     final url = '${ApiConfig.baseUrl}/api/ads/public';
     try {
       _log.i('GET $url [ADS PUBLIC]');
@@ -34,10 +37,10 @@ class AdApiService {
         return list.map((e) => AdModel.fromJson(e as Map<String, dynamic>)).toList();
       }
       _log.e('❌ getPublicAds: ${res.statusCode}');
-      return [];
+      return null;
     } catch (e) {
       _log.e('❌ getPublicAds exception: $e');
-      return [];
+      return null;
     }
   }
 
