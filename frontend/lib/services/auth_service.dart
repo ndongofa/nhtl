@@ -21,6 +21,70 @@ class AuthService {
   static bool _is429(dynamic statusCode) =>
       statusCode == 429 || statusCode?.toString() == '429';
 
+  /// Traduit un message d'erreur Supabase en message lisible en français.
+  static String _friendlyAuthMessage(String? message) {
+    if (message == null || message.isEmpty) {
+      return "Une erreur s'est produite. Veuillez réessayer.";
+    }
+    final m = message.toLowerCase();
+    if (m.contains('invalid login credentials') ||
+        m.contains('invalid credentials') ||
+        m.contains('wrong password') ||
+        m.contains('invalid email or password')) {
+      return "Email/téléphone ou mot de passe incorrect.";
+    }
+    if (m.contains('user already registered') ||
+        m.contains('already been registered') ||
+        m.contains('already exists') ||
+        m.contains('user_already_exists')) {
+      return "Un compte existe déjà avec cet email ou ce numéro de téléphone.";
+    }
+    if (m.contains('email not confirmed')) {
+      return "Votre email n'a pas encore été confirmé. Vérifiez votre boîte mail et cliquez sur le lien de confirmation.";
+    }
+    if (m.contains('phone not confirmed')) {
+      return "Votre numéro de téléphone n'a pas encore été vérifié.";
+    }
+    if (m.contains('token has expired') ||
+        m.contains('token expired') ||
+        m.contains('otp expired') ||
+        m.contains('expired')) {
+      return "Code expiré. Veuillez en demander un nouveau.";
+    }
+    if (m.contains('invalid otp') ||
+        m.contains('invalid token') ||
+        m.contains('otp_invalid') ||
+        m.contains('token_not_found') ||
+        m.contains('incorrect code')) {
+      return "Code incorrect. Vérifiez le code reçu par SMS et réessayez.";
+    }
+    if (m.contains('user not found') || m.contains('no user found')) {
+      return "Aucun compte trouvé avec ces identifiants.";
+    }
+    if (m.contains('rate limit') || m.contains('too many requests')) {
+      return "Trop de tentatives. Veuillez patienter quelques minutes avant de réessayer.";
+    }
+    if (m.contains('network') ||
+        m.contains('connection refused') ||
+        m.contains('socket')) {
+      return "Impossible de se connecter. Vérifiez votre connexion internet.";
+    }
+    if (m.contains('weak password') || m.contains('password should be')) {
+      return "Le mot de passe doit contenir au moins 8 caractères.";
+    }
+    if (m.contains('signup is disabled') ||
+        m.contains('signups not allowed')) {
+      return "Les inscriptions sont temporairement désactivées. Contactez le support.";
+    }
+    if (m.contains('email') && (m.contains('invalid') || m.contains('format'))) {
+      return "Adresse email invalide.";
+    }
+    if (m.contains('phone') && m.contains('invalid')) {
+      return "Numéro de téléphone invalide.";
+    }
+    return "Une erreur s'est produite : $message";
+  }
+
   /// Supabase/Twilio attend le numéro sans "+" pour signUp, signInWithOtp
   /// et verifyOTP. On conserve le "+" uniquement pour la validation E.164
   /// côté Flutter.
@@ -119,7 +183,7 @@ class AuthService {
         );
       }
 
-      rethrow;
+      throw Exception(_friendlyAuthMessage(e.message));
     } catch (e) {
       // ignore: avoid_print
       print("[AuthService][signup] Unknown error: $e");
@@ -161,7 +225,7 @@ class AuthService {
         );
       }
 
-      rethrow;
+      throw Exception(_friendlyAuthMessage(e.message));
     } catch (e) {
       // ignore: avoid_print
       print("[AuthService][sendPhoneOtp] Unknown error: $e");
@@ -208,7 +272,7 @@ class AuthService {
         );
       }
 
-      rethrow;
+      throw Exception(_friendlyAuthMessage(e.message));
     } catch (e) {
       // ignore: avoid_print
       print("[AuthService][verifyPhoneOtp] Unknown error: $e");
@@ -259,7 +323,12 @@ class AuthService {
       // ignore: avoid_print
       print(
           "[AuthService][login] AuthException status=${e.statusCode} message=${e.message}");
-      rethrow;
+      if (_is429(e.statusCode)) {
+        throw Exception(
+          "Trop de tentatives de connexion. Veuillez patienter quelques minutes puis réessayer.",
+        );
+      }
+      throw Exception(_friendlyAuthMessage(e.message));
     } catch (e) {
       // ignore: avoid_print
       print("[AuthService][login] Unknown error: $e");
@@ -295,7 +364,7 @@ class AuthService {
         );
       }
 
-      rethrow;
+      throw Exception(_friendlyAuthMessage(e.message));
     }
   }
 

@@ -32,6 +32,43 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   int _quantite = 1;
   bool _adding = false;
 
+  void _showLoginRequiredDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(children: [
+          Icon(Icons.lock_outline, color: widget.accentColor),
+          const SizedBox(width: 8),
+          const Text('Connexion requise',
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+        ]),
+        content: const Text(
+          'Vous devez être connecté pour ajouter des articles au panier.\n\n'
+          'Connectez-vous ou créez un compte pour continuer.',
+          style: TextStyle(fontSize: 14, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Annuler',
+                style: TextStyle(color: Colors.grey.shade600)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.of(context).pushNamed('/login');
+            },
+            style: ElevatedButton.styleFrom(
+                backgroundColor: widget.accentColor,
+                foregroundColor: Colors.white),
+            child: const Text('Se connecter'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = context.watch<AppThemeProvider>();
@@ -262,6 +299,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     onPressed: _adding
                         ? null
                         : () async {
+                            if (!AuthService.isLoggedIn()) {
+                              _showLoginRequiredDialog(context);
+                              return;
+                            }
                             setState(() => _adding = true);
                             final ok = await panier.ajouter(
                               p.id!,
@@ -278,8 +319,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   backgroundColor: Colors.green);
                             } else {
                               Fluttertoast.showToast(
-                                  msg: '❌ Impossible d\'ajouter au panier',
-                                  backgroundColor: Colors.red);
+                                  msg: '❌ Impossible d\'ajouter au panier. Vérifiez votre connexion et réessayez.',
+                                  backgroundColor: Colors.red,
+                                  toastLength: Toast.LENGTH_LONG);
                             }
                           },
                   ),

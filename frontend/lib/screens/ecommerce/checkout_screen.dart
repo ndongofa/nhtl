@@ -76,6 +76,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           backgroundColor: Colors.red);
       return;
     }
+    if (!AuthService.isLoggedIn()) {
+      Fluttertoast.showToast(
+        msg: 'Vous devez être connecté pour valider une commande. Veuillez vous reconnecter.',
+        backgroundColor: Colors.red,
+        toastLength: Toast.LENGTH_LONG,
+      );
+      return;
+    }
     setState(() => _loading = true);
 
     try {
@@ -223,12 +231,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         }
       } else {
         Fluttertoast.showToast(
-            msg: '❌ Erreur lors de la validation',
-            backgroundColor: Colors.red);
+            msg: '❌ Impossible de valider la commande. Vérifiez votre connexion et réessayez.',
+            backgroundColor: Colors.red,
+            toastLength: Toast.LENGTH_LONG);
       }
     } catch (e) {
       Fluttertoast.showToast(
-          msg: '❌ Erreur : $e', backgroundColor: Colors.red);
+          msg: '❌ Erreur : ${e.toString().replaceFirst('Exception: ', '')}',
+          backgroundColor: Colors.red,
+          toastLength: Toast.LENGTH_LONG);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
