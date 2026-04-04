@@ -13,6 +13,7 @@ import '../../providers/panier_provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/ecommerce_service.dart';
 import '../../widgets/sama_account_menu.dart';
+import 'ecommerce_hub_screen.dart';
 import 'product_detail_screen.dart';
 import 'panier_screen.dart';
 
@@ -117,6 +118,21 @@ class _CatalogueScreenState extends State<CatalogueScreen> {
             icon: const Icon(Icons.dashboard_outlined),
             onPressed: () => SamaAccountMenu.open(context),
           ),
+          if (isLoggedIn)
+            IconButton(
+              tooltip: "Mes commandes",
+              icon: const Icon(Icons.receipt_long_outlined),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => EcommerceHubScreen(
+                    serviceType: widget.serviceType,
+                    serviceLabel: widget.serviceLabel,
+                    accentColor: widget.accentColor,
+                  ),
+                ),
+              ),
+            ),
           if (isLoggedIn)
             IconButton(
               tooltip: "Déconnexion",
@@ -244,7 +260,7 @@ class _CatalogueScreenState extends State<CatalogueScreen> {
                           gridDelegate:
                               const SliverGridDelegateWithMaxCrossAxisExtent(
                             maxCrossAxisExtent: 200,
-                            childAspectRatio: 0.72,
+                            childAspectRatio: 0.62,
                             crossAxisSpacing: 12,
                             mainAxisSpacing: 12,
                           ),
@@ -253,6 +269,7 @@ class _CatalogueScreenState extends State<CatalogueScreen> {
                             produit: _filtered[i],
                             accentColor: widget.accentColor,
                             t: t,
+                            panier: panier,
                             onTap: () => Navigator.push(
                               ctx,
                               MaterialPageRoute(
@@ -339,23 +356,62 @@ class _CatalogueScreenState extends State<CatalogueScreen> {
 
 // ── Carte produit ─────────────────────────────────────────────────────────────
 
-class _ProduitCard extends StatelessWidget {
+class _ProduitCard extends StatefulWidget {
   final Produit produit;
   final Color accentColor;
   final AppThemeProvider t;
+  final PanierProvider panier;
   final VoidCallback onTap;
 
   const _ProduitCard({
     required this.produit,
     required this.accentColor,
     required this.t,
+    required this.panier,
     required this.onTap,
   });
 
   @override
+  State<_ProduitCard> createState() => _ProduitCardState();
+}
+
+class _ProduitCardState extends State<_ProduitCard> {
+  bool _addingToCart = false;
+
+  Future<void> _addToCart() async {
+    if (!widget.produit.enStock) return;
+    setState(() => _addingToCart = true);
+    final ok = await widget.panier.ajouter(
+      widget.produit.id,
+      1,
+      nom: widget.produit.nom,
+      imageUrl: widget.produit.imageUrl,
+      prix: widget.produit.prix,
+      devise: widget.produit.devise,
+    );
+    if (mounted) {
+      setState(() => _addingToCart = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(ok
+              ? '${widget.produit.nom} ajouté au panier'
+              : 'Erreur lors de l\'ajout — veuillez réessayer'),
+          backgroundColor: ok ? widget.accentColor : Colors.red,
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final t = widget.t;
+    final produit = widget.produit;
+    final accentColor = widget.accentColor;
+
     return GestureDetector(
-      onTap: onTap,
+      onTap: widget.onTap,
       child: Container(
         decoration: BoxDecoration(
           color: t.bgCard,
@@ -393,7 +449,7 @@ class _ProduitCard extends StatelessWidget {
             ),
             // Infos
             Padding(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 4),
               child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -422,21 +478,54 @@ class _ProduitCard extends StatelessWidget {
                     ),
                   ],
                 ]),
-                const SizedBox(height: 4),
                 if (!produit.enStock)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                        color: Colors.red.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(6)),
-                    child: const Text('Rupture',
-                        style: TextStyle(
-                            color: Colors.red,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700)),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                          color: Colors.red.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(6)),
+                      child: const Text('Rupture',
+                          style: TextStyle(
+                              color: Colors.red,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700)),
+                    ),
                   ),
               ]),
+            ),
+            // Bouton ajout panier
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+              child: SizedBox(
+                width: double.infinity,
+                height: 32,
+                child: ElevatedButton.icon(
+                  onPressed: produit.enStock && !_addingToCart
+                      ? _addToCart
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: accentColor,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: t.border,
+                    padding: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                    elevation: 0,
+                  ),
+                  icon: _addingToCart
+                      ? SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.add_shopping_cart, size: 14),
+                  label: const Text('Ajouter',
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                ),
+              ),
             ),
           ],
         ),

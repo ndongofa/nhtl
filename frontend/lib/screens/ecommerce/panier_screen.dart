@@ -8,9 +8,10 @@ import '../../providers/app_theme_provider.dart';
 import '../../providers/panier_provider.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/sama_account_menu.dart';
+import '../auth/login_screen.dart';
 import 'checkout_screen.dart';
 
-class PanierScreen extends StatelessWidget {
+class PanierScreen extends StatefulWidget {
   final String serviceType;
   final String serviceLabel;
   final String serviceEmoji;
@@ -23,6 +24,77 @@ class PanierScreen extends StatelessWidget {
     required this.serviceEmoji,
     required this.accentColor,
   }) : super(key: key);
+
+  @override
+  State<PanierScreen> createState() => _PanierScreenState();
+}
+
+class _PanierScreenState extends State<PanierScreen> {
+  String get serviceType => widget.serviceType;
+  String get serviceLabel => widget.serviceLabel;
+  String get serviceEmoji => widget.serviceEmoji;
+  Color get accentColor => widget.accentColor;
+
+  void _validerCommande(BuildContext context, PanierProvider panier) {
+    if (AuthService.isLoggedIn()) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ChangeNotifierProvider.value(
+            value: panier,
+            child: CheckoutScreen(
+              serviceType: serviceType,
+              serviceLabel: serviceLabel,
+              accentColor: accentColor,
+              totalAmount: panier.total,
+              devise: panier.devise,
+            ),
+          ),
+        ),
+      );
+    } else {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Connexion requise'),
+          content: const Text(
+              'Vous devez être connecté pour finaliser votre commande.\n\nSouhaitez-vous vous connecter ?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Annuler'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                // Crée un nouveau PanierProvider qui rechargera depuis le
+                // cache SharedPreferences (le panier actuel est toujours
+                // persisté). On ne réutilise pas le provider existant car
+                // il sera disposé lors du pushAndRemoveUntil dans LoginScreen.
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => LoginScreen(
+                      redirectTo: ChangeNotifierProvider(
+                        create: (_) => PanierProvider(serviceType: serviceType),
+                        child: PanierScreen(
+                          serviceType: serviceType,
+                          serviceLabel: serviceLabel,
+                          serviceEmoji: serviceEmoji,
+                          accentColor: accentColor,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+              child: const Text('Se connecter'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,16 +120,17 @@ class PanierScreen extends StatelessWidget {
             onPressed: () => SamaAccountMenu.open(context),
             icon: const Icon(Icons.dashboard_outlined),
           ),
-          IconButton(
-            tooltip: "Déconnexion",
-            onPressed: () async {
-              await AuthService.logout();
-              if (!context.mounted) return;
-              Navigator.of(context)
-                  .pushNamedAndRemoveUntil('/', (_) => false);
-            },
-            icon: const Icon(Icons.logout),
-          ),
+          if (AuthService.isLoggedIn())
+            IconButton(
+              tooltip: "Déconnexion",
+              onPressed: () async {
+                await AuthService.logout();
+                if (!context.mounted) return;
+                Navigator.of(context)
+                    .pushNamedAndRemoveUntil('/', (_) => false);
+              },
+              icon: const Icon(Icons.logout),
+            ),
           if (!panier.isEmpty)
             TextButton(
               onPressed: () async {
@@ -146,21 +219,7 @@ class PanierScreen extends StatelessWidget {
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14)),
                           elevation: 0),
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ChangeNotifierProvider.value(
-                            value: context.read<PanierProvider>(),
-                            child: CheckoutScreen(
-                              serviceType: serviceType,
-                              serviceLabel: serviceLabel,
-                              accentColor: accentColor,
-                              totalAmount: panier.total,
-                              devise: panier.devise,
-                            ),
-                          ),
-                        ),
-                      ),
+                      onPressed: () => _validerCommande(context, panier),
                     ),
                   ),
                 ]),

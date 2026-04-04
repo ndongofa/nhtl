@@ -1,7 +1,9 @@
 // lib/screens/services/sama_maad_screen.dart
 
 import 'package:flutter/material.dart';
-import '../ecommerce/ecommerce_hub_screen.dart';
+import 'package:provider/provider.dart';
+import '../../providers/panier_provider.dart';
+import '../ecommerce/catalogue_screen.dart';
 
 class SamaMaadScreen extends StatelessWidget {
   const SamaMaadScreen({Key? key}) : super(key: key);
@@ -10,10 +12,14 @@ class SamaMaadScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const EcommerceHubScreen(
-      serviceType: 'maad',
-      serviceLabel: 'Sama Maad',
-      accentColor: _green,
+    return ChangeNotifierProvider(
+      create: (_) => PanierProvider(serviceType: 'maad'),
+      child: const CatalogueScreen(
+        serviceType: 'maad',
+        serviceLabel: 'Sama Maad',
+        serviceEmoji: '🌿',
+        accentColor: _green,
+      ),
     );
   }
 }
