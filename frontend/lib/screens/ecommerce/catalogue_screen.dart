@@ -210,9 +210,10 @@ class _CatalogueScreenState extends State<CatalogueScreen> {
                     dense: true,
                   ),
                 ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'actualiser',
-                child: ListTile(
+                enabled: !_loading,
+                child: const ListTile(
                   leading: Icon(Icons.refresh),
                   title: Text('Actualiser'),
                   contentPadding: EdgeInsets.zero,
