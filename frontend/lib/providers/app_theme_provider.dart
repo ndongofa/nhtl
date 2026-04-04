@@ -129,7 +129,7 @@ class AppThemeProvider extends ChangeNotifier with WidgetsBindingObserver {
     _checkAutoTheme();
     _autoTimer?.cancel();
     _autoTimer =
-        Timer.periodic(const Duration(minutes: 1), (_) => _checkAutoTheme());
+        Timer.periodic(const Duration(minutes: 5), (_) => _checkAutoTheme());
     _refreshLocation();
   }
 
