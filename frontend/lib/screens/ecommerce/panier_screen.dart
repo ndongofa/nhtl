@@ -115,22 +115,6 @@ class _PanierScreenState extends State<PanierScreen> {
                   fontWeight: FontWeight.w800, fontSize: 16)),
         ]),
         actions: [
-          IconButton(
-            tooltip: "Mon espace",
-            onPressed: () => SamaAccountMenu.open(context),
-            icon: const Icon(Icons.dashboard_outlined),
-          ),
-          if (AuthService.isLoggedIn())
-            IconButton(
-              tooltip: "Déconnexion",
-              onPressed: () async {
-                await AuthService.logout();
-                if (!context.mounted) return;
-                Navigator.of(context)
-                    .pushNamedAndRemoveUntil('/', (_) => false);
-              },
-              icon: const Icon(Icons.logout),
-            ),
           if (!panier.isEmpty)
             TextButton(
               onPressed: () async {
@@ -161,6 +145,45 @@ class _PanierScreenState extends State<PanierScreen> {
                   style: TextStyle(
                       color: Colors.red, fontWeight: FontWeight.w700)),
             ),
+          // Menu burger : actions secondaires
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            tooltip: 'Menu',
+            onSelected: (value) async {
+              switch (value) {
+                case 'mon_espace':
+                  SamaAccountMenu.open(context);
+                  break;
+                case 'deconnexion':
+                  await AuthService.logout();
+                  if (!context.mounted) return;
+                  Navigator.of(context)
+                      .pushNamedAndRemoveUntil('/', (_) => false);
+                  break;
+              }
+            },
+            itemBuilder: (_) => [
+              const PopupMenuItem(
+                value: 'mon_espace',
+                child: ListTile(
+                  leading: Icon(Icons.dashboard_outlined),
+                  title: Text('Mon espace'),
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                ),
+              ),
+              if (AuthService.isLoggedIn())
+                const PopupMenuItem(
+                  value: 'deconnexion',
+                  child: ListTile(
+                    leading: Icon(Icons.logout),
+                    title: Text('Déconnexion'),
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                  ),
+                ),
+            ],
+          ),
         ],
       ),
       body: panier.isEmpty

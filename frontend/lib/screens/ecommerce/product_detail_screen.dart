@@ -86,26 +86,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
         actions: [
-          IconButton(
-            tooltip: "Mon espace",
-            onPressed: () => SamaAccountMenu.open(context),
-            icon: const Icon(Icons.dashboard_outlined),
-          ),
-          IconButton(
-            tooltip: "Déconnexion",
-            onPressed: () async {
-              await AuthService.logout();
-              if (!context.mounted) return;
-              Navigator.of(context)
-                  .pushNamedAndRemoveUntil('/', (_) => false);
-            },
-            icon: const Icon(Icons.logout),
-          ),
+          // Panier (toujours visible, avec badge article)
           Stack(
             alignment: Alignment.topRight,
             children: [
               IconButton(
                 icon: const Icon(Icons.shopping_cart_outlined),
+                tooltip: 'Mon panier',
                 onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -139,6 +126,44 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                   ),
                 ),
+            ],
+          ),
+          // Menu burger : actions secondaires
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            tooltip: 'Menu',
+            onSelected: (value) async {
+              switch (value) {
+                case 'mon_espace':
+                  SamaAccountMenu.open(context);
+                  break;
+                case 'deconnexion':
+                  await AuthService.logout();
+                  if (!context.mounted) return;
+                  Navigator.of(context)
+                      .pushNamedAndRemoveUntil('/', (_) => false);
+                  break;
+              }
+            },
+            itemBuilder: (_) => [
+              const PopupMenuItem(
+                value: 'mon_espace',
+                child: ListTile(
+                  leading: Icon(Icons.dashboard_outlined),
+                  title: Text('Mon espace'),
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'deconnexion',
+                child: ListTile(
+                  leading: Icon(Icons.logout),
+                  title: Text('Déconnexion'),
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                ),
+              ),
             ],
           ),
         ],
