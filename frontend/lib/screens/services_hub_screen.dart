@@ -806,7 +806,7 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
       if (ads.isEmpty) return;
       // Don't auto-advance while a YouTube ad is playing
       final current = ads[_index % ads.length];
-      if (current.adType == 'youtube') return;
+      if (current.adType == AdModel.typeYoutube) return;
       setState(() => _index = (_index + 1) % ads.length);
     });
   }
@@ -1100,9 +1100,9 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
       child: KeyedSubtree(
         key: ValueKey(safeIndex),
         child: switch (ad.adType) {
-          'image' when (ad.imageUrl ?? '').isNotEmpty =>
+          AdModel.typeImage when (ad.imageUrl ?? '').isNotEmpty =>
             _buildImageContent(ad, safeIndex, ads.length),
-          'youtube' when (ad.youtubeId ?? '').isNotEmpty =>
+          AdModel.typeYoutube when (ad.youtubeId ?? '').isNotEmpty =>
             _buildYoutubeContent(ad, safeIndex, ads.length),
           _ => _buildTextContent(ad, safeIndex, ads.length),
         },

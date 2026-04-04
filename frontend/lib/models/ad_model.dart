@@ -3,10 +3,14 @@
 import 'package:flutter/material.dart';
 
 /// Type d'une publicité dans le carousel.
-/// - `'text'`    : emoji + texte sur fond dégradé (comportement actuel)
-/// - `'image'`   : image/GIF depuis une URL, texte en overlay
-/// - `'youtube'` : lecteur YouTube intégré (muet, autoplay)
+/// - `AdModel.typeText`    : emoji + texte sur fond dégradé (comportement actuel)
+/// - `AdModel.typeImage`   : image/GIF depuis une URL, texte en overlay
+/// - `AdModel.typeYoutube` : lecteur YouTube intégré (muet, autoplay)
 class AdModel {
+  static const String typeText = 'text';
+  static const String typeImage = 'image';
+  static const String typeYoutube = 'youtube';
+
   final int? id;
   final String emoji;
   final String title;
@@ -28,7 +32,7 @@ class AdModel {
     required this.colorEndHex,
     this.position = 0,
     this.isActive = true,
-    this.adType = 'text',
+    this.adType = AdModel.typeText,
     this.imageUrl,
     this.youtubeId,
   });
@@ -55,7 +59,7 @@ class AdModel {
         colorEndHex: json['colorEndHex'] as String? ?? '#0D5BBF',
         position: json['position'] as int? ?? 0,
         isActive: json['isActive'] as bool? ?? true,
-        adType: json['adType'] as String? ?? 'text',
+        adType: json['adType'] as String? ?? AdModel.typeText,
         imageUrl: json['imageUrl'] as String?,
         youtubeId: json['youtubeId'] as String?,
       );

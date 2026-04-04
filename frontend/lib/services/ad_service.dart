@@ -19,7 +19,7 @@ class AdService extends ChangeNotifier {
       colorHex: '#004EDA',
       colorEndHex: '#0D5BBF',
       position: 0,
-      adType: 'text',
+      adType: AdModel.typeText,
     ),
     const AdModel(
       emoji: '🛒',
@@ -28,7 +28,7 @@ class AdService extends ChangeNotifier {
       colorHex: '#FBBF24',
       colorEndHex: '#E65100',
       position: 1,
-      adType: 'text',
+      adType: AdModel.typeText,
     ),
     const AdModel(
       emoji: '🌿',
@@ -37,7 +37,7 @@ class AdService extends ChangeNotifier {
       colorHex: '#16A34A',
       colorEndHex: '#14532D',
       position: 2,
-      adType: 'text',
+      adType: AdModel.typeText,
     ),
   ];
 

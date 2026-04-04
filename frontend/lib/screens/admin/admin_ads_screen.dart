@@ -218,9 +218,9 @@ class _AdTile extends StatelessWidget {
 
   String _adTypeLabel(String adType) {
     switch (adType) {
-      case 'image':
+      case AdModel.typeImage:
         return '🖼️ Image';
-      case 'youtube':
+      case AdModel.typeYoutube:
         return '▶️ YouTube';
       default:
         return '📝 Texte';
@@ -228,7 +228,7 @@ class _AdTile extends StatelessWidget {
   }
 
   Widget _buildPreviewSwatch() {
-    if (ad.adType == 'image' && (ad.imageUrl ?? '').isNotEmpty) {
+    if (ad.adType == AdModel.typeImage && (ad.imageUrl ?? '').isNotEmpty) {
       return SizedBox(
         width: 54,
         child: CachedNetworkImage(
@@ -249,7 +249,7 @@ class _AdTile extends StatelessWidget {
         ),
       );
     }
-    if (ad.adType == 'youtube') {
+    if (ad.adType == AdModel.typeYoutube) {
       return Container(
         width: 54,
         color: Colors.red.withValues(alpha: 0.15),
@@ -446,7 +446,7 @@ class _AdFormSheetState extends State<_AdFormSheet> {
     _imageUrlCtrl = TextEditingController(text: ad?.imageUrl ?? '');
     _youtubeIdCtrl = TextEditingController(text: ad?.youtubeId ?? '');
     _isActive = ad?.isActive ?? true;
-    _adType = ad?.adType ?? 'text';
+    _adType = ad?.adType ?? AdModel.typeText;
   }
 
   @override
@@ -469,13 +469,13 @@ class _AdFormSheetState extends State<_AdFormSheet> {
       );
       return;
     }
-    if (_adType == 'image' && _imageUrlCtrl.text.trim().isEmpty) {
+    if (_adType == AdModel.typeImage && _imageUrlCtrl.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("L'URL de l'image est obligatoire pour ce type")),
       );
       return;
     }
-    if (_adType == 'youtube' && _youtubeIdCtrl.text.trim().isEmpty) {
+    if (_adType == AdModel.typeYoutube && _youtubeIdCtrl.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("L'ID YouTube est obligatoire pour ce type")),
       );
@@ -594,16 +594,16 @@ class _AdFormSheetState extends State<_AdFormSheet> {
             const SizedBox(height: 8),
             Row(
               children: [
-                _typeChip('text', '📝 Texte'),
+                _typeChip(AdModel.typeText, '📝 Texte'),
                 const SizedBox(width: 8),
-                _typeChip('image', '🖼️ Image'),
+                _typeChip(AdModel.typeImage, '🖼️ Image'),
                 const SizedBox(width: 8),
-                _typeChip('youtube', '▶️ YouTube'),
+                _typeChip(AdModel.typeYoutube, '▶️ YouTube'),
               ],
             ),
             const SizedBox(height: 16),
             // ── Media URL fields (conditional) ──────────────────────────────
-            if (_adType == 'image') ...[
+            if (_adType == AdModel.typeImage) ...[
               TextField(
                 controller: _imageUrlCtrl,
                 style: const TextStyle(color: _textPrimary),
@@ -613,7 +613,7 @@ class _AdFormSheetState extends State<_AdFormSheet> {
               ),
               const SizedBox(height: 12),
             ],
-            if (_adType == 'youtube') ...[
+            if (_adType == AdModel.typeYoutube) ...[
               TextField(
                 controller: _youtubeIdCtrl,
                 style: const TextStyle(color: _textPrimary),
@@ -630,7 +630,7 @@ class _AdFormSheetState extends State<_AdFormSheet> {
             ],
             // ── Title row (emoji shown only for text/image types) ───────────
             Row(children: [
-              if (_adType != 'youtube') ...[
+              if (_adType != AdModel.typeYoutube) ...[
                 SizedBox(
                   width: 80,
                   child: TextField(
