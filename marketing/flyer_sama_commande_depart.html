@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Sama Commande — Clôture des commandes · Prochains départs</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Poppins', Arial, sans-serif;
+      background: #f0f0f7;
+      display: flex; justify-content: center; align-items: center;
+      min-height: 100vh; padding: 20px;
+    }
+    .flyer {
+      width: 794px; min-height: 1123px;
+      background: linear-gradient(160deg, #1a0a2e 0%, #2d1b69 50%, #1a0a2e 100%);
+      border-radius: 16px; overflow: hidden; position: relative; color: white;
+    }
+
+    /* ── Barre d'accent urgence ── */
+    .accent-bar { height: 8px; background: linear-gradient(90deg, #FF4444, #FF8C00, #FFD700); }
+
+    /* ── Badge urgence clignotant ── */
+    .urgency-ribbon {
+      background: linear-gradient(90deg, #FF4444, #CC0000);
+      text-align: center;
+      padding: 12px;
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: white;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.8; }
+    }
+
+    /* ── Header ── */
+    .header { padding: 36px 48px 28px; position: relative; z-index: 1; }
+    .service-badge {
+      background: linear-gradient(90deg, #FF6B9D, #C850C0);
+      border-radius: 8px; padding: 8px 20px;
+      display: inline-block; font-size: 12px; font-weight: 700;
+      color: white; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 18px;
+    }
+    .main-title { font-size: 56px; font-weight: 900; line-height: 1; margin-bottom: 6px; }
+    .main-title span { color: #FF6B9D; }
+    .main-subtitle { font-size: 16px; color: rgba(255,255,255,0.7); margin-bottom: 28px; line-height: 1.5; }
+
+    /* ── Routes ── */
+    .routes { padding: 0 48px 28px; display: flex; flex-direction: column; gap: 14px; z-index: 1; position: relative; }
+    .route-card {
+      display: flex; align-items: center;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,215,0,0.3);
+      border-radius: 14px;
+      padding: 20px 24px;
+      gap: 16px;
+    }
+    .route-card.highlight { border-color: rgba(255,107,157,0.45); background: rgba(255,107,157,0.08); }
+    .route-node { text-align: center; min-width: 68px; }
+    .route-flag { font-size: 34px; }
+    .route-city { font-size: 13px; font-weight: 700; color: #FFD700; margin-top: 4px; }
+    .route-arrow { font-size: 26px; color: rgba(255,255,255,0.35); flex: 1; text-align: center; }
+    .route-tag {
+      background: rgba(255,215,0,0.15);
+      border: 1px solid rgba(255,215,0,0.4);
+      border-radius: 30px;
+      padding: 6px 16px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #FFD700;
+      white-space: nowrap;
+    }
+
+    /* ── Countdown box ── */
+    .deadline-box {
+      margin: 0 48px 28px;
+      background: linear-gradient(90deg, rgba(255,68,68,0.18), rgba(255,140,0,0.14));
+      border: 2px solid #FF4444;
+      border-radius: 16px;
+      padding: 24px 32px;
+      text-align: center;
+      position: relative; z-index: 1;
+    }
+    .deadline-icon { font-size: 40px; margin-bottom: 10px; }
+    .deadline-title { font-size: 22px; font-weight: 900; color: #FF6B6B; margin-bottom: 6px; }
+    .deadline-body { font-size: 14px; color: rgba(255,255,255,0.8); line-height: 1.6; }
+    .deadline-body strong { color: #FFD700; }
+
+    /* ── Pourquoi commander maintenant ── */
+    .why { padding: 0 48px 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; z-index: 1; position: relative; }
+    .why-item {
+      display: flex; align-items: flex-start; gap: 12px;
+      background: rgba(255,255,255,0.05); border-radius: 10px; padding: 16px;
+    }
+    .why-icon { font-size: 22px; flex-shrink: 0; }
+    .why-text { font-size: 12.5px; color: rgba(255,255,255,0.75); line-height: 1.5; }
+    .why-text strong { display: block; color: white; font-size: 13px; margin-bottom: 2px; }
+
+    /* ── CTA ── */
+    .cta {
+      margin: 0 48px 36px;
+      background: linear-gradient(90deg, rgba(255,107,157,0.15), rgba(200,80,192,0.1));
+      border: 2px solid #C850C0; border-radius: 16px; padding: 28px 36px; text-align: center;
+      position: relative; z-index: 1;
+    }
+    .cta-text { font-size: 15px; color: rgba(255,255,255,0.8); margin-bottom: 10px; }
+    .cta-url { font-size: 22px; font-weight: 900; color: #FF6B9D; text-decoration: none; display: block; margin-bottom: 8px; }
+    .cta-sub { font-size: 12px; color: rgba(255,255,255,0.5); }
+    .wa-note { margin-top: 12px; font-size: 13px; color: rgba(255,255,255,0.7); }
+    .wa-note span { color: #4ADE80; font-weight: 700; }
+
+    /* ── Footer ── */
+    .footer { background: rgba(0,0,0,0.4); padding: 16px 48px; display: flex; justify-content: space-between; align-items: center; }
+    .footer-left { font-size: 11px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; }
+    .footer-right { font-size: 11px; color: rgba(255,255,255,0.4); }
+
+    @media print { body { background: white; padding: 0; } .flyer { border-radius: 0; width: 100%; } }
+  </style>
+</head>
+<body>
+<div class="flyer">
+  <div class="accent-bar"></div>
+
+  <!-- Bandeau urgence -->
+  <div class="urgency-ribbon">⚠️ Clôture des commandes cette semaine — Ne manquez pas votre départ !</div>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="service-badge">🛒 Sama Commande</div>
+    <h1 class="main-title">Prochains <span>Départs</span></h1>
+    <p class="main-subtitle">
+      Les envois groupés partent bientôt.<br>
+      Passez votre commande <strong>avant la clôture</strong> pour être dans ce départ.
+    </p>
+  </div>
+
+  <!-- Routes -->
+  <div class="routes">
+    <div class="route-card">
+      <div class="route-node">
+        <div class="route-flag">🗼</div>
+        <div class="route-city">Paris</div>
+      </div>
+      <div class="route-arrow">✈️ ——▶</div>
+      <div class="route-node">
+        <div class="route-flag">🕌</div>
+        <div class="route-city">Casablanca</div>
+      </div>
+      <div class="route-tag">Départ imminent</div>
+    </div>
+
+    <div class="route-card highlight">
+      <div class="route-node">
+        <div class="route-flag">🗼</div>
+        <div class="route-city">Paris</div>
+      </div>
+      <div class="route-arrow">✈️ ——▶</div>
+      <div class="route-node">
+        <div class="route-flag">🇸🇳</div>
+        <div class="route-city">Dakar</div>
+      </div>
+      <div class="route-tag">Départ imminent</div>
+    </div>
+  </div>
+
+  <!-- Deadline box -->
+  <div class="deadline-box">
+    <div class="deadline-icon">⏳</div>
+    <div class="deadline-title">Clôture des commandes cette semaine</div>
+    <div class="deadline-body">
+      Pour que vos articles aient le temps d'être <strong>achetés, préparés et expédiés</strong>
+      avant le départ, nous clôturons la prise de commandes <strong>dès cette semaine</strong>.<br><br>
+      <strong>Commandez maintenant</strong> — il ne reste que quelques jours !
+    </div>
+  </div>
+
+  <!-- Pourquoi commander maintenant -->
+  <div class="why">
+    <div class="why-item">
+      <div class="why-icon">📦</div>
+      <div class="why-text">
+        <strong>Délais d'achat inclus</strong>
+        On commande pour vous sur Amazon, Temu, Shein… il faut anticiper le délai de livraison du vendeur.
+      </div>
+    </div>
+    <div class="why-item">
+      <div class="why-icon">✈️</div>
+      <div class="why-text">
+        <strong>Groupage optimisé</strong>
+        Vos articles partent avec les prochains envois groupés — rater ce départ = attendre le suivant.
+      </div>
+    </div>
+    <div class="why-item">
+      <div class="why-icon">🔗</div>
+      <div class="why-text">
+        <strong>Simple & rapide</strong>
+        Envoyez juste le lien du produit et la quantité — on s'occupe du reste.
+      </div>
+    </div>
+    <div class="why-item">
+      <div class="why-icon">📍</div>
+      <div class="why-text">
+        <strong>Suivi en temps réel</strong>
+        Suivez l'état de votre commande étape par étape sur la plateforme.
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta">
+    <p class="cta-text">Passez votre commande avant la clôture</p>
+    <a class="cta-url" href="https://www.sama-services-intl.com/commande">sama-services-intl.com/commande</a>
+    <p class="cta-sub">Accessible sur le web — aucune application à télécharger</p>
+    <p class="wa-note">Ou commandez directement via <span>WhatsApp 📲</span></p>
+  </div>
+
+  <div class="footer">
+    <div class="footer-left">Ngom Holding Transport &amp; Logistics</div>
+    <div class="footer-right">tech@ngom-holding.com</div>
+  </div>
+</div>
+</body>
+</html>

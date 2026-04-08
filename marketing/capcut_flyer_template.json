@@ -1,0 +1,270 @@
+{
+  "_info": {
+    "tool": "CapCut",
+    "version": "1.0",
+    "description": "Template CapCut pour le flyer vidéo SAMA — Prochains Départs / Clôture Commandes",
+    "format": "Story / Reels / TikTok  —  1080×1920 px vertical (9:16)",
+    "duration_seconds": 15,
+    "usage": "Importez ce fichier dans CapCut via Modèles > Importer, ou recréez les calques manuellement en suivant les instructions ci-dessous.",
+    "fonts": ["Poppins Bold", "Poppins Black"],
+    "color_palette": {
+      "bg_dark":    "#1a0a2e",
+      "bg_mid":     "#2d1b69",
+      "accent_red": "#FF4444",
+      "accent_gold": "#FFD700",
+      "accent_pink": "#FF6B9D",
+      "accent_green": "#4ADE80",
+      "text_white": "#FFFFFF",
+      "text_muted": "rgba(255,255,255,0.65)"
+    }
+  },
+
+  "canvas": {
+    "width": 1080,
+    "height": 1920,
+    "background": {
+      "type": "gradient",
+      "angle": 160,
+      "stops": [
+        { "position": 0.0,  "color": "#1a0a2e" },
+        { "position": 0.5,  "color": "#2d1b69" },
+        { "position": 1.0,  "color": "#1a0a2e" }
+      ]
+    }
+  },
+
+  "layers": [
+
+    {
+      "id": "accent_bar",
+      "type": "shape",
+      "shape": "rectangle",
+      "x": 0, "y": 0, "w": 1080, "h": 18,
+      "fill": {
+        "type": "gradient_horizontal",
+        "stops": [
+          { "position": 0.0, "color": "#FF4444" },
+          { "position": 0.5, "color": "#FF8C00" },
+          { "position": 1.0, "color": "#FFD700" }
+        ]
+      },
+      "animation": { "in": "none" },
+      "z": 1
+    },
+
+    {
+      "id": "urgency_banner",
+      "type": "shape",
+      "shape": "rectangle",
+      "x": 0, "y": 18, "w": 1080, "h": 90,
+      "fill": {
+        "type": "gradient_horizontal",
+        "stops": [
+          { "position": 0.0, "color": "#FF4444" },
+          { "position": 1.0, "color": "#CC0000" }
+        ]
+      },
+      "animation": { "in": "fade_in", "in_duration": 0.3 },
+      "z": 2
+    },
+
+    {
+      "id": "urgency_text",
+      "type": "text",
+      "content": "⚠️ CLÔTURE DES COMMANDES CETTE SEMAINE",
+      "x": 540, "y": 63,
+      "font": "Poppins Black",
+      "font_size": 36,
+      "color": "#FFFFFF",
+      "letter_spacing": 2,
+      "text_transform": "uppercase",
+      "align": "center",
+      "animation": {
+        "in": "fade_in",
+        "in_duration": 0.3,
+        "loop": { "type": "opacity_pulse", "min": 0.8, "max": 1.0, "period": 1.5 }
+      },
+      "z": 3
+    },
+
+    {
+      "id": "service_badge",
+      "type": "shape+text",
+      "shape": "pill",
+      "x": 540, "y": 200, "w": 380, "h": 60,
+      "fill": {
+        "type": "gradient_horizontal",
+        "stops": [
+          { "position": 0.0, "color": "#FF6B9D" },
+          { "position": 1.0, "color": "#C850C0" }
+        ]
+      },
+      "text": {
+        "content": "🛒  SAMA COMMANDE",
+        "font": "Poppins Bold",
+        "font_size": 28,
+        "color": "#FFFFFF",
+        "letter_spacing": 2
+      },
+      "animation": { "in": "slide_down", "in_duration": 0.5, "in_delay": 0.2 },
+      "z": 4
+    },
+
+    {
+      "id": "main_title",
+      "type": "text",
+      "content": "Prochains\nDéparts ✈️",
+      "x": 90, "y": 310,
+      "font": "Poppins Black",
+      "font_size": 110,
+      "color": "#FF6B9D",
+      "line_height": 1.05,
+      "animation": { "in": "slide_up", "in_duration": 0.6, "in_delay": 0.4 },
+      "z": 5
+    },
+
+    {
+      "id": "subtitle",
+      "type": "text",
+      "content": "Commandez avant la clôture\npour être dans ce départ.",
+      "x": 90, "y": 560,
+      "font": "Poppins Bold",
+      "font_size": 42,
+      "color": "rgba(255,255,255,0.75)",
+      "line_height": 1.5,
+      "animation": { "in": "fade_in", "in_duration": 0.5, "in_delay": 0.6 },
+      "z": 5
+    },
+
+    {
+      "id": "route_card_1",
+      "type": "card",
+      "x": 90, "y": 700, "w": 900, "h": 130,
+      "fill": "rgba(255,255,255,0.07)",
+      "border": { "color": "rgba(255,215,0,0.3)", "width": 2, "radius": 24 },
+      "text": {
+        "content": "🗼 Paris   ✈️ ——▶   🕌 Casablanca",
+        "font": "Poppins Black",
+        "font_size": 52,
+        "color": "#FFD700",
+        "align": "center"
+      },
+      "badge": {
+        "text": "Départ imminent",
+        "bg": "rgba(255,215,0,0.15)",
+        "border": "rgba(255,215,0,0.4)",
+        "color": "#FFD700",
+        "font_size": 28
+      },
+      "animation": { "in": "slide_right", "in_duration": 0.5, "in_delay": 0.7 },
+      "z": 6
+    },
+
+    {
+      "id": "route_card_2",
+      "type": "card",
+      "x": 90, "y": 850, "w": 900, "h": 130,
+      "fill": "rgba(255,107,157,0.08)",
+      "border": { "color": "rgba(255,107,157,0.45)", "width": 2, "radius": 24 },
+      "text": {
+        "content": "🗼 Paris   ✈️ ——▶   🇸🇳 Dakar",
+        "font": "Poppins Black",
+        "font_size": 52,
+        "color": "#FF6B9D",
+        "align": "center"
+      },
+      "badge": {
+        "text": "Départ imminent",
+        "bg": "rgba(255,107,157,0.15)",
+        "border": "rgba(255,107,157,0.45)",
+        "color": "#FF6B9D",
+        "font_size": 28
+      },
+      "animation": { "in": "slide_right", "in_duration": 0.5, "in_delay": 0.85 },
+      "z": 6
+    },
+
+    {
+      "id": "deadline_box",
+      "type": "card",
+      "x": 90, "y": 1010, "w": 900, "h": 260,
+      "fill": "rgba(255,68,68,0.12)",
+      "border": { "color": "#FF4444", "width": 3, "radius": 28 },
+      "text": {
+        "content": "⏳  Clôture cette semaine\n\nNos commandes ferment pour laisser\nle temps d'acheter, préparer et\nexpédier vos articles avant le départ.",
+        "font_title": "Poppins Black",
+        "font_title_size": 56,
+        "font_body": "Poppins Bold",
+        "font_body_size": 36,
+        "color_title": "#FF6B6B",
+        "color_body": "rgba(255,255,255,0.8)",
+        "align": "center"
+      },
+      "animation": { "in": "fade_scale", "in_duration": 0.6, "in_delay": 1.0 },
+      "z": 7
+    },
+
+    {
+      "id": "cta_box",
+      "type": "card",
+      "x": 90, "y": 1300, "w": 900, "h": 200,
+      "fill": "rgba(200,80,192,0.12)",
+      "border": { "color": "#C850C0", "width": 3, "radius": 28 },
+      "text": {
+        "content": "🌐  sama-services-intl.com/commande\n📲  Ou commandez via WhatsApp",
+        "font": "Poppins Black",
+        "font_size_url": 44,
+        "font_size_wa": 36,
+        "color_url": "#FF6B9D",
+        "color_wa": "#4ADE80",
+        "align": "center"
+      },
+      "animation": { "in": "slide_up", "in_duration": 0.6, "in_delay": 1.2 },
+      "z": 8
+    },
+
+    {
+      "id": "footer",
+      "type": "shape+text",
+      "shape": "rectangle",
+      "x": 0, "y": 1820, "w": 1080, "h": 100,
+      "fill": "rgba(0,0,0,0.5)",
+      "text": {
+        "content": "Ngom Holding Transport & Logistics  •  tech@ngom-holding.com",
+        "font": "Poppins Bold",
+        "font_size": 28,
+        "color": "rgba(255,255,255,0.45)",
+        "align": "center"
+      },
+      "z": 9
+    }
+  ],
+
+  "audio": {
+    "suggestion": "Musique libre de droits — ton énergique/urgence",
+    "bpm_target": 120,
+    "volume": 0.6
+  },
+
+  "export": {
+    "formats": ["mp4_1080x1920", "png_1080x1920"],
+    "fps": 30,
+    "quality": "high"
+  },
+
+  "capcut_manual_steps": [
+    "1. Ouvrez CapCut → Nouveau projet → Format 9:16 (1080×1920)",
+    "2. Arrière-plan : Couleur personnalisée → dégradé #1a0a2e → #2d1b69 → #1a0a2e (angle 160°)",
+    "3. Ajoutez un Rectangle pleine largeur (18px) tout en haut — dégradé horizontal rouge→orange→or",
+    "4. Ajoutez un Rectangle 90px de hauteur — dégradé rouge (#FF4444 → #CC0000) — texte blanc centré uppercase",
+    "5. Texte principal '✈️ Prochains Départs' — police Poppins Black, 110px, couleur #FF6B9D",
+    "6. Deux cartes de routes avec Formes > Rectangle arrondi + texte emoji",
+    "7. Box deadline : Rectangle arrondi rouge, texte ⏳ centré",
+    "8. CTA : Rectangle arrondi violet #C850C0, URL en rose + WhatsApp en vert",
+    "9. Footer : Rectangle sombre + texte gris clair",
+    "10. Animations : chaque calque avec Entrée = Glisser vers le haut ou Fondu, décalage progressif",
+    "11. Durée : 15 secondes — Exportez en MP4 + PNG (frame 0)"
+  ],
+
+  "gemini_prompt_capcut": "Crée un template CapCut pour une story 1080x1920 avec un fond dégradé sombre violet (#1a0a2e → #2d1b69), un bandeau rouge urgent en haut avec le texte '⚠️ CLÔTURE DES COMMANDES CETTE SEMAINE' en blanc gras, deux cartes de route (Paris→Casablanca et Paris→Dakar) avec des emojis de drapeaux, une boîte countdown ⏳ avec bordure rouge, et un CTA rose avec l'URL sama-services-intl.com/commande. Style marketing premium, police Poppins, animations d'entrée fluides, durée 15 secondes."
+}
