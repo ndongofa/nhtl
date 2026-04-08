@@ -21,6 +21,17 @@ class AuthService {
   static bool _is429(dynamic statusCode) =>
       statusCode == 429 || statusCode?.toString() == '429';
 
+  static const String _webviewBlockedMsg =
+      "Connexion bloquée par votre navigateur.\n\n"
+      "⚠️ Si vous êtes dans l'application Facebook ou Instagram, "
+      "ouvrez ce lien dans votre navigateur (Chrome, Safari) et réessayez.";
+
+  static bool _looksLikeNetworkBlock(String s) =>
+      s.contains('xmlhttprequest') ||
+      s.contains('cors') ||
+      s.contains('failed to fetch') ||
+      s.contains('network error');
+
   /// Traduit un message d'erreur Supabase en message lisible en français.
   static String _friendlyAuthMessage(String? message) {
     if (message == null || message.isEmpty) {
@@ -68,12 +79,8 @@ class AuthService {
     if (m.contains('network') ||
         m.contains('connection refused') ||
         m.contains('socket') ||
-        m.contains('xmlhttprequest') ||
-        m.contains('cors') ||
-        m.contains('failed to fetch')) {
-      return "Impossible de se connecter au serveur.\n\n"
-          "⚠️ Si vous êtes dans l'application Facebook ou Instagram, "
-          "ouvrez ce lien dans votre navigateur (Chrome, Safari) et réessayez.";
+        _looksLikeNetworkBlock(m)) {
+      return _webviewBlockedMsg;
     }
     if (m.contains('weak password') || m.contains('password should be')) {
       return "Le mot de passe doit contenir au moins 8 caractères.";
@@ -97,13 +104,8 @@ class AuthService {
   /// Traduit une erreur inconnue (non-AuthException) en message lisible en français.
   static String _friendlyUnknownError(dynamic error) {
     final s = error.toString().toLowerCase();
-    if (s.contains('xmlhttprequest') ||
-        s.contains('cors') ||
-        s.contains('failed to fetch') ||
-        s.contains('network error')) {
-      return "Connexion bloquée.\n\n"
-          "⚠️ Si vous êtes dans l'application Facebook ou Instagram, "
-          "ouvrez ce lien dans votre navigateur (Chrome, Safari) et réessayez.";
+    if (_looksLikeNetworkBlock(s)) {
+      return _webviewBlockedMsg;
     }
     if (s.contains('socketexception') ||
         s.contains('connection refused') ||
@@ -114,7 +116,7 @@ class AuthService {
     if (s.contains('timeoutexception') || s.contains('timed out')) {
       return "La connexion a pris trop de temps. Vérifiez votre connexion et réessayez.";
     }
-    // Re-throw clean message without the "Exception:" prefix
+    // Return clean message without the "Exception:" prefix
     return error.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
   }
 
