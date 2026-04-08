@@ -23,7 +23,7 @@ CREATE OR REPLACE FUNCTION is_admin()
 RETURNS boolean
 LANGUAGE sql
 STABLE
-SECURITY DEFINER
+SECURITY INVOKER
 AS $$
   SELECT EXISTS (
     SELECT 1 FROM users WHERE id = auth.uid()::uuid AND role = 'admin'
