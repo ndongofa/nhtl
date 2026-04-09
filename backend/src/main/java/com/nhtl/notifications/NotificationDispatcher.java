@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import com.nhtl.notifications.providers.EmailProvider;
 import com.nhtl.notifications.providers.InAppProvider;
 import com.nhtl.notifications.providers.SmsProvider;
+import com.nhtl.notifications.providers.WhatsAppProvider;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -16,11 +17,14 @@ public class NotificationDispatcher {
 	private final EmailProvider emailProvider;
 	private final SmsProvider smsProvider;
 	private final InAppProvider inAppProvider;
+	private final WhatsAppProvider whatsAppProvider;
 
-	public NotificationDispatcher(EmailProvider emailProvider, SmsProvider smsProvider, InAppProvider inAppProvider) {
+	public NotificationDispatcher(EmailProvider emailProvider, SmsProvider smsProvider, InAppProvider inAppProvider,
+			WhatsAppProvider whatsAppProvider) {
 		this.emailProvider = emailProvider;
 		this.smsProvider = smsProvider;
 		this.inAppProvider = inAppProvider;
+		this.whatsAppProvider = whatsAppProvider;
 	}
 
 	@Async("notificationExecutor")
@@ -53,6 +57,15 @@ public class NotificationDispatcher {
 				smsProvider.sendSms(evt.getPhoneNumber(), evt.getMessage());
 			} catch (Exception e) {
 				log.warn("SMS failed type={} to={}: {}", evt.getType(), evt.getPhoneNumber(), e.getMessage());
+			}
+		}
+
+		// WhatsApp
+		if (evt.getPhoneNumber() != null && !evt.getPhoneNumber().isBlank()) {
+			try {
+				whatsAppProvider.sendWhatsApp(evt.getPhoneNumber(), evt.getMessage());
+			} catch (Exception e) {
+				log.warn("WhatsApp failed type={} to={}: {}", evt.getType(), evt.getPhoneNumber(), e.getMessage());
 			}
 		}
 	}
