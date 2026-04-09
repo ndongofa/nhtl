@@ -13,7 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
-@Profile("prod")
+@Profile("twilio-sms")
 public class TwilioSmsProvider implements SmsProvider {
 
 	@Value("${twilio.accountSid:}")
