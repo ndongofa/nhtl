@@ -475,6 +475,8 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
               errors.add('Article $n : le prix unitaire est invalide');
             }
           }
+        } else {
+          errors.add('Article $n : le lien du produit est requis');
         }
       } else {
         if (art.hasPhoto || art.titreCtrl.text.trim().isNotEmpty) {

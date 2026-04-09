@@ -491,6 +491,8 @@ class _AchatFormScreenState extends State<AchatFormScreen> {
               errors.add('Article $n : le prix estimé est invalide');
             }
           }
+        } else {
+          errors.add('Article $n : le lien du produit est requis');
         }
       } else {
         if (art.hasPhoto || art.titreCtrl.text.trim().isNotEmpty ||
