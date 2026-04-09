@@ -35,13 +35,19 @@ public class Transport {
 
     private String paysExpediteur;
     private String villeExpediteur;
+    @Column(columnDefinition = "TEXT")
     private String adresseExpediteur;
 
     private String paysDestinataire;
     private String villeDestinataire;
+
+    @Column(columnDefinition = "TEXT")
     private String adresseDestinataire;
 
+    @Column(columnDefinition = "TEXT")
     private String typesMarchandise;
+
+    @Column(columnDefinition = "TEXT")
     private String description;
     private BigDecimal poids;
     private BigDecimal valeurEstimee;

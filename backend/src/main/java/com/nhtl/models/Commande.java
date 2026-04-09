@@ -22,9 +22,12 @@ public class Commande {
 
     private String paysLivraison;
     private String villeLivraison;
+    @Column(columnDefinition = "TEXT")
     private String adresseLivraison;
 
     private String plateforme;
+
+    @Column(columnDefinition = "TEXT")
     private String lienProduit;
 
     @Column(name = "liens_produits", columnDefinition = "TEXT")
@@ -36,12 +39,14 @@ public class Commande {
     @Column(name = "articles_json", columnDefinition = "TEXT")
     private String articlesJson;
 
+    @Column(columnDefinition = "TEXT")
     private String descriptionCommande;
 
     private Integer quantite;
     private BigDecimal prixUnitaire;
     private BigDecimal prixTotal;
     private String devise;
+    @Column(columnDefinition = "TEXT")
     private String notesSpeciales;
 
     // Statut ADMINISTRATIF (gestion du dossier)
