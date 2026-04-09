@@ -454,8 +454,8 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
     }
     if (_adresseLivraisonController.text.trim().isEmpty) {
       errors.add("L'adresse complète est requise");
-    } else if (_adresseLivraisonController.text.trim().length < 10) {
-      errors.add("L'adresse complète doit contenir au moins 10 caractères");
+    } else if (_adresseLivraisonController.text.trim().length < 5) {
+      errors.add("L'adresse complète doit contenir au moins 5 caractères");
     }
 
     bool hasValidArticle = false;
@@ -669,8 +669,8 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
                             hint: "N°, rue, quartier, code postal...",
                             required: true,
                             maxLines: 2, validator: (v) {
-                      if (v == null || v.trim().isEmpty) return 'Requis';
-                      if (v.trim().length < 10) return 'Minimum 10 caractères';
+                       if (v == null || v.trim().isEmpty) return 'Requis';
+                      if (v.trim().length < 5) return 'Minimum 5 caractères';
                       return null;
                     })),
                   ]),
@@ -1329,7 +1329,7 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
         }
         if (isInt) {
           final n = int.tryParse(v.trim());
-          return (n == null || n < 1) ? 'Min. 1' : null;
+          return (n == null || n < 1) ? 'Min 1' : null;
         }
         final p = _parseDecimal(v);
         return (p == null || p <= 0) ? 'Invalide' : null;
