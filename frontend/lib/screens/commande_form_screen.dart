@@ -82,6 +82,7 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
   static const int _maxArticleQuantity = 9999;
 
   final _formKey = GlobalKey<FormState>();
+  final _scrollController = ScrollController();
   final _service = CommandeService();
   bool _isLoading = false;
 
@@ -293,32 +294,18 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-    if (_phoneE164 == null || _phoneE164!.isEmpty) {
-      Fluttertoast.showToast(
-          msg: 'Veuillez entrer un numéro de téléphone valide.',
-          backgroundColor: Colors.red,
-          toastLength: Toast.LENGTH_LONG);
-      return;
-    }
+    final formValid = _formKey.currentState!.validate();
+    final errors = _collectErrors();
 
-    // ✅ Vérifier qu'au moins un article est valide
-    bool hasValidArticle = false;
-    for (final art in _articles) {
-      if (art.type == 'lien' && art.lienCtrl.text.trim().isNotEmpty) {
-        hasValidArticle = true;
-        break;
-      }
-      if (art.type == 'photo' && art.hasPhoto) {
-        hasValidArticle = true;
-        break;
-      }
-    }
-    if (!hasValidArticle) {
-      Fluttertoast.showToast(
-          msg: '⚠️ Ajoutez au moins un article (lien ou photo).',
-          backgroundColor: Colors.orange,
-          toastLength: Toast.LENGTH_LONG);
+    if (!formValid || errors.isNotEmpty) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOut,
+      );
+      _showValidationDialog(errors.isNotEmpty
+          ? errors
+          : ['Veuillez corriger les champs indiqués en rouge.']);
       return;
     }
 
@@ -445,8 +432,131 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
     }
   }
 
+  // ✅ Collecte toutes les erreurs de validation en langage clair
+  List<String> _collectErrors() {
+    final errors = <String>[];
+
+    if (_nomController.text.trim().isEmpty) errors.add('Le nom est requis');
+    if (_prenomController.text.trim().isEmpty) errors.add('Le prénom est requis');
+    if (_phoneE164 == null || _phoneE164!.isEmpty) {
+      errors.add('Un numéro de téléphone valide est requis');
+    }
+    if (_emailController.text.trim().isNotEmpty &&
+        !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
+            .hasMatch(_emailController.text.trim())) {
+      errors.add("L'adresse email est invalide");
+    }
+    if (_paysLivraisonController.text.trim().isEmpty) {
+      errors.add('Le pays de livraison est requis');
+    }
+    if (_villeLivraisonController.text.trim().isEmpty) {
+      errors.add('La ville de livraison est requise');
+    }
+    if (_adresseLivraisonController.text.trim().isEmpty) {
+      errors.add("L'adresse complète est requise");
+    } else if (_adresseLivraisonController.text.trim().length < 10) {
+      errors.add("L'adresse complète doit contenir au moins 10 caractères");
+    }
+
+    bool hasValidArticle = false;
+    for (int i = 0; i < _articles.length; i++) {
+      final art = _articles[i];
+      final n = i + 1;
+      if (art.type == 'lien') {
+        if (art.lienCtrl.text.trim().isNotEmpty) {
+          hasValidArticle = true;
+          final q = int.tryParse(art.quantiteCtrl.text.trim());
+          if (q == null || q < 1) {
+            errors.add('Article $n : la quantité doit être au moins 1');
+          }
+          if (art.prixUnitaireCtrl.text.trim().isNotEmpty) {
+            final p = _parseDecimal(art.prixUnitaireCtrl.text);
+            if (p == null || p <= 0) {
+              errors.add('Article $n : le prix unitaire est invalide');
+            }
+          }
+        }
+      } else {
+        if (art.hasPhoto || art.titreCtrl.text.trim().isNotEmpty) {
+          hasValidArticle = true;
+          if (art.titreCtrl.text.trim().isEmpty) {
+            errors.add('Article $n (photo) : le titre est requis');
+          }
+          if (art.descriptionCtrl.text.trim().isEmpty) {
+            errors.add('Article $n (photo) : la description est requise');
+          } else if (art.descriptionCtrl.text.trim().length < 5) {
+            errors
+                .add('Article $n (photo) : la description est trop courte (min 5 caractères)');
+          }
+        }
+      }
+    }
+    if (!hasValidArticle) {
+      errors.add('Ajoutez au moins un article valide (lien ou photo)');
+    }
+
+    return errors;
+  }
+
+  // ✅ Affiche un dialogue récapitulatif des erreurs de validation
+  void _showValidationDialog(List<String> errors) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(children: [
+          Icon(Icons.warning_amber_rounded, color: _amber),
+          SizedBox(width: 8),
+          Text('Corrections requises',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+        ]),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Veuillez corriger les points suivants avant de soumettre :',
+                style: TextStyle(color: _textMuted, fontSize: 13),
+              ),
+              const SizedBox(height: 12),
+              ...errors.map((e) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('• ',
+                            style: TextStyle(
+                                color: _red, fontWeight: FontWeight.w700)),
+                        Expanded(
+                            child: Text(e,
+                                style: const TextStyle(
+                                    fontSize: 13, color: _textMain))),
+                      ],
+                    ),
+                  )),
+            ],
+          ),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _appBlue,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('OK, je corrige'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   void dispose() {
+    _scrollController.dispose();
     _nomController.dispose();
     _prenomController.dispose();
     _emailController.dispose();
@@ -494,6 +604,7 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
       ),
       body: Center(
         child: SingleChildScrollView(
+          controller: _scrollController,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 640),
@@ -823,7 +934,7 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
             Expanded(
               child: _articleDecimalField(art.prixUnitaireCtrl, "Prix unitaire",
                   Icons.sell_outlined,
-                  hint: "Ex : 29,99"),
+                  hint: "Ex : 29,99", isRequired: false),
             ),
           ],
         ),
@@ -1175,6 +1286,7 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
     IconData icon, {
     String? hint,
     bool isInt = false,
+    bool isRequired = true,
   }) {
     return TextFormField(
       controller: controller,
@@ -1212,7 +1324,9 @@ class _CommandeFormScreenState extends State<CommandeFormScreen> {
             borderSide: const BorderSide(color: _red)),
       ),
       validator: (v) {
-        if (v == null || v.trim().isEmpty) return 'Requis';
+        if (v == null || v.trim().isEmpty) {
+          return isRequired ? 'Requis' : null;
+        }
         if (isInt) {
           final n = int.tryParse(v.trim());
           return (n == null || n < 1) ? 'Min. 1' : null;
