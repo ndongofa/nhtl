@@ -22,11 +22,13 @@ public class Achat {
 
     private String paysLivraison;
     private String villeLivraison;
+    @Column(columnDefinition = "TEXT")
     private String adresseLivraison;
 
     // Champs spécifiques Achat (remplace plateforme/lienProduit de Commande)
     private String marche;          // marché ou boutique cible
     private String typeProduit;     // catégorie / type de produit
+    @Column(columnDefinition = "TEXT")
     private String descriptionAchat;
 
     @Column(name = "liens_produits", columnDefinition = "TEXT")
@@ -42,6 +44,7 @@ public class Achat {
     private BigDecimal prixEstime;
     private BigDecimal prixTotal;
     private String devise;
+    @Column(columnDefinition = "TEXT")
     private String notesSpeciales;
 
     // Statut ADMINISTRATIF (gestion du dossier)
