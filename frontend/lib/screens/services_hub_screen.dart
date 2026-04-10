@@ -1463,6 +1463,13 @@ class _TopBar extends StatelessWidget {
                       subtitle: "Articles best seller",
                       value: "bestseller",
                     ),
+                    _menuItem(
+                      ctx,
+                      icon: Icons.sports_soccer_outlined,
+                      title: "Sama Maillot",
+                      subtitle: "Maillots des Lions de la Téranga",
+                      value: "maillot",
+                    ),
                     const SizedBox(height: 6),
                     if (isLogged) ...[
                       _menuItem(
@@ -1541,6 +1548,10 @@ class _TopBar extends StatelessWidget {
 
       case "bestseller":
         Navigator.pushNamed(context, '/bestseller');
+        break;
+
+      case "maillot":
+        Navigator.pushNamed(context, '/maillot');
         break;
 
       case "profile":

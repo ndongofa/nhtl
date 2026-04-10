@@ -30,6 +30,7 @@ class AdminDashboardScreen extends StatelessWidget {
   static const Color _green = Color(0xFF22C55E);
   static const Color _textPrimary = Color(0xFFF0F6FF);
   static const Color _textMuted = Color(0xFF7A94B0);
+  static const Color _kSamaMaillotColor = Color(0xFF009A44);
 
   void _go(BuildContext context, Widget screen) =>
       Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
@@ -237,6 +238,30 @@ class AdminDashboardScreen extends StatelessWidget {
                   serviceType: 'bestseller',
                   serviceLabel: 'Sama Best Seller',
                   accentColor: Color(0xFF7C3AED)),
+            ),
+          ),
+          _DashCard(
+            icon: Icons.sports_soccer_outlined,
+            label: 'Produits Maillot',
+            sub: 'Catalogue Sama Maillot',
+            color: _kSamaMaillotColor,
+            onTap: () => _go(
+              context,
+              const AdminProduitListScreen(
+                  serviceType: 'maillot', serviceLabel: 'Sama Maillot'),
+            ),
+          ),
+          _DashCard(
+            icon: Icons.receipt_long_outlined,
+            label: 'Commandes Maillot',
+            sub: 'Commandes Sama Maillot',
+            color: _kSamaMaillotColor,
+            onTap: () => _go(
+              context,
+              const AdminCommandeEcommerceListScreen(
+                  serviceType: 'maillot',
+                  serviceLabel: 'Sama Maillot',
+                  accentColor: _kSamaMaillotColor),
             ),
           ),
         ],
