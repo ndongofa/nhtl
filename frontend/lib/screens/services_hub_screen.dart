@@ -1151,7 +1151,7 @@ class _YoutubeAdWidgetState extends State<_YoutubeAdWidget> {
       videoId: widget.youtubeId,
       autoPlay: true,
       params: const YoutubePlayerParams(
-        mute: false,
+        mute: true,
         showControls: true,
         showFullscreenButton: true,
         loop: false,
