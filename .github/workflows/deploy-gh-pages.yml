@@ -42,7 +42,7 @@ jobs:
         run: flutter pub get
 
       - name: Build web
-        run: flutter build web --release --base-href "/"
+        run: flutter build web --release --base-href "/" --web-renderer html
 
       - name: "Sanity check - ensure expected UI text is in JS bundle"
         run: |

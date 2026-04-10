@@ -1257,12 +1257,12 @@ class _YoutubeAdWidgetState extends State<_YoutubeAdWidget> {
     _controller = YoutubePlayerController.fromVideoId(
       videoId: widget.youtubeId,
       autoPlay: true,
-      params: const YoutubePlayerParams(
+      params: YoutubePlayerParams(
         mute: true,
         showControls: true,
         showFullscreenButton: false,
         loop: false,
-        origin: 'https://www.youtube.com',
+        origin: Uri.base.origin,
       ),
     );
     _sub = _controller.stream.listen((value) {
