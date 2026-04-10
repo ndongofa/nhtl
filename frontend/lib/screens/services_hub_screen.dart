@@ -799,7 +799,6 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
     with WidgetsBindingObserver {
   int _index = 0;
   Timer? _timer;
-  bool _youtubeDismissed = false;
 
   @override
   void initState() {
@@ -825,26 +824,14 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
     if (!mounted) return;
     final ads = context.read<AdService>().ads;
     if (ads.isEmpty) return;
-    final nextIndex = (_index + 1) % ads.length;
-    setState(() {
-      _index = nextIndex;
-      _youtubeDismissed = false;
-    });
-  }
-
-  void _dismissYoutubeAd() {
-    if (!mounted) return;
-    setState(() => _youtubeDismissed = true);
+    setState(() => _index = (_index + 1) % ads.length);
   }
 
   void _prevSlide() {
     if (!mounted) return;
     final ads = context.read<AdService>().ads;
     if (ads.isEmpty) return;
-    setState(() {
-      _index = (_index - 1 + ads.length) % ads.length;
-      _youtubeDismissed = false;
-    });
+    setState(() => _index = (_index - 1 + ads.length) % ads.length);
   }
 
   @override
@@ -1050,13 +1037,7 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
   // ── YouTube ad (inline player + text strip below) ──────────────────────────
   Widget _buildYoutubeContent(AdModel ad, int safeIndex, int total) {
     final p = widget.isDesktop ? 22.0 : 18.0;
-    // On desktop, cap the player at 640 px wide (→ 360 px tall at 16:9).
-    // Without this limit the HtmlElementView fills the entire viewport width,
-    // which triggers a Flutter-web CanvasKit compositing bug that repeats the
-    // canvas segment above the platform-view (the TopBar) several times on
-    // screen, making the page look like it has duplicate navigation bars.
-    final maxWidth = widget.isDesktop ? 640.0 : double.infinity;
-    final card = Container(
+    return Container(
       width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.black,
@@ -1065,6 +1046,7 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // YouTube player (no overlay: iframes capture pointer events)
           ClipRRect(
             borderRadius:
                 const BorderRadius.vertical(top: Radius.circular(16)),
@@ -1073,7 +1055,7 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
               onVideoEnded: _advanceToNext,
             ),
           ),
-          // Title + subtitle + dots (close button moved to top-right overlay)
+          // Title + subtitle + dots + close button
           Container(
             padding: EdgeInsets.symmetric(
                 horizontal: p, vertical: widget.isDesktop ? 14 : 10),
@@ -1117,42 +1099,23 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
                 ),
                 const SizedBox(width: 12),
                 _buildDots(safeIndex, total),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: _advanceToNext,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white12,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    padding: const EdgeInsets.all(4),
+                    child: const Icon(Icons.close,
+                        color: Colors.white54, size: 16),
+                  ),
+                ),
               ],
             ),
           ),
         ],
-      ),
-    );
-
-    // The close button is overlaid at the top-right corner of the card so it
-    // is clearly separated from the YouTube player controls (settings gear,
-    // progress bar…) that appear at the bottom of the video on all screen
-    // sizes.  Placing it in the bottom strip caused confusion on small screens
-    // (two close-like buttons at the same location) and on large screens (too
-    // close to the YouTube settings gear).
-    return Center(
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: maxWidth),
-        child: Stack(
-          children: [
-            card,
-            Positioned(
-              top: 8,
-              right: 8,
-              child: GestureDetector(
-                onTap: _dismissYoutubeAd,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  padding: const EdgeInsets.all(6),
-                  child: const Icon(Icons.close, color: Colors.white, size: 18),
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -1165,11 +1128,6 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
     // Keep index in bounds when ad list changes
     final safeIndex = _index % ads.length;
     final ad = ads[safeIndex];
-
-    // Hide the YouTube ad if dismissed by the user
-    final isYoutube = ad.adType == AdModel.typeYoutube &&
-        (ad.youtubeId ?? '').isNotEmpty;
-    if (isYoutube && _youtubeDismissed) return const SizedBox.shrink();
 
     final carousel = AnimatedSwitcher(
       duration: const Duration(milliseconds: 500),
@@ -1260,12 +1218,12 @@ class _YoutubeAdWidgetState extends State<_YoutubeAdWidget> {
     _controller = YoutubePlayerController.fromVideoId(
       videoId: widget.youtubeId,
       autoPlay: true,
-      params: YoutubePlayerParams(
+      params: const YoutubePlayerParams(
         mute: true,
         showControls: true,
-        showFullscreenButton: false,
+        showFullscreenButton: true,
         loop: false,
-        origin: Uri.base.origin,
+        origin: 'https://www.youtube.com',
       ),
     );
     _sub = _controller.stream.listen((value) {
