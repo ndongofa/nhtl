@@ -88,6 +88,14 @@ class ServicesHubScreen extends StatelessWidget {
         desc: 'Création de sites web\net solutions digitales sur mesure',
         color: Color(0xFF0EA5E9),
         isLive: true),
+    _ServiceItem(
+        id: 'maillot',
+        emoji: '🇸🇳',
+        name: 'Sama Maillot',
+        tagline: 'Maillots du Sénégal',
+        desc: 'Maillots & blousons officiels\ndes Lions de la Téranga',
+        color: Color(0xFF009A44),
+        isLive: true),
   ];
 
   Future<void> _wa(BuildContext context, String digits) async {
@@ -115,6 +123,7 @@ class ServicesHubScreen extends StatelessWidget {
       'teranga': '/teranga',
       'bestseller': '/bestseller',
       'techdigital': '/tech',
+      'maillot': '/maillot',
     };
     final route = routes[s.id];
     if (route != null) Navigator.pushNamed(context, route);

@@ -26,6 +26,7 @@ import 'screens/services/sama_maad_screen.dart';
 import 'screens/services/sama_teranga_screen.dart';
 import 'screens/services/sama_best_seller_screen.dart';
 import 'screens/services/sama_tech_digital_screen.dart';
+import 'screens/services/sama_maillot_screen.dart';
 import 'screens/notifications/notifications_screen.dart';
 import 'services/ad_service.dart';
 import 'services/departure_countdown_service.dart';
@@ -118,6 +119,7 @@ class MyApp extends StatelessWidget {
         '/teranga': (context) => const SamaTerangaScreen(),
         '/bestseller': (context) => const SamaBestSellerScreen(),
         '/tech': (context) => const SamaTechDigitalScreen(),
+        '/maillot': (context) => const SamaMaillotScreen(),
         '/notifications': (context) => const NotificationsScreen(),
       },
       debugShowCheckedModeBanner: false,
