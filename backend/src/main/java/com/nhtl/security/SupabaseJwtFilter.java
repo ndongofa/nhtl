@@ -44,7 +44,7 @@ public class SupabaseJwtFilter extends OncePerRequestFilter {
 
 	private static final List<String> PUBLIC_PATHS = Arrays.asList("/auth/", "/api/public/", "/actuator/health",
 			"/actuator/info", "/swagger-ui/", "/v3/api-docs/", "/login", "/signup", "/api/auth/login",
-			"/api/auth/register", "/api/departures/public",
+			"/api/auth/register", "/api/departures/public", "/api/ads/public",
 			"/api/maad/produits", "/api/teranga/produits", "/api/bestseller/produits");
 
 	@Override
