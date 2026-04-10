@@ -143,7 +143,7 @@ class SamaGlobeLogo extends StatelessWidget {
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.65),
                   fontWeight: FontWeight.w600,
-                  fontSize: height * 0.23,
+                  fontSize: height * 0.30,
                   letterSpacing: 0.4,
                   height: 1.0,
                 ),
