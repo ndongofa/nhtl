@@ -1059,35 +1059,13 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // YouTube player with a close button above it (outside the iframe)
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(16)),
-                child: _YoutubeAdWidget(
-                  youtubeId: ad.youtubeId!,
-                  onVideoEnded: _advanceToNext,
-                ),
-              ),
-              // Close button positioned at top-right, above the iframe area
-              Positioned(
-                top: 6,
-                right: 8,
-                child: GestureDetector(
-                  onTap: _dismissYoutubeAd,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.65),
-                      shape: BoxShape.circle,
-                    ),
-                    padding: const EdgeInsets.all(6),
-                    child: const Icon(Icons.close,
-                        color: Colors.white, size: 18),
-                  ),
-                ),
-              ),
-            ],
+          ClipRRect(
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(16)),
+            child: _YoutubeAdWidget(
+              youtubeId: ad.youtubeId!,
+              onVideoEnded: _advanceToNext,
+            ),
           ),
           // Title + subtitle + dots + close button
           Container(
