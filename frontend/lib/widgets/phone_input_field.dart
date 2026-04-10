@@ -8,10 +8,11 @@ import 'package:intl_phone_field/phone_number.dart';
 /// via [onChanged], quelle que soit la saisie de l'utilisateur.
 ///
 /// Corrections automatiques appliquées en temps réel :
-/// - Suppression des espaces.
+/// - Suppression des caractères non-numériques (espaces, tirets, points…).
 /// - Suppression du zéro initial du numéro local.
 /// - Détection automatique du pays à partir de l'indicatif saisi
-///   (formats +XXX… ou 00XXX…).
+///   (formats +XXX… ou 00XXX…, avec ou sans séparateurs).
+/// - Prise en charge correcte du copier/coller d'un numéro E.164 complet.
 ///
 /// Utilisation :
 /// ```dart
@@ -95,25 +96,26 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
   // Helpers
   // -----------------------------------------------------------------------
 
-  /// Supprime espaces et zéro(s) initial(aux) d'un numéro local.
+  /// Supprime les caractères non-numériques (espaces, tirets, points,
+  /// parenthèses…) et le(s) zéro(s) initial(aux) d'un numéro local.
   /// Retourne le texte sanitisé et l'offset de curseur ajusté.
   static ({String text, int cursorOffset}) _sanitizeLocal(
       String text, int cursorPos) {
-    // Supprimer les espaces et suivre combien sont supprimés avant le curseur
+    // Conserver uniquement les chiffres et ajuster la position du curseur
     final buf = StringBuffer();
     int newCursor = cursorPos;
     for (int i = 0; i < text.length; i++) {
-      if (text[i] == ' ') {
-        if (i < cursorPos) newCursor--;
-      } else {
+      if (RegExp(r'\d').hasMatch(text[i])) {
         buf.write(text[i]);
+      } else {
+        if (i < cursorPos) newCursor--;
       }
     }
-    final noSpaces = buf.toString();
+    final digitsOnly = buf.toString();
 
     // Supprimer les zéros initiaux
-    final stripped = noSpaces.replaceFirst(RegExp(r'^0+'), '');
-    final zerosRemoved = noSpaces.length - stripped.length;
+    final stripped = digitsOnly.replaceFirst(RegExp(r'^0+'), '');
+    final zerosRemoved = digitsOnly.length - stripped.length;
     newCursor = (newCursor - zerosRemoved).clamp(0, stripped.length);
 
     return (text: stripped, cursorOffset: newCursor);
@@ -122,10 +124,12 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
   /// Essaie de détecter le pays et d'en extraire le numéro local
   /// lorsque la saisie commence par '+' ou '00'.
   ///
-  /// Retourne null si le format n'est pas reconnu.
+  /// Normalise en supprimant tous les caractères non-numériques sauf '+',
+  /// puis retourne null si le format n'est pas reconnu.
   static ({String countryCode, String localNumber})? _detectInternational(
       String text) {
-    String normalized = text.replaceAll(' ', '');
+    // Supprimer tout sauf chiffres et '+'
+    String normalized = text.replaceAll(RegExp(r'[^\d+]'), '');
     if (normalized.startsWith('00')) {
       normalized = '+${normalized.substring(2)}';
     }
@@ -158,7 +162,9 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
         : text.length;
 
     // --- Cas 1 : format international (+XXX ou 00XXX) ---
-    if (text.startsWith('+') || text.startsWith('00')) {
+    // Vérifier après suppression d'éventuels séparateurs en tête
+    final trimmedText = text.trimLeft();
+    if (trimmedText.startsWith('+') || trimmedText.startsWith('00')) {
       final detected = _detectInternational(text);
       if (detected != null) {
         // Capturer la génération courante pour éviter les conflits
@@ -194,6 +200,28 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
   }
 
   // -----------------------------------------------------------------------
+  // Validation
+  // -----------------------------------------------------------------------
+
+  /// Valide le numéro selon la règle "requis" et les longueurs min/max
+  /// du pays sélectionné (remplace la validation interne d'IntlPhoneField
+  /// désactivée via disableLengthCheck: true).
+  String? _validatePhone(PhoneNumber? phone) {
+    final number = phone?.number.trim() ?? '';
+    if (number.isEmpty) {
+      return widget.required ? 'Téléphone requis' : null;
+    }
+    final matches =
+        _sortedCountries.where((c) => c.code == phone!.countryISOCode);
+    if (matches.isEmpty) return null; // pays inconnu : pas de blocage
+    final country = matches.first;
+    if (number.length < country.minLength || number.length > country.maxLength) {
+      return 'Numéro de téléphone invalide';
+    }
+    return null;
+  }
+
+  // -----------------------------------------------------------------------
   // Build
   // -----------------------------------------------------------------------
 
@@ -210,7 +238,10 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
       initialCountryCode: _countryCode,
       languageCode: 'fr',
       invalidNumberMessage: 'Numéro de téléphone invalide',
-      disableLengthCheck: false,
+      // disableLengthCheck: true empêche Flutter d'ajouter un
+      // LengthLimitingTextInputFormatter qui tronquerait un numéro collé
+      // au format E.164 (+XXX…) avant que notre listener puisse le traiter.
+      disableLengthCheck: true,
       onChanged: (PhoneNumber phone) {
         try {
           final e164 = phone.completeNumber;
@@ -222,14 +253,7 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
       onCountryChanged: (_) {
         widget.onChanged(null);
       },
-      validator: widget.required
-          ? (phone) {
-              if (phone == null || phone.number.trim().isEmpty) {
-                return 'Téléphone requis';
-              }
-              return null;
-            }
-          : null,
+      validator: (phone) => _validatePhone(phone),
     );
   }
 }
