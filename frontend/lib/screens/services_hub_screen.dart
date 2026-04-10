@@ -1056,88 +1056,102 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
     // canvas segment above the platform-view (the TopBar) several times on
     // screen, making the page look like it has duplicate navigation bars.
     final maxWidth = widget.isDesktop ? 640.0 : double.infinity;
+    final card = Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ClipRRect(
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(16)),
+            child: _YoutubeAdWidget(
+              youtubeId: ad.youtubeId!,
+              onVideoEnded: _advanceToNext,
+            ),
+          ),
+          // Title + subtitle + dots (close button moved to top-right overlay)
+          Container(
+            padding: EdgeInsets.symmetric(
+                horizontal: p, vertical: widget.isDesktop ? 14 : 10),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF111111), Color(0xFF1A1A1A)],
+              ),
+              borderRadius:
+                  BorderRadius.vertical(bottom: Radius.circular(16)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        ad.title,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: widget.isDesktop ? 14 : 12,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (ad.subtitle.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          ad.subtitle,
+                          style: TextStyle(
+                            color: Colors.white54,
+                            fontSize: widget.isDesktop ? 12 : 10,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                _buildDots(safeIndex, total),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+
+    // The close button is overlaid at the top-right corner of the card so it
+    // is clearly separated from the YouTube player controls (settings gear,
+    // progress bar…) that appear at the bottom of the video on all screen
+    // sizes.  Placing it in the bottom strip caused confusion on small screens
+    // (two close-like buttons at the same location) and on large screens (too
+    // close to the YouTube settings gear).
     return Center(
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxWidth),
-        child: Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: Colors.black,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(16)),
-                child: _YoutubeAdWidget(
-                  youtubeId: ad.youtubeId!,
-                  onVideoEnded: _advanceToNext,
-                ),
-              ),
-              // Title + subtitle + dots + close button
-              Container(
-                padding: EdgeInsets.symmetric(
-                    horizontal: p, vertical: widget.isDesktop ? 14 : 10),
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF111111), Color(0xFF1A1A1A)],
+        child: Stack(
+          children: [
+            card,
+            Positioned(
+              top: 8,
+              right: 8,
+              child: GestureDetector(
+                onTap: _dismissYoutubeAd,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  borderRadius:
-                      BorderRadius.vertical(bottom: Radius.circular(16)),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            ad.title,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w800,
-                              fontSize: widget.isDesktop ? 14 : 12,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          if (ad.subtitle.isNotEmpty) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              ad.subtitle,
-                              style: TextStyle(
-                                color: Colors.white54,
-                                fontSize: widget.isDesktop ? 12 : 10,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    _buildDots(safeIndex, total),
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: _dismissYoutubeAd,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white24,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        padding: const EdgeInsets.all(4),
-                        child: const Icon(Icons.close,
-                            color: Colors.white, size: 16),
-                      ),
-                    ),
-                  ],
+                  padding: const EdgeInsets.all(6),
+                  child: const Icon(Icons.close, color: Colors.white, size: 18),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
