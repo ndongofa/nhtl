@@ -1136,6 +1136,7 @@ class _YoutubeAdWidgetState extends State<_YoutubeAdWidget> {
         showControls: true,
         showFullscreenButton: true,
         loop: true,
+        origin: 'https://www.youtube.com',
       ),
     );
   }

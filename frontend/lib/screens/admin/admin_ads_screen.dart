@@ -481,6 +481,16 @@ class _AdFormSheetState extends State<_AdFormSheet> {
       );
       return;
     }
+    if (_adType == AdModel.typeYoutube && _youtubeIdCtrl.text.trim().length != 11) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "L'ID YouTube doit faire exactement 11 caractères (ex: dQw4w9WgXcQ depuis youtube.com/watch?v=ID_ICI)",
+          ),
+        ),
+      );
+      return;
+    }
     setState(() => _saving = true);
     final imageUrl = _imageUrlCtrl.text.trim();
     final youtubeId = _youtubeIdCtrl.text.trim();
