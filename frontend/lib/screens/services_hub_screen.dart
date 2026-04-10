@@ -1070,10 +1070,10 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
                   onVideoEnded: _advanceToNext,
                 ),
               ),
-              // Close button positioned at top-right, above the iframe area
+              // Close button positioned at top-left to avoid overlapping YouTube controls
               Positioned(
                 top: 6,
-                right: 8,
+                left: 8,
                 child: GestureDetector(
                   onTap: _dismissYoutubeAd,
                   child: Container(
