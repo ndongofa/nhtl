@@ -799,6 +799,7 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
     with WidgetsBindingObserver {
   int _index = 0;
   Timer? _timer;
+  bool _youtubeDismissed = false;
 
   @override
   void initState() {
@@ -824,14 +825,26 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
     if (!mounted) return;
     final ads = context.read<AdService>().ads;
     if (ads.isEmpty) return;
-    setState(() => _index = (_index + 1) % ads.length);
+    final nextIndex = (_index + 1) % ads.length;
+    setState(() {
+      _index = nextIndex;
+      _youtubeDismissed = false;
+    });
+  }
+
+  void _dismissYoutubeAd() {
+    if (!mounted) return;
+    setState(() => _youtubeDismissed = true);
   }
 
   void _prevSlide() {
     if (!mounted) return;
     final ads = context.read<AdService>().ads;
     if (ads.isEmpty) return;
-    setState(() => _index = (_index - 1 + ads.length) % ads.length);
+    setState(() {
+      _index = (_index - 1 + ads.length) % ads.length;
+      _youtubeDismissed = false;
+    });
   }
 
   @override
@@ -1046,14 +1059,35 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // YouTube player (no overlay: iframes capture pointer events)
-          ClipRRect(
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(16)),
-            child: _YoutubeAdWidget(
-              youtubeId: ad.youtubeId!,
-              onVideoEnded: _advanceToNext,
-            ),
+          // YouTube player with a close button above it (outside the iframe)
+          Stack(
+            children: [
+              ClipRRect(
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(16)),
+                child: _YoutubeAdWidget(
+                  youtubeId: ad.youtubeId!,
+                  onVideoEnded: _advanceToNext,
+                ),
+              ),
+              // Close button positioned at top-right, above the iframe area
+              Positioned(
+                top: 6,
+                right: 8,
+                child: GestureDetector(
+                  onTap: _dismissYoutubeAd,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.65),
+                      shape: BoxShape.circle,
+                    ),
+                    padding: const EdgeInsets.all(6),
+                    child: const Icon(Icons.close,
+                        color: Colors.white, size: 18),
+                  ),
+                ),
+              ),
+            ],
           ),
           // Title + subtitle + dots + close button
           Container(
@@ -1101,15 +1135,15 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
                 _buildDots(safeIndex, total),
                 const SizedBox(width: 8),
                 GestureDetector(
-                  onTap: _advanceToNext,
+                  onTap: _dismissYoutubeAd,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.white12,
+                      color: Colors.white24,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     padding: const EdgeInsets.all(4),
                     child: const Icon(Icons.close,
-                        color: Colors.white54, size: 16),
+                        color: Colors.white, size: 16),
                   ),
                 ),
               ],
@@ -1128,6 +1162,11 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
     // Keep index in bounds when ad list changes
     final safeIndex = _index % ads.length;
     final ad = ads[safeIndex];
+
+    // Hide the YouTube ad if dismissed by the user
+    final isYoutube = ad.adType == AdModel.typeYoutube &&
+        (ad.youtubeId ?? '').isNotEmpty;
+    if (isYoutube && _youtubeDismissed) return const SizedBox.shrink();
 
     final carousel = AnimatedSwitcher(
       duration: const Duration(milliseconds: 500),
@@ -1221,7 +1260,7 @@ class _YoutubeAdWidgetState extends State<_YoutubeAdWidget> {
       params: const YoutubePlayerParams(
         mute: true,
         showControls: true,
-        showFullscreenButton: true,
+        showFullscreenButton: false,
         loop: false,
         origin: 'https://www.youtube.com',
       ),
