@@ -158,8 +158,7 @@ class AuthService {
     // IMPORTANT (Flutter Web + path routing):
     final redirectTo = kIsWeb ? '${Uri.base.origin}/auth/callback' : null;
 
-    // ignore: avoid_print
-    print("[AuthService][signup] start identifier=$cleanIdentifier role=$role "
+    if (kDebugMode) print("[AuthService][signup] start identifier=$cleanIdentifier role=$role "
         "prenomLen=${cleanPrenom.length} nomLen=${cleanNom.length} "
         "isWeb=$kIsWeb origin=${kIsWeb ? Uri.base.origin : 'n/a'}");
 
@@ -196,8 +195,7 @@ class AuthService {
         );
       }
 
-      // ignore: avoid_print
-      print("[AuthService][signup] signUp() done userId=${res.user?.id} "
+      if (kDebugMode) print("[AuthService][signup] signUp() done userId=${res.user?.id} "
           "email=${res.user?.email} phone=${res.user?.phone} "
           "session=${res.session != null}");
 
@@ -206,8 +204,7 @@ class AuthService {
       }
       return SignupOutcome.signedIn;
     } on AuthException catch (e) {
-      // ignore: avoid_print
-      print(
+      if (kDebugMode) print(
           "[AuthService][signup] AuthException status=${e.statusCode} message=${e.message}");
 
       if (_is429(e.statusCode)) {
@@ -220,8 +217,7 @@ class AuthService {
 
       throw Exception(_friendlyAuthMessage(e.message));
     } catch (e) {
-      // ignore: avoid_print
-      print("[AuthService][signup] Unknown error: $e");
+      if (kDebugMode) print("[AuthService][signup] Unknown error: $e");
       throw Exception(_friendlyUnknownError(e));
     }
   }
@@ -238,19 +234,16 @@ class AuthService {
       );
     }
 
-    // ignore: avoid_print
-    print("[AuthService][sendPhoneOtp] start phone=$cleanPhone");
+    if (kDebugMode) print("[AuthService][sendPhoneOtp] start phone=$cleanPhone");
 
     try {
       // ✅ Strip le "+" — Supabase/Twilio attend le numéro sans préfixe
       await _supabase.auth.signInWithOtp(
         phone: _toSupabasePhone(cleanPhone),
       );
-      // ignore: avoid_print
-      print("[AuthService][sendPhoneOtp] OK");
+      if (kDebugMode) print("[AuthService][sendPhoneOtp] OK");
     } on AuthException catch (e) {
-      // ignore: avoid_print
-      print(
+      if (kDebugMode) print(
           "[AuthService][sendPhoneOtp] AuthException status=${e.statusCode} message=${e.message}");
 
       if (_is429(e.statusCode)) {
@@ -262,8 +255,7 @@ class AuthService {
 
       throw Exception(_friendlyAuthMessage(e.message));
     } catch (e) {
-      // ignore: avoid_print
-      print("[AuthService][sendPhoneOtp] Unknown error: $e");
+      if (kDebugMode) print("[AuthService][sendPhoneOtp] Unknown error: $e");
       throw Exception(_friendlyUnknownError(e));
     }
   }
@@ -283,8 +275,7 @@ class AuthService {
       throw Exception("Code invalide.");
     }
 
-    // ignore: avoid_print
-    print(
+    if (kDebugMode) print(
         "[AuthService][verifyPhoneOtp] start phone=$cleanPhone tokenLen=${cleanToken.length}");
 
     try {
@@ -294,11 +285,9 @@ class AuthService {
         phone: _toSupabasePhone(cleanPhone),
         token: cleanToken,
       );
-      // ignore: avoid_print
-      print("[AuthService][verifyPhoneOtp] OK");
+      if (kDebugMode) print("[AuthService][verifyPhoneOtp] OK");
     } on AuthException catch (e) {
-      // ignore: avoid_print
-      print(
+      if (kDebugMode) print(
           "[AuthService][verifyPhoneOtp] AuthException status=${e.statusCode} message=${e.message}");
 
       if (_is429(e.statusCode)) {
@@ -309,8 +298,7 @@ class AuthService {
 
       throw Exception(_friendlyAuthMessage(e.message));
     } catch (e) {
-      // ignore: avoid_print
-      print("[AuthService][verifyPhoneOtp] Unknown error: $e");
+      if (kDebugMode) print("[AuthService][verifyPhoneOtp] Unknown error: $e");
       throw Exception(_friendlyUnknownError(e));
     }
   }
@@ -324,8 +312,7 @@ class AuthService {
           "Veuillez renseigner un email ou un numéro de téléphone.");
     }
 
-    // ignore: avoid_print
-    print("[AuthService][login] start identifier=$cleanIdentifier");
+    if (kDebugMode) print("[AuthService][login] start identifier=$cleanIdentifier");
 
     try {
       AuthResponse res;
@@ -347,16 +334,14 @@ class AuthService {
         );
       }
 
-      // ignore: avoid_print
-      print(
+      if (kDebugMode) print(
           "[AuthService][login] done userId=${res.user?.id} session=${res.session != null}");
 
       if (res.user == null || res.session == null) {
         throw Exception('Connexion échouée. Vérifiez vos identifiants.');
       }
     } on AuthException catch (e) {
-      // ignore: avoid_print
-      print(
+      if (kDebugMode) print(
           "[AuthService][login] AuthException status=${e.statusCode} message=${e.message}");
       if (_is429(e.statusCode)) {
         throw Exception(
@@ -365,8 +350,7 @@ class AuthService {
       }
       throw Exception(_friendlyAuthMessage(e.message));
     } catch (e) {
-      // ignore: avoid_print
-      print("[AuthService][login] Unknown error: $e");
+      if (kDebugMode) print("[AuthService][login] Unknown error: $e");
       throw Exception(_friendlyUnknownError(e));
     }
   }
@@ -377,19 +361,16 @@ class AuthService {
       throw Exception("Veuillez entrer une adresse e-mail valide.");
     }
 
-    // ignore: avoid_print
-    print("[AuthService][resetPassword] start email=$cleanEmail isWeb=$kIsWeb");
+    if (kDebugMode) print("[AuthService][resetPassword] start email=$cleanEmail isWeb=$kIsWeb");
 
     try {
       await _supabase.auth.resetPasswordForEmail(
         cleanEmail,
         redirectTo: kIsWeb ? '${Uri.base.origin}/reset-password' : null,
       );
-      // ignore: avoid_print
-      print("[AuthService][resetPassword] OK");
+      if (kDebugMode) print("[AuthService][resetPassword] OK");
     } on AuthException catch (e) {
-      // ignore: avoid_print
-      print(
+      if (kDebugMode) print(
           "[AuthService][resetPassword] AuthException status=${e.statusCode} message=${e.message}");
 
       if (_is429(e.statusCode)) {
@@ -401,25 +382,21 @@ class AuthService {
 
       throw Exception(_friendlyAuthMessage(e.message));
     } catch (e) {
-      // ignore: avoid_print
-      print("[AuthService][resetPassword] Unknown error: $e");
+      if (kDebugMode) print("[AuthService][resetPassword] Unknown error: $e");
       throw Exception(_friendlyUnknownError(e));
     }
   }
 
   static Future<void> logout() async {
-    // ignore: avoid_print
-    print("[AuthService][logout] start");
+    if (kDebugMode) print("[AuthService][logout] start");
     await _supabase.auth.signOut();
-    // ignore: avoid_print
-    print("[AuthService][logout] done");
+    if (kDebugMode) print("[AuthService][logout] done");
   }
 
   /// Compat: certains services appellent `await AuthService.getJwt()`
   static Future<String?> getJwt() async {
     final token = _supabase.auth.currentSession?.accessToken;
-    // ignore: avoid_print
-    print("[AuthService][getJwt] token=${token == null ? 'null' : 'present'}");
+    if (kDebugMode) print("[AuthService][getJwt] token=${token == null ? 'null' : 'present'}");
     return token;
   }
 
