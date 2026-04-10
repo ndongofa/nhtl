@@ -1046,36 +1046,16 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // YouTube player with close button overlay
+          // YouTube player (no overlay: iframes capture pointer events)
           ClipRRect(
             borderRadius:
                 const BorderRadius.vertical(top: Radius.circular(16)),
-            child: Stack(
-              children: [
-                _YoutubeAdWidget(
-                  youtubeId: ad.youtubeId!,
-                  onVideoEnded: _advanceToNext,
-                ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: GestureDetector(
-                    onTap: _advanceToNext,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black54,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      padding: const EdgeInsets.all(6),
-                      child: const Icon(Icons.close,
-                          color: Colors.white, size: 18),
-                    ),
-                  ),
-                ),
-              ],
+            child: _YoutubeAdWidget(
+              youtubeId: ad.youtubeId!,
+              onVideoEnded: _advanceToNext,
             ),
           ),
-          // Title + subtitle + dots
+          // Title + subtitle + dots + close button
           Container(
             padding: EdgeInsets.symmetric(
                 horizontal: p, vertical: widget.isDesktop ? 14 : 10),
@@ -1119,6 +1099,19 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
                 ),
                 const SizedBox(width: 12),
                 _buildDots(safeIndex, total),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: _advanceToNext,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white12,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    padding: const EdgeInsets.all(4),
+                    child: const Icon(Icons.close,
+                        color: Colors.white54, size: 16),
+                  ),
+                ),
               ],
             ),
           ),
