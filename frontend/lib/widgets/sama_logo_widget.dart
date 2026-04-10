@@ -130,7 +130,7 @@ class SamaTopBarLogo extends StatelessWidget {
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w900,
-                fontSize: logoSize * 0.28,
+                fontSize: logoSize * 0.33,
                 letterSpacing: 2.2,
                 height: 1.0,
               ),
@@ -140,7 +140,7 @@ class SamaTopBarLogo extends StatelessWidget {
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.85),
                 fontWeight: FontWeight.w800,
-                fontSize: logoSize * 0.12,
+                fontSize: logoSize * 0.22,
                 letterSpacing: 1.2,
                 height: 1.0,
               ),
