@@ -1128,10 +1128,13 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
                 ],
               ),
             ),
-            // Close button overlaid at top-right, away from YouTube's bottom controls
+            // Close button overlaid at top-left on desktop (YouTube settings are
+            // top-right on large screens) and top-right on mobile (YouTube
+            // controls are at the bottom on small screens).
             Positioned(
               top: 8,
-              right: 8,
+              left: widget.isDesktop ? 8 : null,
+              right: widget.isDesktop ? null : 8,
               child: GestureDetector(
                 onTap: _dismissYoutubeAd,
                 child: Container(
