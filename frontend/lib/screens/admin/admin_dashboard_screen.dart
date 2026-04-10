@@ -239,6 +239,30 @@ class AdminDashboardScreen extends StatelessWidget {
                   accentColor: Color(0xFF7C3AED)),
             ),
           ),
+          _DashCard(
+            icon: Icons.sports_soccer_outlined,
+            label: 'Produits Maillot',
+            sub: 'Catalogue Sama Maillot',
+            color: const Color(0xFF009A44),
+            onTap: () => _go(
+              context,
+              const AdminProduitListScreen(
+                  serviceType: 'maillot', serviceLabel: 'Sama Maillot'),
+            ),
+          ),
+          _DashCard(
+            icon: Icons.receipt_long_outlined,
+            label: 'Commandes Maillot',
+            sub: 'Commandes Sama Maillot',
+            color: const Color(0xFF009A44),
+            onTap: () => _go(
+              context,
+              const AdminCommandeEcommerceListScreen(
+                  serviceType: 'maillot',
+                  serviceLabel: 'Sama Maillot',
+                  accentColor: Color(0xFF009A44)),
+            ),
+          ),
         ],
       ),
     ];

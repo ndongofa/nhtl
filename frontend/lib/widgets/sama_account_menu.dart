@@ -13,6 +13,7 @@ import '../screens/services/sama_maad_screen.dart';
 import '../screens/services/sama_teranga_screen.dart';
 import '../screens/services/sama_tech_digital_screen.dart';
 import '../screens/services/sama_best_seller_screen.dart';
+import '../screens/services/sama_maillot_screen.dart';
 
 class SamaAccountMenu {
   static Future<void> open(BuildContext context) async {
@@ -126,6 +127,14 @@ class SamaAccountMenu {
                       subtitle: "Articles best seller",
                       value: "bestseller",
                     ),
+                    _menuItem(
+                      ctx,
+                      t,
+                      icon: Icons.sports_soccer_outlined,
+                      title: "Sama Maillot",
+                      subtitle: "Maillots des Lions de la Téranga",
+                      value: "maillot",
+                    ),
                     const SizedBox(height: 6),
                     if (isLogged) ...[
                       _menuItem(
@@ -217,6 +226,12 @@ class SamaAccountMenu {
       case "bestseller":
         Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const SamaBestSellerScreen()),
+        );
+        break;
+
+      case "maillot":
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const SamaMaillotScreen()),
         );
         break;
 
