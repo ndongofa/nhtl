@@ -827,6 +827,13 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
     setState(() => _index = (_index + 1) % ads.length);
   }
 
+  void _prevSlide() {
+    if (!mounted) return;
+    final ads = context.read<AdService>().ads;
+    if (ads.isEmpty) return;
+    setState(() => _index = (_index - 1 + ads.length) % ads.length);
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused ||
@@ -1039,13 +1046,33 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // YouTube player
+          // YouTube player with close button overlay
           ClipRRect(
             borderRadius:
                 const BorderRadius.vertical(top: Radius.circular(16)),
-            child: _YoutubeAdWidget(
-              youtubeId: ad.youtubeId!,
-              onVideoEnded: _advanceToNext,
+            child: Stack(
+              children: [
+                _YoutubeAdWidget(
+                  youtubeId: ad.youtubeId!,
+                  onVideoEnded: _advanceToNext,
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: GestureDetector(
+                    onTap: _advanceToNext,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      padding: const EdgeInsets.all(6),
+                      child: const Icon(Icons.close,
+                          color: Colors.white, size: 18),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           // Title + subtitle + dots
@@ -1109,7 +1136,7 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
     final safeIndex = _index % ads.length;
     final ad = ads[safeIndex];
 
-    return AnimatedSwitcher(
+    final carousel = AnimatedSwitcher(
       duration: const Duration(milliseconds: 500),
       transitionBuilder: (child, animation) => FadeTransition(
         opacity: animation,
@@ -1125,6 +1152,54 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
           _ => _buildTextContent(ad, safeIndex, ads.length),
         },
       ),
+    );
+
+    if (ads.length <= 1) return carousel;
+
+    return Stack(
+      children: [
+        carousel,
+        // Previous arrow
+        Positioned(
+          left: 4,
+          top: 0,
+          bottom: 0,
+          child: Center(
+            child: GestureDetector(
+              onTap: _prevSlide,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black45,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                padding: const EdgeInsets.all(6),
+                child: const Icon(Icons.chevron_left,
+                    color: Colors.white, size: 22),
+              ),
+            ),
+          ),
+        ),
+        // Next arrow
+        Positioned(
+          right: 4,
+          top: 0,
+          bottom: 0,
+          child: Center(
+            child: GestureDetector(
+              onTap: _advanceToNext,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black45,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                padding: const EdgeInsets.all(6),
+                child: const Icon(Icons.chevron_right,
+                    color: Colors.white, size: 22),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
