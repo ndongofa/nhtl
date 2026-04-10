@@ -811,6 +811,13 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
     });
   }
 
+  void _advanceToNext() {
+    if (!mounted) return;
+    final ads = context.read<AdService>().ads;
+    if (ads.isEmpty) return;
+    setState(() => _index = (_index + 1) % ads.length);
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused ||
@@ -1029,6 +1036,7 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
                 const BorderRadius.vertical(top: Radius.circular(16)),
             child: _YoutubeAdWidget(
               youtubeId: ad.youtubeId!,
+              onVideoEnded: _advanceToNext,
             ),
           ),
           // Title + subtitle + dots
@@ -1116,7 +1124,8 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
 
 class _YoutubeAdWidget extends StatefulWidget {
   final String youtubeId;
-  const _YoutubeAdWidget({required this.youtubeId});
+  final VoidCallback onVideoEnded;
+  const _YoutubeAdWidget({required this.youtubeId, required this.onVideoEnded});
 
   @override
   State<_YoutubeAdWidget> createState() => _YoutubeAdWidgetState();
@@ -1124,6 +1133,7 @@ class _YoutubeAdWidget extends StatefulWidget {
 
 class _YoutubeAdWidgetState extends State<_YoutubeAdWidget> {
   late YoutubePlayerController _controller;
+  StreamSubscription<YoutubePlayerValue>? _sub;
 
   @override
   void initState() {
@@ -1132,12 +1142,18 @@ class _YoutubeAdWidgetState extends State<_YoutubeAdWidget> {
       videoId: widget.youtubeId,
       autoPlay: true,
       params: const YoutubePlayerParams(
-        mute: true,
+        mute: false,
         showControls: true,
         showFullscreenButton: true,
-        loop: true,
+        loop: false,
+        origin: 'https://www.youtube.com',
       ),
     );
+    _sub = _controller.stream.listen((value) {
+      if (value.playerState == PlayerState.ended) {
+        widget.onVideoEnded();
+      }
+    });
   }
 
   @override
@@ -1150,6 +1166,7 @@ class _YoutubeAdWidgetState extends State<_YoutubeAdWidget> {
 
   @override
   void dispose() {
+    _sub?.cancel();
     _controller.close();
     super.dispose();
   }
