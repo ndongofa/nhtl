@@ -831,12 +831,12 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
                 ? Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
                     Expanded(flex: 3, child: _heroText(t, isDesktop)),
                     const SizedBox(width: 48),
-                    Expanded(flex: 2, child: _heroCard(t, svc)),
+                    Expanded(flex: 2, child: _heroCard(t, svc, isDesktop: true)),
                   ])
                 : Column(children: [
                     _heroText(t, isDesktop),
                     const SizedBox(height: 32),
-                    _heroCard(t, svc),
+                    _heroCard(t, svc, isDesktop: false),
                   ]),
           )),
         );
@@ -910,7 +910,7 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
         ],
       );
 
-  Widget _heroCard(AppThemeProvider t, DepartureCountdownService svc) {
+  Widget _heroCard(AppThemeProvider t, DepartureCountdownService svc, {bool isDesktop = true}) {
     final dep = svc.currentDeparture;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 350),
@@ -1003,35 +1003,37 @@ class _LandingScreenState extends State<LandingScreenSamaServicesInternational>
           const SizedBox(width: 8),
           Expanded(child: _waCardBtn(t, "Dakar", _waDakar)),
         ]),
-        const SizedBox(height: 12),
-        Row(children: [
-          Expanded(
-              child: OutlinedButton(
-            onPressed: () => _push('/login'),
-            style: OutlinedButton.styleFrom(
-                foregroundColor: t.textPrimary,
-                side: BorderSide(color: t.borderBright),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
-                padding: const EdgeInsets.symmetric(vertical: 11)),
-            child: const Text("Connexion",
-                style: TextStyle(fontWeight: FontWeight.w700)),
-          )),
-          const SizedBox(width: 10),
-          Expanded(
-              child: ElevatedButton(
-            onPressed: () => _push('/signup'),
-            style: ElevatedButton.styleFrom(
-                backgroundColor: _appBlue,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
-                padding: const EdgeInsets.symmetric(vertical: 11)),
-            child: const Text("S'inscrire",
-                style: TextStyle(fontWeight: FontWeight.w800)),
-          )),
-        ]),
+        if (isDesktop) ...[
+          const SizedBox(height: 12),
+          Row(children: [
+            Expanded(
+                child: OutlinedButton(
+              onPressed: () => _push('/login'),
+              style: OutlinedButton.styleFrom(
+                  foregroundColor: t.textPrimary,
+                  side: BorderSide(color: t.borderBright),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(vertical: 11)),
+              child: const Text("Connexion",
+                  style: TextStyle(fontWeight: FontWeight.w700)),
+            )),
+            const SizedBox(width: 10),
+            Expanded(
+                child: ElevatedButton(
+              onPressed: () => _push('/signup'),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: _appBlue,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(vertical: 11)),
+              child: const Text("S'inscrire",
+                  style: TextStyle(fontWeight: FontWeight.w800)),
+            )),
+          ]),
+        ],
       ]),
     );
   }
