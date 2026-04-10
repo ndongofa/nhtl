@@ -1070,20 +1070,23 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
                   onVideoEnded: _advanceToNext,
                 ),
               ),
-              // Close button positioned at top-left to avoid overlapping YouTube controls
+              // Close button positioned at top-center
               Positioned(
                 top: 6,
-                left: 8,
-                child: GestureDetector(
-                  onTap: _dismissYoutubeAd,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.65),
-                      shape: BoxShape.circle,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: GestureDetector(
+                    onTap: _dismissYoutubeAd,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.65),
+                        shape: BoxShape.circle,
+                      ),
+                      padding: const EdgeInsets.all(6),
+                      child: const Icon(Icons.close,
+                          color: Colors.white, size: 18),
                     ),
-                    padding: const EdgeInsets.all(6),
-                    child: const Icon(Icons.close,
-                        color: Colors.white, size: 18),
                   ),
                 ),
               ),
