@@ -1050,84 +1050,95 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
   // ── YouTube ad (inline player + text strip below) ──────────────────────────
   Widget _buildYoutubeContent(AdModel ad, int safeIndex, int total) {
     final p = widget.isDesktop ? 22.0 : 18.0;
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.black,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          ClipRRect(
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(16)),
-            child: _YoutubeAdWidget(
-              youtubeId: ad.youtubeId!,
-              onVideoEnded: _advanceToNext,
-            ),
+    // On desktop, cap the player at 640 px wide (→ 360 px tall at 16:9).
+    // Without this limit the HtmlElementView fills the entire viewport width,
+    // which triggers a Flutter-web CanvasKit compositing bug that repeats the
+    // canvas segment above the platform-view (the TopBar) several times on
+    // screen, making the page look like it has duplicate navigation bars.
+    final maxWidth = widget.isDesktop ? 640.0 : double.infinity;
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.black,
+            borderRadius: BorderRadius.circular(16),
           ),
-          // Title + subtitle + dots + close button
-          Container(
-            padding: EdgeInsets.symmetric(
-                horizontal: p, vertical: widget.isDesktop ? 14 : 10),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF111111), Color(0xFF1A1A1A)],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ClipRRect(
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(16)),
+                child: _YoutubeAdWidget(
+                  youtubeId: ad.youtubeId!,
+                  onVideoEnded: _advanceToNext,
+                ),
               ),
-              borderRadius:
-                  BorderRadius.vertical(bottom: Radius.circular(16)),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        ad.title,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                          fontSize: widget.isDesktop ? 14 : 12,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (ad.subtitle.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          ad.subtitle,
-                          style: TextStyle(
-                            color: Colors.white54,
-                            fontSize: widget.isDesktop ? 12 : 10,
+              // Title + subtitle + dots + close button
+              Container(
+                padding: EdgeInsets.symmetric(
+                    horizontal: p, vertical: widget.isDesktop ? 14 : 10),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF111111), Color(0xFF1A1A1A)],
+                  ),
+                  borderRadius:
+                      BorderRadius.vertical(bottom: Radius.circular(16)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            ad.title,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                              fontSize: widget.isDesktop ? 14 : 12,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                _buildDots(safeIndex, total),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: _dismissYoutubeAd,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white24,
-                      borderRadius: BorderRadius.circular(20),
+                          if (ad.subtitle.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              ad.subtitle,
+                              style: TextStyle(
+                                color: Colors.white54,
+                                fontSize: widget.isDesktop ? 12 : 10,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
-                    padding: const EdgeInsets.all(4),
-                    child: const Icon(Icons.close,
-                        color: Colors.white, size: 16),
-                  ),
+                    const SizedBox(width: 12),
+                    _buildDots(safeIndex, total),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: _dismissYoutubeAd,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white24,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        padding: const EdgeInsets.all(4),
+                        child: const Icon(Icons.close,
+                            color: Colors.white, size: 16),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
