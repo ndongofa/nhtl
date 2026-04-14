@@ -20,7 +20,7 @@
  *
  * Optional:
  *   TWILIO_SMS_TEMPLATE           – Custom message template. Use {otp} as placeholder.
- *                                   Default: "Votre code de vérification NHTL est : {otp}"
+ *                                   Default: "Votre code Sama Services est: {otp}"
  *
  * Pricing note:
  *   Twilio rates vary by destination country. Sénégal (+221) ≈ $0.085/SMS,
@@ -167,7 +167,7 @@ serve(async (req: Request): Promise<Response> => {
     const templateEnv = Deno.env.get("TWILIO_SMS_TEMPLATE");
     const messageBody = templateEnv
       ? templateEnv.replace("{otp}", otp)
-      : `Votre code de vérification NHTL est : ${otp}`;
+      : `Votre code Sama Services est: ${otp}`;
 
     const senderParam = messagingServiceSid
       ? `MessagingServiceSid=${encodeURIComponent(messagingServiceSid)}`
