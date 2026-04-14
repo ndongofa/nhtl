@@ -166,6 +166,17 @@ serve(async (req: Request): Promise<Response> => {
       console.error(
         `[send-sms-brevo] Brevo API error status=${brevoRes.status} body=${body}`,
       );
+      // 402 = insufficient SMS credits. Allow signup to proceed rather than
+      // blocking the user entirely; the OTP SMS simply won't be delivered.
+      if (brevoRes.status === 402) {
+        console.warn(
+          "[send-sms-brevo] Insufficient Brevo SMS credits – signup allowed but OTP not sent. Recharge at https://app.sendinblue.com/billing/addon/customize/sms",
+        );
+        return new Response(JSON.stringify({}), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
       return new Response(
         JSON.stringify({ error: `Brevo error ${brevoRes.status}: ${body}` }),
         { status: 502, headers: { "Content-Type": "application/json" } },
