@@ -8,8 +8,11 @@
  * Required environment variables (set via Supabase Dashboard → Edge Functions → Secrets):
  *   TWILIO_ACCOUNT_SID            – Account SID from https://console.twilio.com
  *   TWILIO_AUTH_TOKEN             – Auth Token from https://console.twilio.com
- *   SEND_SMS_HOOK_SECRET          – Webhook signing secret from the Supabase hook dashboard
- *                                   (full value, e.g. "v1,whsec_<base64>")
+ *   SEND_SMS_HOOK_SECRET          – The secret configured in the Supabase Auth hook settings.
+ *                                   Supabase Auth Hooks send this value as:
+ *                                     Authorization: Bearer <SEND_SMS_HOOK_SECRET>
+ *                                   Copy the secret exactly as shown in:
+ *                                     Dashboard → Authentication → Hooks → Send SMS hook
  *
  * Sender – use ONE of the following (Messaging Service SID recommended for worldwide delivery):
  *   TWILIO_MESSAGING_SERVICE_SID  – Messaging Service SID (starts with "MG…")
@@ -43,68 +46,38 @@ interface SMSHookPayload {
   };
 }
 
-/**
- * Verify the Supabase webhook HMAC-SHA256 signature.
- *
- * Supabase sends:   x-supabase-signature: v1=<base64-encoded-HMAC-SHA256>
- * The hook secret stored in the dashboard has the format: v1,whsec_<base64-key>
- */
-async function verifyHookSignature(
-  rawBody: Uint8Array,
-  sigHeader: string,
-  secret: string,
-): Promise<boolean> {
-  const match = sigHeader.match(/^v1=(.+)$/);
-  if (!match) return false;
-  const receivedSig = match[1];
-
-  const secretMatch = secret.match(/^v1,whsec_(.+)$/);
-  if (!secretMatch) return false;
-  const rawKey = Uint8Array.from(atob(secretMatch[1]), (c) => c.charCodeAt(0));
-
-  const cryptoKey = await crypto.subtle.importKey(
-    "raw",
-    rawKey,
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-
-  const signature = await crypto.subtle.sign("HMAC", cryptoKey, rawBody);
-  const computedSig = btoa(String.fromCharCode(...new Uint8Array(signature)));
-
-  // Constant-time comparison to prevent timing attacks
-  if (computedSig.length !== receivedSig.length) return false;
-  let diff = 0;
-  for (let i = 0; i < computedSig.length; i++) {
-    diff |= computedSig.charCodeAt(i) ^ receivedSig.charCodeAt(i);
-  }
-  return diff === 0;
-}
-
 serve(async (req: Request): Promise<Response> => {
   try {
     const rawBody = await req.arrayBuffer();
 
-    // ── Webhook signature verification ─────────────────────────────────────
+    // ── Bearer token verification (Supabase Auth Hooks authorization) ───────
+    // Supabase Auth Hooks send: Authorization: Bearer <SEND_SMS_HOOK_SECRET>
     const hookSecret = Deno.env.get("SEND_SMS_HOOK_SECRET");
     if (hookSecret) {
-      const sigHeader = req.headers.get("x-supabase-signature") ?? "";
-      const valid = await verifyHookSignature(
-        new Uint8Array(rawBody),
-        sigHeader,
-        hookSecret,
-      );
+      const authHeader = req.headers.get("authorization") ?? "";
+      const token = authHeader.startsWith("Bearer ")
+        ? authHeader.slice(7)
+        : "";
+      // Constant-time comparison to prevent timing attacks
+      const expected = hookSecret;
+      let valid = token.length > 0 && token.length === expected.length;
+      if (valid) {
+        let diff = 0;
+        for (let i = 0; i < token.length; i++) {
+          diff |= token.charCodeAt(i) ^ expected.charCodeAt(i);
+        }
+        valid = diff === 0;
+      }
       if (!valid) {
-        console.error("[send-sms-twilio] Invalid webhook signature");
+        console.error("[send-sms-twilio] Invalid or missing authorization token");
         return new Response(
-          JSON.stringify({ error: "Invalid webhook signature" }),
+          JSON.stringify({ error: "Invalid authorization token" }),
           { status: 401, headers: { "Content-Type": "application/json" } },
         );
       }
     } else {
       console.warn(
-        "[send-sms-twilio] SEND_SMS_HOOK_SECRET is not set – skipping signature verification",
+        "[send-sms-twilio] SEND_SMS_HOOK_SECRET is not set – skipping authorization check",
       );
     }
     // ───────────────────────────────────────────────────────────────────────
