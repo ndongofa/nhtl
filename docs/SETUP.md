@@ -76,8 +76,87 @@ Copiez `.env.example` en `.env` et renseignez les variables :
 cp backend/.env.example backend/.env
 ```
 
-| Variable | Description |
-|---|---|
-| `SUPABASE_URL` | URL de votre projet Supabase |
-| `SUPABASE_ANON_KEY` | Clé anonyme Supabase |
-| `JWT_SECRET` | Secret JWT (même que dans Supabase) |
+| Variable | Description | Obligatoire |
+|---|---|---|
+| `SPRING_PROFILES_ACTIVE` | Profil actif : `prod` en production, `dev` en local | Oui |
+| `PORT` | Port d'écoute du serveur (défaut : 8080) | Non |
+| `PGHOST` | Hôte PostgreSQL | Oui (prod) |
+| `PGPORT` | Port PostgreSQL | Oui (prod) |
+| `PGDATABASE` | Nom de la base de données | Oui (prod) |
+| `PGUSER` | Utilisateur PostgreSQL | Oui (prod) |
+| `PGPASSWORD` | Mot de passe PostgreSQL | Oui (prod) |
+| `SUPABASE_URL` | URL de votre projet Supabase | Oui |
+| `SUPABASE_ANON_KEY` | Clé anonyme Supabase | Oui |
+| `SUPABASE_JWT_SECRET` | Secret JWT Supabase (Settings → API → JWT Secret) | Oui |
+| `BREVO_API_KEY` | Clé API Brevo pour l'envoi d'emails transactionnels | Recommandé |
+| `MAIL_FROM` | Adresse expéditeur des emails | Non |
+| `MAIL_FROMNAME` | Nom affiché de l'expéditeur | Non |
+| `SMTP_HOST` | Hôte SMTP (alternative à Brevo API) | Non |
+| `SMTP_PORT` | Port SMTP (défaut : 587) | Non |
+| `SMTP_USERNAME` | Identifiant SMTP | Non |
+| `SMTP_PASSWORD` | Mot de passe SMTP | Non |
+| `BREVO_SMS_FROM` | Nom expéditeur SMS Brevo (max 11 car.) | Non |
+| `TWILIO_ACCOUNT_SID` | Account SID Twilio (WhatsApp) | Non |
+| `TWILIO_AUTH_TOKEN` | Auth Token Twilio (WhatsApp) | Non |
+| `TWILIO_FROM_NUMBER` | Numéro Twilio SMS (E.164) | Non |
+| `TWILIO_WHATSAPP_FROM` | Expéditeur WhatsApp Twilio (ex : `whatsapp:+14155238886`) | Non |
+
+---
+
+## 3. Configuration WhatsApp via Twilio
+
+Les notifications WhatsApp sont envoyées via **Twilio** uniquement en profil `prod`.
+En profil `dev`, un stub log les messages sans les envoyer réellement.
+
+### 3.1 Créer un compte Twilio
+
+1. Inscrivez-vous sur [https://www.twilio.com](https://www.twilio.com)
+2. Dans la **Console Twilio** (console.twilio.com), notez :
+   - **Account SID** (commence par `AC…`)
+   - **Auth Token**
+
+### 3.2 Configurer le sandbox WhatsApp (développement/test)
+
+Le sandbox Twilio WhatsApp permet de tester sans numéro approuvé :
+
+1. Dans la Console Twilio, allez dans **Messaging → Try it out → Send a WhatsApp message**
+2. Suivez les instructions pour rejoindre le sandbox depuis votre téléphone
+   (envoyez le code d'activation au numéro sandbox, ex : `+1 415 523 8886`)
+3. Utilisez `whatsapp:+14155238886` comme `TWILIO_WHATSAPP_FROM`
+
+### 3.3 Passer en production (numéro WhatsApp Business approuvé)
+
+1. Dans la Console Twilio → **Messaging → Senders → WhatsApp senders**
+2. Soumettez votre numéro pour approbation Meta/WhatsApp (délai : quelques jours)
+3. Une fois approuvé, remplacez `TWILIO_WHATSAPP_FROM` par `whatsapp:+VOTRE_NUMERO`
+
+### 3.4 Configurer les variables d'environnement
+
+```bash
+# Sur Railway / votre hébergeur
+TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_AUTH_TOKEN=your-twilio-auth-token
+TWILIO_FROM_NUMBER=+33700000000   # optionnel si SMS géré par Brevo
+TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
+```
+
+### 3.5 Canaux de notification — vue d'ensemble
+
+| Canal | Profil `dev` | Profil `prod` | Fournisseur |
+|---|---|---|---|
+| In-app | ✅ | ✅ | BDD (Supabase/PostgreSQL) |
+| Email | Stub (log) | ✅ | Brevo API ou SMTP |
+| SMS | Stub (log) | ✅ | Brevo SMS |
+| WhatsApp | Stub (log) | ✅ si Twilio configuré | Twilio |
+
+> **Note** : Si `TWILIO_ACCOUNT_SID` est absent en prod, les notifications WhatsApp
+> sont simplement ignorées (warn dans les logs) sans lever d'erreur.
+
+### 3.6 Vérification
+
+Pour confirmer que les notifications WhatsApp fonctionnent :
+
+1. Déployez en profil `prod` avec les variables Twilio renseignées
+2. Déclenchez un changement de statut sur une commande ou un transport
+3. Vérifiez les logs Spring Boot : `[TWILIO-WA] Accepted sid=…`
+4. Vérifiez dans la Console Twilio → **Monitor → Logs → Messaging**
