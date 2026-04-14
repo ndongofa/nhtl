@@ -1059,7 +1059,7 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // YouTube player with a close button above it (outside the iframe)
+          // YouTube player with a single close button overlay
           Stack(
             children: [
               ClipRRect(
@@ -1070,23 +1070,20 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
                   onVideoEnded: _advanceToNext,
                 ),
               ),
-              // Close button positioned at top-center
+              // Single close button – top-right corner, works on all screen sizes
               Positioned(
                 top: 6,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: GestureDetector(
-                    onTap: _dismissYoutubeAd,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.65),
-                        shape: BoxShape.circle,
-                      ),
-                      padding: const EdgeInsets.all(6),
-                      child: const Icon(Icons.close,
-                          color: Colors.white, size: 18),
+                right: 8,
+                child: GestureDetector(
+                  onTap: _dismissYoutubeAd,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.65),
+                      shape: BoxShape.circle,
                     ),
+                    padding: const EdgeInsets.all(6),
+                    child: const Icon(Icons.close,
+                        color: Colors.white, size: 18),
                   ),
                 ),
               ),
@@ -1136,19 +1133,6 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
                 ),
                 const SizedBox(width: 12),
                 _buildDots(safeIndex, total),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: _dismissYoutubeAd,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white24,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    padding: const EdgeInsets.all(4),
-                    child: const Icon(Icons.close,
-                        color: Colors.white, size: 16),
-                  ),
-                ),
               ],
             ),
           ),
@@ -1166,11 +1150,6 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
     final safeIndex = _index % ads.length;
     final ad = ads[safeIndex];
 
-    // Hide the YouTube ad if dismissed by the user
-    final isYoutube = ad.adType == AdModel.typeYoutube &&
-        (ad.youtubeId ?? '').isNotEmpty;
-    if (isYoutube && _youtubeDismissed) return const SizedBox.shrink();
-
     final carousel = AnimatedSwitcher(
       duration: const Duration(milliseconds: 500),
       transitionBuilder: (child, animation) => FadeTransition(
@@ -1183,7 +1162,9 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
           AdModel.typeImage when (ad.imageUrl ?? '').isNotEmpty =>
             _buildImageContent(ad, safeIndex, ads.length),
           AdModel.typeYoutube when (ad.youtubeId ?? '').isNotEmpty =>
-            _buildYoutubeContent(ad, safeIndex, ads.length),
+            _youtubeDismissed
+                ? _buildTextContent(ad, safeIndex, ads.length)
+                : _buildYoutubeContent(ad, safeIndex, ads.length),
           _ => _buildTextContent(ad, safeIndex, ads.length),
         },
       ),
