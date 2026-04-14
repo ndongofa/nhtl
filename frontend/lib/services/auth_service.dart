@@ -120,14 +120,6 @@ class AuthService {
     return error.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
   }
 
-  /// Supabase/Twilio attend le numéro sans "+" pour signUp, signInWithOtp
-  /// et verifyOTP. On conserve le "+" uniquement pour la validation E.164
-  /// côté Flutter.
-  static String _toSupabasePhone(String phoneE164) {
-    final p = phoneE164.trim();
-    return p.startsWith('+') ? p.substring(1) : p;
-  }
-
   /// Signup avec metadata (prenom/nom/role).
   /// `identifier` = email OU téléphone E.164 (ex: +221783042838)
   static Future<SignupOutcome> signupWithMetadata({
@@ -186,11 +178,11 @@ class AuthService {
             "Numéro invalide. Utilisez le format international E.164, ex: +221783042838",
           );
         }
-        // ✅ Strip le "+" — Supabase/Twilio attend le numéro sans préfixe.
         // Supabase envoie automatiquement un OTP SMS ici — ne pas appeler
         // sendPhoneOtp() ensuite, ce serait un double envoi → 429.
+        // Le numéro doit être en format E.164 complet (avec "+") pour Brevo.
         res = await _supabase.auth.signUp(
-          phone: _toSupabasePhone(cleanIdentifier),
+          phone: cleanIdentifier,
           password: password,
           data: data,
         );
@@ -242,9 +234,9 @@ class AuthService {
     print("[AuthService][sendPhoneOtp] start phone=$cleanPhone");
 
     try {
-      // ✅ Strip le "+" — Supabase/Twilio attend le numéro sans préfixe
+      // Le numéro est passé en format E.164 complet (avec "+") pour Brevo.
       await _supabase.auth.signInWithOtp(
-        phone: _toSupabasePhone(cleanPhone),
+        phone: cleanPhone,
       );
       // ignore: avoid_print
       print("[AuthService][sendPhoneOtp] OK");
@@ -288,10 +280,10 @@ class AuthService {
         "[AuthService][verifyPhoneOtp] start phone=$cleanPhone tokenLen=${cleanToken.length}");
 
     try {
-      // ✅ Strip le "+" — Supabase/Twilio attend le numéro sans préfixe
+      // Le numéro est passé en format E.164 complet (avec "+") pour Brevo.
       await _supabase.auth.verifyOTP(
         type: OtpType.sms,
-        phone: _toSupabasePhone(cleanPhone),
+        phone: cleanPhone,
         token: cleanToken,
       );
       // ignore: avoid_print

@@ -1,0 +1,29 @@
+# Supabase project configuration
+# Run `supabase link --project-ref <your-project-ref>` to link this project.
+# Then `supabase functions deploy send-sms-brevo` to deploy the SMS hook.
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[auth]
+enabled = true
+site_url = "https://www.sama-services-intl.com"
+additional_redirect_urls = ["https://www.sama-services-intl.com/auth/callback"]
+jwt_expiry = 3600
+enable_signup = true
+minimum_password_length = 8
+
+[auth.sms]
+enable_signup = true
+enable_confirmations = true
+
+# SMS is handled by the `send-sms-brevo` Edge Function auth hook.
+# Configure the hook in:
+#   Supabase Dashboard → Authentication → Hooks → Send SMS hook
+#   URL: https://<project-ref>.supabase.co/functions/v1/send-sms-brevo
+[functions.send-sms-brevo]
+verify_jwt = false
