@@ -1050,6 +1050,19 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
   // ── YouTube ad (inline player + text strip below) ──────────────────────────
   Widget _buildYoutubeContent(AdModel ad, int safeIndex, int total) {
     final p = widget.isDesktop ? 22.0 : 18.0;
+
+    final closeButton = GestureDetector(
+      onTap: _dismissYoutubeAd,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.65),
+          shape: BoxShape.circle,
+        ),
+        padding: const EdgeInsets.all(6),
+        child: const Icon(Icons.close, color: Colors.white, size: 18),
+      ),
+    );
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -1059,7 +1072,7 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // YouTube player with a single close button overlay
+          // YouTube player – on desktop, close button is centred at the top
           Stack(
             children: [
               ClipRRect(
@@ -1070,26 +1083,17 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
                   onVideoEnded: _advanceToNext,
                 ),
               ),
-              // Single close button – top-right corner, works on all screen sizes
-              Positioned(
-                top: 6,
-                right: 8,
-                child: GestureDetector(
-                  onTap: _dismissYoutubeAd,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.65),
-                      shape: BoxShape.circle,
-                    ),
-                    padding: const EdgeInsets.all(6),
-                    child: const Icon(Icons.close,
-                        color: Colors.white, size: 18),
-                  ),
+              // Large screen: close button at top-centre above the video
+              if (widget.isDesktop)
+                Positioned(
+                  top: 8,
+                  left: 0,
+                  right: 0,
+                  child: Center(child: closeButton),
                 ),
-              ),
             ],
           ),
-          // Title + subtitle + dots + close button
+          // Bottom bar: title + subtitle + dots (+ close button on small screens)
           Container(
             padding: EdgeInsets.symmetric(
                 horizontal: p, vertical: widget.isDesktop ? 14 : 10),
@@ -1133,6 +1137,11 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
                 ),
                 const SizedBox(width: 12),
                 _buildDots(safeIndex, total),
+                // Small screen: close button in the bottom bar
+                if (!widget.isDesktop) ...[
+                  const SizedBox(width: 8),
+                  closeButton,
+                ],
               ],
             ),
           ),
