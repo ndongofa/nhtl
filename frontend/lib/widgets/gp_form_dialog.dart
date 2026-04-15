@@ -36,6 +36,8 @@ Future<Map<String, dynamic>?> showGpFormDialog({
                   hintText: "+221783042838",
                 ),
                 keyboardType: TextInputType.phone,
+                autocorrect: false,
+                enableSuggestions: false,
               ),
               TextField(
                 controller: emailCtrl,

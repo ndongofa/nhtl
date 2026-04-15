@@ -8,11 +8,14 @@ import 'package:intl_phone_field/phone_number.dart';
 /// via [onChanged], quelle que soit la saisie de l'utilisateur.
 ///
 /// Corrections automatiques appliquées en temps réel :
-/// - Suppression des caractères non-numériques (espaces, tirets, points…).
+/// - La correction automatique du clavier est désactivée (autocorrect: false).
+/// - Suppression des caractères non-numériques (tirets, points, parenthèses…).
 /// - Suppression du zéro initial du numéro local.
 /// - Détection automatique du pays à partir de l'indicatif saisi
 ///   (formats +XXX… ou 00XXX…, avec ou sans séparateurs).
 /// - Prise en charge correcte du copier/coller d'un numéro E.164 complet.
+/// - Affichage groupé par paires de chiffres (ex: 78 30 42 83 8) pour la lisibilité.
+/// - Numéro soumis au format E.164 standard (ex: +221783042838) sans espaces.
 ///
 /// Utilisation :
 /// ```dart
@@ -81,7 +84,9 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
   void initState() {
     super.initState();
     _countryCode = widget.initialCountryCode;
-    _controller = TextEditingController(text: widget.initialValue ?? '');
+    // Apply visual formatting to the initial value if provided
+    _controller = TextEditingController(
+        text: _formatForDisplay(widget.initialValue ?? ''));
     _controller.addListener(_onTextChanged);
   }
 
@@ -98,7 +103,7 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
 
   /// Supprime les caractères non-numériques (espaces, tirets, points,
   /// parenthèses…) et le(s) zéro(s) initial(aux) d'un numéro local.
-  /// Retourne le texte sanitisé et l'offset de curseur ajusté.
+  /// Retourne les chiffres bruts (sans espaces) et l'offset de curseur ajusté.
   static ({String text, int cursorOffset}) _sanitizeLocal(
       String text, int cursorPos) {
     // Conserver uniquement les chiffres et ajuster la position du curseur
@@ -119,6 +124,26 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
     newCursor = (newCursor - zerosRemoved).clamp(0, stripped.length);
 
     return (text: stripped, cursorOffset: newCursor);
+  }
+
+  /// Formate les chiffres bruts pour l'affichage en les groupant par paires
+  /// séparées par des espaces (ex: "783042838" → "78 30 42 83 8").
+  /// Améliore la lisibilité sans affecter le format E.164 soumis.
+  static String _formatForDisplay(String digits) {
+    if (digits.isEmpty) return '';
+    final buf = StringBuffer();
+    for (int i = 0; i < digits.length; i++) {
+      if (i > 0 && i.isEven) buf.write(' ');
+      buf.write(digits[i]);
+    }
+    return buf.toString();
+  }
+
+  /// Convertit un offset de curseur dans la chaîne brute (chiffres seuls)
+  /// en offset dans la chaîne formatée (avec espaces tous les 2 chiffres).
+  static int _rawCursorToFormatted(int rawCursor) {
+    if (rawCursor <= 0) return 0;
+    return rawCursor + (rawCursor - 1) ~/ 2;
   }
 
   /// Essaie de détecter le pays et d'en extraire le numéro local
@@ -172,8 +197,8 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
         // Planifier le changement après que le listener soit retourné
         Future.microtask(() {
           if (!mounted || gen != _generation) return;
-          final newController =
-              TextEditingController(text: detected.localNumber);
+          final formatted = _formatForDisplay(detected.localNumber);
+          final newController = TextEditingController(text: formatted);
           _controller.removeListener(_onTextChanged);
           _controller.dispose();
           _controller = newController;
@@ -187,13 +212,17 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
       }
     }
 
-    // --- Cas 2 : numéro local — supprimer espaces et zéro initial ---
+    // --- Cas 2 : numéro local — supprimer espaces et zéro initial, puis formater ---
     final result = _sanitizeLocal(text, cursorPos);
-    if (result.text != text) {
+    final formatted = _formatForDisplay(result.text);
+    final formattedCursor =
+        _rawCursorToFormatted(result.cursorOffset).clamp(0, formatted.length);
+
+    if (formatted != text || formattedCursor != cursorPos) {
       _isSanitizing = true;
       _controller.value = TextEditingValue(
-        text: result.text,
-        selection: TextSelection.collapsed(offset: result.cursorOffset),
+        text: formatted,
+        selection: TextSelection.collapsed(offset: formattedCursor),
       );
       _isSanitizing = false;
     }
@@ -206,8 +235,9 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
   /// Valide le numéro selon la règle "requis" et les longueurs min/max
   /// du pays sélectionné (remplace la validation interne d'IntlPhoneField
   /// désactivée via disableLengthCheck: true).
+  /// Les espaces visuels sont ignorés lors de la validation.
   String? _validatePhone(PhoneNumber? phone) {
-    final number = phone?.number.trim() ?? '';
+    final number = (phone?.number ?? '').replaceAll(' ', '').trim();
     if (number.isEmpty) {
       return widget.required ? 'Téléphone requis' : null;
     }
@@ -230,6 +260,7 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
     return IntlPhoneField(
       key: ValueKey('$_fieldKey-$_countryCode'),
       controller: _controller,
+      autocorrect: false,
       decoration: InputDecoration(
         labelText: widget.label,
         border: const OutlineInputBorder(),
@@ -244,7 +275,9 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
       disableLengthCheck: true,
       onChanged: (PhoneNumber phone) {
         try {
-          final e164 = phone.completeNumber;
+          // Supprimer les espaces visuels insérés pour l'affichage
+          // avant de retourner le numéro au format E.164 standard.
+          final e164 = phone.completeNumber.replaceAll(' ', '');
           widget.onChanged(e164.isNotEmpty ? e164 : null);
         } catch (_) {
           widget.onChanged(null);

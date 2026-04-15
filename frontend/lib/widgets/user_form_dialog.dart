@@ -67,6 +67,8 @@ Future<Map<String, dynamic>?> showUserFormDialog({
                     labelText: "Email ou téléphone",
                     hintText: "ex: nom@domaine.com ou +221783042838",
                   ),
+                  autocorrect: false,
+                  enableSuggestions: false,
                 ),
                 TextField(
                   controller: passwordController,
@@ -90,6 +92,8 @@ Future<Map<String, dynamic>?> showUserFormDialog({
                     hintText: "+221783042838",
                   ),
                   keyboardType: TextInputType.phone,
+                  autocorrect: false,
+                  enableSuggestions: false,
                 ),
               ],
               const SizedBox(height: 20),
