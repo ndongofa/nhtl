@@ -35,7 +35,7 @@ public class FallbackSmsProvider implements SmsProvider {
     @Value("${brevo.apiKey:}")
     private String brevoApiKey;
 
-    @Value("${brevo.sms.from:NHTL}")
+    @Value("${brevo.sms.from:SamaServices}")
     private String brevoSenderName;
 
     // --- Twilio ---
@@ -77,8 +77,10 @@ public class FallbackSmsProvider implements SmsProvider {
         try {
             sendViaTwilio(to, message);
         } catch (Exception e) {
-            log.error("[SMS-FALLBACK] Both Brevo and Twilio failed to='{}' err='{}'", to, e.getMessage());
-            throw e;
+            log.error("[SMS-FALLBACK] Both Brevo and Twilio failed to='{}' — SMS skipped, registration proceeds. err='{}'",
+                    to, e.getMessage());
+            // Ne pas relancer l'exception : l'inscription ne doit pas être bloquée
+            // par une panne SMS. Le message est perdu, mais le flux utilisateur continue.
         }
     }
 

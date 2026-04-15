@@ -27,7 +27,7 @@ public class BrevoSmsProvider implements SmsProvider {
     @Value("${brevo.apiKey:}")
     private String apiKey;
 
-    @Value("${brevo.sms.from:NHTL}")
+    @Value("${brevo.sms.from:SamaServices}")
     private String senderName;
 
     @Override
