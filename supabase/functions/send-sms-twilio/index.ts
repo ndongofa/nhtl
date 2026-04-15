@@ -41,9 +41,78 @@ interface SMSHookPayload {
   };
 }
 
+/**
+ * Verify the Supabase webhook HMAC-SHA256 signature.
+ *
+ * Supabase sends:   x-supabase-signature: v1=<base64-encoded-HMAC-SHA256>
+ * The hook secret stored in the dashboard has the format: v1,whsec_<base64-key>
+ *
+ * @param rawBody   Raw request body bytes (must be read before JSON.parse).
+ * @param sigHeader Value of the x-supabase-signature header.
+ * @param secret    Value of the SEND_SMS_HOOK_SECRET environment variable.
+ * @returns true if the signature is valid, false otherwise.
+ */
+async function verifyHookSignature(
+  rawBody: Uint8Array,
+  sigHeader: string,
+  secret: string,
+): Promise<boolean> {
+  // Expected header format: "v1=<base64>"
+  const match = sigHeader.match(/^v1=(.+)$/);
+  if (!match) return false;
+  const receivedSig = match[1];
+
+  // Secret format from the Supabase dashboard: "v1,whsec_<base64>"
+  const secretMatch = secret.match(/^v1,whsec_(.+)$/);
+  if (!secretMatch) return false;
+  const rawKey = Uint8Array.from(atob(secretMatch[1]), (c) => c.charCodeAt(0));
+
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw",
+    rawKey,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+
+  const signature = await crypto.subtle.sign("HMAC", cryptoKey, rawBody);
+  const computedSig = btoa(String.fromCharCode(...new Uint8Array(signature)));
+
+  // Constant-time comparison to prevent timing attacks
+  if (computedSig.length !== receivedSig.length) return false;
+  let diff = 0;
+  for (let i = 0; i < computedSig.length; i++) {
+    diff |= computedSig.charCodeAt(i) ^ receivedSig.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
 serve(async (req: Request): Promise<Response> => {
   try {
     const rawBody = await req.arrayBuffer();
+
+    // ── Webhook signature verification ─────────────────────────────────────
+    const hookSecret = Deno.env.get("SEND_SMS_HOOK_SECRET");
+    if (hookSecret) {
+      const sigHeader = req.headers.get("x-supabase-signature") ?? "";
+      const valid = await verifyHookSignature(
+        new Uint8Array(rawBody),
+        sigHeader,
+        hookSecret,
+      );
+      if (!valid) {
+        console.error("[send-sms-twilio] Invalid webhook signature");
+        return new Response(
+          JSON.stringify({ error: "Invalid webhook signature" }),
+          { status: 401, headers: { "Content-Type": "application/json" } },
+        );
+      }
+    } else {
+      console.warn(
+        "[send-sms-twilio] SEND_SMS_HOOK_SECRET is not set – skipping signature verification",
+      );
+    }
+    // ───────────────────────────────────────────────────────────────────────
 
     const payload: SMSHookPayload = JSON.parse(
       new TextDecoder().decode(rawBody),
