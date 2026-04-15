@@ -145,11 +145,11 @@ serve(async (req: Request): Promise<Response> => {
 
     // SMS template: override via BREVO_SMS_TEMPLATE env var.
     // Use the placeholder {otp} in your custom template, e.g.:
-    //   "Your NHTL verification code is: {otp}"
+    //   "Your Sama Services International verification code is: {otp}"
     const templateEnv = Deno.env.get("BREVO_SMS_TEMPLATE");
     const message = templateEnv
       ? templateEnv.replace("{otp}", otp)
-      : `Votre code de vérification NHTL est : ${otp}`;
+      : `Votre code de vérification Sama Services International est : ${otp}`;
 
     console.log(
       `[send-sms-brevo] Sending OTP to ${recipient} from "${sender}"`,
