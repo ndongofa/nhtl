@@ -94,7 +94,14 @@ serve(async (req: Request): Promise<Response> => {
     // ── Webhook signature verification ─────────────────────────────────────
     const hookSecret = Deno.env.get("SEND_SMS_HOOK_SECRET");
     if (hookSecret) {
-      const sigHeader = req.headers.get("x-supabase-signature") ?? "";
+      const sigHeader = req.headers.get("x-supabase-signature");
+      if (!sigHeader) {
+        console.error("[send-sms-twilio] Missing x-supabase-signature header");
+        return new Response(
+          JSON.stringify({ error: "Missing signature header" }),
+          { status: 401, headers: { "Content-Type": "application/json" } },
+        );
+      }
       const valid = await verifyHookSignature(
         new Uint8Array(rawBody),
         sigHeader,

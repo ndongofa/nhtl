@@ -88,11 +88,6 @@
             <scope>runtime</scope>
         </dependency>
 
-        <dependency>
-            <groupId>commons-codec</groupId>
-            <artifactId>commons-codec</artifactId>
-            <version>1.15</version>
-        </dependency>
 
         <!-- Email SMTP (Amazon SES SMTP recommended) -->
 		<dependency>

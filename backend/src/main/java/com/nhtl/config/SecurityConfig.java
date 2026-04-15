@@ -44,7 +44,6 @@ public class SecurityConfig {
 				// Autorisations
 				.authorizeHttpRequests(auth -> auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 						.requestMatchers("/", "/index.html").permitAll()
-						.requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
 						.requestMatchers("/api/admin/**").hasRole("ADMIN")
 						.requestMatchers("/api/commandes/**", "/api/transports/**", "/api/achats/**").authenticated()
 						.requestMatchers("/api/maad/panier/**", "/api/teranga/panier/**", "/api/bestseller/panier/**").authenticated()
