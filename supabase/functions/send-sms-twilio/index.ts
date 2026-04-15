@@ -92,9 +92,13 @@ serve(async (req: Request): Promise<Response> => {
     const rawBody = await req.arrayBuffer();
 
     // ── Webhook signature verification ─────────────────────────────────────
+    // Signature is only verified when BOTH the env secret is configured AND
+    // Supabase actually sends the x-supabase-signature header.
+    // If the header is absent (null), we proceed and only warn – this happens
+    // when the Auth Hook in the Supabase dashboard has no signing secret set.
     const hookSecret = Deno.env.get("SEND_SMS_HOOK_SECRET");
-    if (hookSecret) {
-      const sigHeader = req.headers.get("x-supabase-signature") ?? "";
+    const sigHeader = req.headers.get("x-supabase-signature");
+    if (hookSecret && sigHeader) {
       const valid = await verifyHookSignature(
         new Uint8Array(rawBody),
         sigHeader,
@@ -107,9 +111,17 @@ serve(async (req: Request): Promise<Response> => {
           { status: 401, headers: { "Content-Type": "application/json" } },
         );
       }
-    } else {
+    } else if (!hookSecret) {
       console.warn(
         "[send-sms-twilio] SEND_SMS_HOOK_SECRET is not set – skipping signature verification",
+      );
+    } else {
+      // hookSecret is set but Supabase sent no signature header.
+      // This happens when the Auth Hook in the dashboard has no signing secret.
+      // Configure a matching secret in: Dashboard → Authentication → Hooks → (edit) → Signing secret
+      console.warn(
+        "[send-sms-twilio] x-supabase-signature header is absent – proceeding without verification. " +
+        "Set a signing secret in the Supabase Auth Hook dashboard to enable verification.",
       );
     }
     // ───────────────────────────────────────────────────────────────────────
