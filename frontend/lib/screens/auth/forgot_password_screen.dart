@@ -5,6 +5,7 @@ import '../../services/auth_service.dart';
 import '../../ui/app_brand.dart';
 import '../../widgets/phone_input_field.dart';
 import 'password_reset_sent_screen.dart';
+import 'phone_otp_screen.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({Key? key}) : super(key: key);
@@ -49,23 +50,27 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     try {
       if (!_usePhone) {
         await AuthService.resetPasswordForEmail(identifier);
+
+        if (!mounted) return;
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => PasswordResetSentScreen(identifier: identifier),
+          ),
+        );
       } else {
-        // Flux SMS/OTP reset (en cours d'activation)
-        Fluttertoast.showToast(
-          msg:
-              "Réinitialisation par téléphone: vous recevrez un SMS (en cours d'activation).",
-          backgroundColor: Colors.orange,
-          toastLength: Toast.LENGTH_LONG,
+        // ✅ Flux reset password par SMS : envoyer OTP puis vérifier
+        await AuthService.sendPhoneOtp(identifier);
+
+        if (!mounted) return;
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => PhoneOtpScreen(
+              phoneE164: identifier,
+              isPasswordReset: true,
+            ),
+          ),
         );
       }
-
-      if (!mounted) return;
-
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => PasswordResetSentScreen(identifier: identifier),
-        ),
-      );
     } catch (e) {
       if (!mounted) return;
       Fluttertoast.showToast(

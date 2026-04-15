@@ -5,15 +5,21 @@ import 'package:fluttertoast/fluttertoast.dart';
 
 import '../../services/auth_service.dart';
 import '../../ui/app_brand.dart';
+import 'reset_password_screen.dart';
 
 class PhoneOtpScreen extends StatefulWidget {
   final String phoneE164;
   final Widget? redirectTo;
 
+  /// Quand true, après vérification OTP on navigue vers ResetPasswordScreen
+  /// au lieu d'afficher "Compte activé!" (flux reset password par téléphone).
+  final bool isPasswordReset;
+
   const PhoneOtpScreen({
     Key? key,
     required this.phoneE164,
     this.redirectTo,
+    this.isPasswordReset = false,
   }) : super(key: key);
 
   @override
@@ -83,7 +89,17 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
 
       if (!mounted) return;
 
-      // ✅ Modale de succès — bloque jusqu'à confirmation de l'utilisateur
+      if (widget.isPasswordReset) {
+        // ✅ Flux reset password — la session est déjà créée par verifyOTP.
+        // On va directement à l'écran de nouveau mot de passe.
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const ResetPasswordScreen()),
+          (_) => false,
+        );
+        return;
+      }
+
+      // ✅ Flux signup — modale de succès
       await showDialog(
         context: context,
         barrierDismissible: false,
@@ -204,7 +220,9 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
                 const Icon(Icons.sms_outlined, size: 48, color: Colors.blue),
                 const SizedBox(height: 16),
                 Text(
-                  "Validation du téléphone",
+                  widget.isPasswordReset
+                      ? "Réinitialisation par SMS"
+                      : "Validation du téléphone",
                   style: theme.textTheme.titleLarge,
                   textAlign: TextAlign.center,
                 ),
@@ -274,9 +292,11 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
                               color: Colors.white,
                             ),
                           )
-                        : const Text(
-                            "Valider le code",
-                            style: TextStyle(fontSize: 16),
+                        : Text(
+                            widget.isPasswordReset
+                                ? "Vérifier le code"
+                                : "Valider le code",
+                            style: const TextStyle(fontSize: 16),
                           ),
                   ),
                 ),
