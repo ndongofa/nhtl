@@ -8,11 +8,6 @@
  * Required environment variables (set via Supabase Dashboard → Edge Functions → Secrets):
  *   TWILIO_ACCOUNT_SID            – Account SID from https://console.twilio.com
  *   TWILIO_AUTH_TOKEN             – Auth Token from https://console.twilio.com
- *   SEND_SMS_HOOK_SECRET          – The secret configured in the Supabase Auth hook settings.
- *                                   Supabase Auth Hooks send this value as:
- *                                     Authorization: Bearer <SEND_SMS_HOOK_SECRET>
- *                                   Copy the secret exactly as shown in:
- *                                     Dashboard → Authentication → Hooks → Send SMS hook
  *
  * Sender – use ONE of the following (Messaging Service SID recommended for worldwide delivery):
  *   TWILIO_MESSAGING_SERVICE_SID  – Messaging Service SID (starts with "MG…")
@@ -49,38 +44,6 @@ interface SMSHookPayload {
 serve(async (req: Request): Promise<Response> => {
   try {
     const rawBody = await req.arrayBuffer();
-
-    // ── Bearer token verification (Supabase Auth Hooks authorization) ───────
-    // Supabase Auth Hooks send: Authorization: Bearer <SEND_SMS_HOOK_SECRET>
-    const hookSecret = Deno.env.get("SEND_SMS_HOOK_SECRET");
-    if (hookSecret) {
-      const authHeader = req.headers.get("authorization") ?? "";
-      const token = authHeader.startsWith("Bearer ")
-        ? authHeader.slice(7)
-        : "";
-      // Constant-time comparison to prevent timing attacks
-      const expected = hookSecret;
-      let valid = token.length > 0 && token.length === expected.length;
-      if (valid) {
-        let diff = 0;
-        for (let i = 0; i < token.length; i++) {
-          diff |= token.charCodeAt(i) ^ expected.charCodeAt(i);
-        }
-        valid = diff === 0;
-      }
-      if (!valid) {
-        console.error("[send-sms-twilio] Invalid or missing authorization token");
-        return new Response(
-          JSON.stringify({ error: "Invalid authorization token" }),
-          { status: 401, headers: { "Content-Type": "application/json" } },
-        );
-      }
-    } else {
-      console.warn(
-        "[send-sms-twilio] SEND_SMS_HOOK_SECRET is not set – skipping authorization check",
-      );
-    }
-    // ───────────────────────────────────────────────────────────────────────
 
     const payload: SMSHookPayload = JSON.parse(
       new TextDecoder().decode(rawBody),
