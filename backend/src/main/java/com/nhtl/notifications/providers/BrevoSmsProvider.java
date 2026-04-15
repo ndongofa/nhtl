@@ -17,7 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
-@Profile("prod")
+@Profile("brevo-sms")
 public class BrevoSmsProvider implements SmsProvider {
 
     private static final String BREVO_SMS_URL = "https://api.brevo.com/v3/transactionalSMS/sms";
@@ -27,7 +27,7 @@ public class BrevoSmsProvider implements SmsProvider {
     @Value("${brevo.apiKey:}")
     private String apiKey;
 
-    @Value("${brevo.sms.from:NHTL}")
+    @Value("${brevo.sms.from:SamaService}")
     private String senderName;
 
     @Override

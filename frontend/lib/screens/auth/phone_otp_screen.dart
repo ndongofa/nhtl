@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:http/http.dart' as http;
 
+import '../../config/api_config.dart';
 import '../../services/auth_service.dart';
 import '../../ui/app_brand.dart';
 import 'reset_password_screen.dart';
@@ -201,6 +204,121 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
     }
   }
 
+  /// Confirme le compte sans OTP quand les deux providers SMS sont KO.
+  /// Appelle le backend qui utilise la clé service_role Supabase pour forcer
+  /// {@code phone_confirmed_at} en base.
+  Future<void> _skipOtp() async {
+    // Demande confirmation à l'utilisateur
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text("Activer le compte sans SMS"),
+        content: const Text(
+          "Vous n'avez toujours pas reçu votre code SMS ?\n\n"
+          "Votre compte sera activé directement. "
+          "Vous pourrez ensuite vous connecter avec votre mot de passe.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text("Annuler"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text("Confirmer"),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() {
+      _loading = true;
+      _errorMsg = null;
+    });
+
+    try {
+      final url = Uri.parse('${ApiConfig.baseUrl}/api/auth/skip-phone-otp');
+      final resp = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'phone': widget.phoneE164}),
+      );
+
+      if (!mounted) return;
+
+      if (resp.statusCode == 200) {
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => AlertDialog(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.check_circle_outline,
+                      color: Colors.green.shade600, size: 56),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  "Compte activé !",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  "Votre compte associé au numéro ${widget.phoneE164} est maintenant actif.\n"
+                  "Vous pouvez vous connecter.",
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 14, color: Colors.black54),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.login),
+                    label: const Text("Se connecter",
+                        style: TextStyle(fontSize: 16)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green.shade600,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: () => Navigator.of(ctx).pop(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+        if (!mounted) return;
+        Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
+      } else {
+        final decoded = jsonDecode(resp.body) as Map<String, dynamic>?;
+        final errMsg = decoded?['error']?.toString() ??
+            "Impossible d'activer le compte. Réessayez ou contactez le support.";
+        setState(() => _errorMsg = errMsg);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(
+          () => _errorMsg = "Erreur réseau. Vérifiez votre connexion et réessayez.");
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final canResend = _resendCountdown == 0 && !_loading;
@@ -336,6 +454,32 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
                   style:
                       theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
                 ),
+
+                // ── Bypass OTP (flux signup uniquement, pas reset password) ──
+                if (!widget.isPasswordReset) ...[
+                  const SizedBox(height: 20),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  Text(
+                    "Toujours pas de code SMS après plusieurs tentatives ?",
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: Colors.grey.shade600),
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: _loading ? null : _skipOtp,
+                    child: const Text(
+                      "Activer le compte sans code SMS",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.orange,
+                        fontWeight: FontWeight.w600,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

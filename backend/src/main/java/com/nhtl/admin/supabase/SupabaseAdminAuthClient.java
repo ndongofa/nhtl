@@ -117,4 +117,55 @@ public class SupabaseAdminAuthClient {
 				.bodyToMono(String.class).onErrorResume(WebClientResponseException.class,
 						e -> Mono.error(new RuntimeException("Supabase error: " + e.getResponseBodyAsString(), e)));
 	}
-}
+
+	/**
+	 * Force-confirme un numéro de téléphone sans OTP.
+	 * Utilisé comme filet de sécurité quand les deux providers SMS (Brevo + Twilio)
+	 * sont KO : l'utilisateur a été créé dans Supabase mais n'a pas reçu le code.
+	 *
+	 * 1. Trouve l'uid Supabase via le listing admin filtré par téléphone.
+	 * 2. Met à jour l'utilisateur avec {@code phone_confirm: true}.
+	 *
+	 * @param phone numéro E.164 (ex: +221783042838)
+	 * @return l'uuid Supabase de l'utilisateur confirmé
+	 */
+	public Mono<String> confirmPhoneByPhone(String phone) {
+		if (!looksLikeE164Phone(phone)) {
+			return Mono.error(new IllegalArgumentException("Numéro de téléphone invalide (E.164 requis)."));
+		}
+
+		// Supabase admin users list supports ?phone= equality filter
+		return client()
+				.get()
+				.uri(uriBuilder -> uriBuilder
+						.path("/auth/v1/admin/users")
+						.queryParam("phone", phone)
+						.queryParam("page", 1)
+						.queryParam("per_page", 1)
+						.build())
+				.retrieve()
+				.bodyToMono(com.fasterxml.jackson.databind.JsonNode.class)
+				.flatMap(root -> {
+					// Response shape: {"users": [...]} or directly an array
+					com.fasterxml.jackson.databind.JsonNode users = root.has("users") ? root.get("users") : root;
+					if (users == null || !users.isArray() || users.size() == 0) {
+						return Mono.error(new RuntimeException(
+								"Aucun compte trouvé pour le numéro " + phone + ". Vérifiez que le compte existe."));
+					}
+					String userId = users.get(0).path("id").asText(null);
+					if (userId == null || userId.isBlank()) {
+						return Mono.error(new RuntimeException("Impossible de récupérer l'identifiant du compte."));
+					}
+					// Force phone_confirm = true via admin update
+					Map<String, Object> body = Map.of("phone_confirm", true);
+					return client()
+							.put()
+							.uri("/auth/v1/admin/users/{id}", userId)
+							.bodyValue(body)
+							.retrieve()
+							.bodyToMono(String.class)
+							.thenReturn(userId);
+				})
+				.onErrorResume(WebClientResponseException.class,
+						e -> Mono.error(new RuntimeException("Supabase error: " + e.getResponseBodyAsString(), e)));
+	}}
