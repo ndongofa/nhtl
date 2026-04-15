@@ -35,7 +35,7 @@ public class FallbackSmsProvider implements SmsProvider {
     @Value("${brevo.apiKey:}")
     private String brevoApiKey;
 
-    @Value("${brevo.sms.from:SamaServices}")
+    @Value("${brevo.sms.from:SamaService}")
     private String brevoSenderName;
 
     // --- Twilio ---
