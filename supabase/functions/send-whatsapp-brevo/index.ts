@@ -18,7 +18,7 @@
  *
  * Meta template setup (one-time, done in Brevo dashboard):
  *   Template name : otp_verification  (or your chosen name)
- *   Template body : "Votre code de vérification NHTL est : {{1}}. Il expire dans 10 minutes."
+ *   Template body : "Votre code de vérification Sama Services International est : {{1}}. Il expire dans 10 minutes."
  *   Category      : AUTHENTICATION
  *   Language      : French (fr)
  *   The placeholder {{1}} will be replaced by the 6-digit OTP.
