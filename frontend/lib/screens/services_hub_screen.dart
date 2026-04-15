@@ -1228,6 +1228,7 @@ class _YoutubeAdWidget extends StatefulWidget {
 class _YoutubeAdWidgetState extends State<_YoutubeAdWidget> {
   late YoutubePlayerController _controller;
   StreamSubscription<YoutubePlayerValue>? _sub;
+  bool _playInitiated = false;
 
   @override
   void initState() {
@@ -1245,9 +1246,12 @@ class _YoutubeAdWidgetState extends State<_YoutubeAdWidget> {
     );
     _sub = _controller.stream.listen((value) {
       if (value.playerState == PlayerState.ended) {
+        _playInitiated = false;
         widget.onVideoEnded();
-      } else if (value.playerState == PlayerState.unStarted ||
-          value.playerState == PlayerState.cued) {
+      } else if (!_playInitiated &&
+          (value.playerState == PlayerState.unStarted ||
+              value.playerState == PlayerState.cued)) {
+        _playInitiated = true;
         _controller.playVideo();
       }
     });
@@ -1257,6 +1261,7 @@ class _YoutubeAdWidgetState extends State<_YoutubeAdWidget> {
   void didUpdateWidget(_YoutubeAdWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.youtubeId != widget.youtubeId) {
+      _playInitiated = false;
       _controller.loadVideoById(videoId: widget.youtubeId);
     }
   }
