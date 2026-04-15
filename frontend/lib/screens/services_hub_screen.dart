@@ -1072,28 +1072,16 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // YouTube player – on desktop, close button is centred at the top
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(16)),
-                child: _YoutubeAdWidget(
-                  youtubeId: ad.youtubeId!,
-                  onVideoEnded: _advanceToNext,
-                ),
-              ),
-              // Large screen: close button at top-centre above the video
-              if (widget.isDesktop)
-                Positioned(
-                  top: 8,
-                  left: 0,
-                  right: 0,
-                  child: Center(child: closeButton),
-                ),
-            ],
+          // YouTube player
+          ClipRRect(
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(16)),
+            child: _YoutubeAdWidget(
+              youtubeId: ad.youtubeId!,
+              onVideoEnded: _advanceToNext,
+            ),
           ),
-          // Bottom bar: title + subtitle + dots (+ close button on small screens)
+          // Bottom bar: title + subtitle + dots + close button
           Container(
             padding: EdgeInsets.symmetric(
                 horizontal: p, vertical: widget.isDesktop ? 14 : 10),
@@ -1137,11 +1125,8 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
                 ),
                 const SizedBox(width: 12),
                 _buildDots(safeIndex, total),
-                // Small screen: close button in the bottom bar
-                if (!widget.isDesktop) ...[
-                  const SizedBox(width: 8),
-                  closeButton,
-                ],
+                const SizedBox(width: 8),
+                closeButton,
               ],
             ),
           ),
@@ -1243,6 +1228,7 @@ class _YoutubeAdWidget extends StatefulWidget {
 class _YoutubeAdWidgetState extends State<_YoutubeAdWidget> {
   late YoutubePlayerController _controller;
   StreamSubscription<YoutubePlayerValue>? _sub;
+  bool _playInitiated = false;
 
   @override
   void initState() {
@@ -1260,7 +1246,13 @@ class _YoutubeAdWidgetState extends State<_YoutubeAdWidget> {
     );
     _sub = _controller.stream.listen((value) {
       if (value.playerState == PlayerState.ended) {
+        _playInitiated = false;
         widget.onVideoEnded();
+      } else if (!_playInitiated &&
+          (value.playerState == PlayerState.unStarted ||
+              value.playerState == PlayerState.cued)) {
+        _playInitiated = true;
+        _controller.playVideo();
       }
     });
   }
@@ -1269,6 +1261,7 @@ class _YoutubeAdWidgetState extends State<_YoutubeAdWidget> {
   void didUpdateWidget(_YoutubeAdWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.youtubeId != widget.youtubeId) {
+      _playInitiated = false;
       _controller.loadVideoById(videoId: widget.youtubeId);
     }
   }
