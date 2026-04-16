@@ -7,15 +7,18 @@ import 'package:intl_phone_field/phone_number.dart';
 /// Retourne toujours un numéro au format E.164 (ex: +221783042838)
 /// via [onChanged], quelle que soit la saisie de l'utilisateur.
 ///
-/// Corrections automatiques appliquées en temps réel :
-/// - La correction automatique du clavier est désactivée (autocorrect: false).
-/// - Suppression des caractères non-numériques (tirets, points, parenthèses…).
-/// - Suppression du zéro initial du numéro local.
+/// Comportements appliqués :
+/// - Accepte la saisie débutant par '+' ou '0'.
 /// - Détection automatique du pays à partir de l'indicatif saisi
-///   (formats +XXX… ou 00XXX…, avec ou sans séparateurs).
-/// - Prise en charge correcte du copier/coller d'un numéro E.164 complet.
-/// - Affichage groupé par paires de chiffres (ex: 78 30 42 83 8) pour la lisibilité.
+///   (formats +XXX… ou 00XXX…, avec ou sans séparateurs) et mise à jour
+///   automatique du drapeau.
+/// - Le zéro initial du numéro local est conservé pendant la saisie
+///   et supprimé automatiquement lorsque le champ perd le focus.
+/// - Affichage groupé par paires de chiffres (ex: 78 30 42 83 8).
 /// - Numéro soumis au format E.164 standard (ex: +221783042838) sans espaces.
+/// - Bouton d'effacement rapide lorsque le champ contient du texte.
+/// - Correction automatique du clavier désactivée.
+/// - Prise en charge correcte du copier/coller d'un numéro E.164 complet.
 ///
 /// Utilisation :
 /// ```dart
@@ -28,7 +31,7 @@ import 'package:intl_phone_field/phone_number.dart';
 /// ```
 class PhoneInputField extends StatefulWidget {
   /// Callback appelé à chaque changement — reçoit le numéro E.164 complet
-  /// (ex: +221783042838) ou null si le numéro est invalide.
+  /// (ex: +221783042838) ou null si le numéro est invalide / vide.
   final void Function(String? e164) onChanged;
 
   /// Code pays ISO 3166-1 alpha-2 par défaut (ex: 'SN' pour Sénégal)
@@ -58,6 +61,7 @@ class PhoneInputField extends StatefulWidget {
 
 class _PhoneInputFieldState extends State<PhoneInputField> {
   late TextEditingController _controller;
+  late FocusNode _focusNode;
   late String _countryCode;
 
   /// Incrémenté pour forcer la reconstruction d'[IntlPhoneField]
@@ -70,6 +74,9 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
 
   /// Garde contre la récursion lors de la mise à jour du contrôleur.
   bool _isSanitizing = false;
+
+  /// Indique si le champ contient du texte (pour le bouton d'effacement).
+  bool _hasContent = false;
 
   /// Liste des pays triée du plus long au plus court indicatif,
   /// calculée une seule fois.
@@ -84,16 +91,20 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
   void initState() {
     super.initState();
     _countryCode = widget.initialCountryCode;
-    // Apply visual formatting to the initial value if provided
-    _controller = TextEditingController(
-        text: _formatForDisplay(widget.initialValue ?? ''));
+    final initialText = _formatForDisplay(widget.initialValue ?? '');
+    _controller = TextEditingController(text: initialText);
+    _hasContent = initialText.isNotEmpty;
     _controller.addListener(_onTextChanged);
+    _focusNode = FocusNode()..addListener(_onFocusChanged);
   }
 
   @override
   void dispose() {
     _controller.removeListener(_onTextChanged);
     _controller.dispose();
+    _focusNode
+      ..removeListener(_onFocusChanged)
+      ..dispose();
     super.dispose();
   }
 
@@ -102,8 +113,9 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
   // -----------------------------------------------------------------------
 
   /// Supprime les caractères non-numériques (espaces, tirets, points,
-  /// parenthèses…) et le(s) zéro(s) initial(aux) d'un numéro local.
-  /// Retourne les chiffres bruts (sans espaces) et l'offset de curseur ajusté.
+  /// parenthèses…) et retourne les chiffres bruts avec l'offset de curseur
+  /// ajusté. Conserve au maximum un zéro initial pendant la saisie
+  /// (plusieurs zéros initiaux consécutifs sont réduits à un seul).
   static ({String text, int cursorOffset}) _sanitizeLocal(
       String text, int cursorPos) {
     // Conserver uniquement les chiffres et ajuster la position du curseur
@@ -118,13 +130,23 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
     }
     final digitsOnly = buf.toString();
 
-    // Supprimer les zéros initiaux
-    final stripped = digitsOnly.replaceFirst(RegExp(r'^0+'), '');
-    final zerosRemoved = digitsOnly.length - stripped.length;
-    newCursor = (newCursor - zerosRemoved).clamp(0, stripped.length);
+    // Autoriser au maximum un zéro initial pendant la saisie.
+    // Plusieurs zéros consécutifs en tête (ex: "003") → réduits à un seul.
+    final leadingZeros =
+        RegExp(r'^(0+)').firstMatch(digitsOnly)?.group(1)?.length ?? 0;
+    if (leadingZeros > 1) {
+      final stripped = '0${digitsOnly.substring(leadingZeros)}';
+      final removed = leadingZeros - 1;
+      newCursor = (newCursor - removed).clamp(0, stripped.length);
+      return (text: stripped, cursorOffset: newCursor);
+    }
 
-    return (text: stripped, cursorOffset: newCursor);
+    return (text: digitsOnly, cursorOffset: newCursor.clamp(0, digitsOnly.length));
   }
+
+  /// Supprime tous les zéros initiaux d'une chaîne de chiffres.
+  static String _stripLeadingZeros(String digits) =>
+      digits.replaceFirst(RegExp(r'^0+'), '');
 
   /// Formate les chiffres bruts pour l'affichage en les groupant par paires
   /// séparées par des espaces (ex: "783042838" → "78 30 42 83 8").
@@ -175,6 +197,43 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
   }
 
   // -----------------------------------------------------------------------
+  // Focus — suppression du zéro initial à la fin de la saisie
+  // -----------------------------------------------------------------------
+
+  void _onFocusChanged() {
+    if (_focusNode.hasFocus) return;
+
+    // Quand le champ perd le focus, supprimer le zéro initial résiduel.
+    final raw = _controller.text.replaceAll(' ', '');
+    final stripped = _stripLeadingZeros(raw);
+    if (stripped == raw) return; // rien à faire
+
+    final formatted = _formatForDisplay(stripped);
+    _isSanitizing = true;
+    _controller.value = TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+    _isSanitizing = false;
+    if (mounted) setState(() => _hasContent = formatted.isNotEmpty);
+  }
+
+  // -----------------------------------------------------------------------
+  // Clear
+  // -----------------------------------------------------------------------
+
+  void _clearField() {
+    _isSanitizing = true;
+    _controller.value = const TextEditingValue(
+      text: '',
+      selection: TextSelection.collapsed(offset: 0),
+    );
+    _isSanitizing = false;
+    if (mounted) setState(() => _hasContent = false);
+    widget.onChanged(null);
+  }
+
+  // -----------------------------------------------------------------------
   // Listener
   // -----------------------------------------------------------------------
 
@@ -186,33 +245,67 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
         ? _controller.selection.baseOffset
         : text.length;
 
+    // Mettre à jour le bouton d'effacement
+    final hasContent = text.isNotEmpty;
+    if (hasContent != _hasContent && mounted) {
+      setState(() => _hasContent = hasContent);
+    }
+
     // --- Cas 1 : format international (+XXX ou 00XXX) ---
-    // Vérifier après suppression d'éventuels séparateurs en tête
     final trimmedText = text.trimLeft();
     if (trimmedText.startsWith('+') || trimmedText.startsWith('00')) {
       final detected = _detectInternational(text);
       if (detected != null) {
-        // Capturer la génération courante pour éviter les conflits
+        // Pays détecté : changer le drapeau et mettre à jour le champ.
         final gen = ++_generation;
-        // Planifier le changement après que le listener soit retourné
         Future.microtask(() {
           if (!mounted || gen != _generation) return;
           final formatted = _formatForDisplay(detected.localNumber);
-          final newController = TextEditingController(text: formatted);
           _controller.removeListener(_onTextChanged);
           _controller.dispose();
-          _controller = newController;
+          _controller = TextEditingController(text: formatted);
           _controller.addListener(_onTextChanged);
           setState(() {
             _countryCode = detected.countryCode;
             _fieldKey++;
+            _hasContent = formatted.isNotEmpty;
           });
         });
         return;
       }
+
+      // Indicatif en cours de saisie (pays pas encore identifié) :
+      // conserver le préfixe '+' ou '00' avec les chiffres suivants
+      // sans tomber dans la sanitisation locale.
+      if (trimmedText.startsWith('+')) {
+        // Garder '+' suivi uniquement de chiffres
+        final digits = text.replaceAll(RegExp(r'[^\d]'), '');
+        final sanitized = '+$digits';
+        if (sanitized != text) {
+          _isSanitizing = true;
+          _controller.value = TextEditingValue(
+            text: sanitized,
+            selection: TextSelection.collapsed(offset: sanitized.length),
+          );
+          _isSanitizing = false;
+        }
+      } else {
+        // Garder '00' suivi uniquement de chiffres
+        final digits = text.replaceAll(RegExp(r'[^\d]'), '');
+        if (digits != text) {
+          _isSanitizing = true;
+          _controller.value = TextEditingValue(
+            text: digits,
+            selection: TextSelection.collapsed(offset: digits.length),
+          );
+          _isSanitizing = false;
+        }
+      }
+      return;
     }
 
-    // --- Cas 2 : numéro local — supprimer espaces et zéro initial, puis formater ---
+    // --- Cas 2 : numéro local (peut débuter par un 0) ---
+    // Le zéro initial est conservé pendant la saisie et supprimé au blur.
     final result = _sanitizeLocal(text, cursorPos);
     final formatted = _formatForDisplay(result.text);
     final formattedCursor =
@@ -235,9 +328,11 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
   /// Valide le numéro selon la règle "requis" et les longueurs min/max
   /// du pays sélectionné (remplace la validation interne d'IntlPhoneField
   /// désactivée via disableLengthCheck: true).
-  /// Les espaces visuels sont ignorés lors de la validation.
+  /// Les espaces visuels et le zéro initial sont ignorés lors de la validation.
   String? _validatePhone(PhoneNumber? phone) {
-    final number = (phone?.number ?? '').replaceAll(' ', '').trim();
+    // Supprimer espaces et zéro initial avant validation
+    final number =
+        _stripLeadingZeros((phone?.number ?? '').replaceAll(' ', '').trim());
     if (number.isEmpty) {
       return widget.required ? 'Téléphone requis' : null;
     }
@@ -260,11 +355,21 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
     return IntlPhoneField(
       key: ValueKey('$_fieldKey-$_countryCode'),
       controller: _controller,
+      focusNode: _focusNode,
       autocorrect: false,
       decoration: InputDecoration(
         labelText: widget.label,
         border: const OutlineInputBorder(),
         counterText: '',
+        hintText: '+221 78 … ou 0 78 … ou 00221 78 …',
+        hintStyle: const TextStyle(fontSize: 12, color: Colors.grey),
+        suffixIcon: _hasContent
+            ? IconButton(
+                icon: const Icon(Icons.clear, size: 18),
+                tooltip: 'Effacer',
+                onPressed: _clearField,
+              )
+            : null,
       ),
       initialCountryCode: _countryCode,
       languageCode: 'fr',
@@ -275,10 +380,16 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
       disableLengthCheck: true,
       onChanged: (PhoneNumber phone) {
         try {
-          // Supprimer les espaces visuels insérés pour l'affichage
+          // Supprimer les espaces visuels et le zéro initial du numéro local
           // avant de retourner le numéro au format E.164 standard.
-          final e164 = phone.completeNumber.replaceAll(' ', '');
-          widget.onChanged(e164.isNotEmpty ? e164 : null);
+          final localClean =
+              _stripLeadingZeros(phone.number.replaceAll(' ', ''));
+          if (localClean.isEmpty) {
+            widget.onChanged(null);
+            return;
+          }
+          final e164 = '${phone.countryCode}$localClean';
+          widget.onChanged(e164);
         } catch (_) {
           widget.onChanged(null);
         }
