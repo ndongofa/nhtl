@@ -361,11 +361,15 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
         labelText: widget.label,
         border: const OutlineInputBorder(),
         counterText: '',
-        hintText: '+221 78 … ou 0 78 … ou 00221 78 …',
+        hintText: '+XX… ou 0… ou 00XX…',
         hintStyle: const TextStyle(fontSize: 12, color: Colors.grey),
         suffixIcon: _hasContent
             ? IconButton(
-                icon: const Icon(Icons.clear, size: 18),
+                icon: const Icon(
+                  Icons.clear,
+                  size: 18,
+                  semanticLabel: 'Effacer le numéro',
+                ),
                 tooltip: 'Effacer',
                 onPressed: _clearField,
               )
