@@ -24,9 +24,15 @@ public class AdController {
 
     // ── PUBLIC — carousel publicitaire ─────────────────────────────────────
     @GetMapping("/api/ads/public")
-    public ResponseEntity<List<AdDTO>> getPublicAds() {
-        List<AdDTO> result = repo.findByIsActiveTrueOrderByPositionAscCreatedAtAsc()
-                .stream().map(this::toDTO).collect(Collectors.toList());
+    public ResponseEntity<List<AdDTO>> getPublicAds(
+            @RequestParam(required = false) String serviceType) {
+        List<Ad> ads;
+        if (serviceType != null && !serviceType.isBlank()) {
+            ads = repo.findByIsActiveTrueAndServiceTypeOrderByPositionAscCreatedAtAsc(serviceType);
+        } else {
+            ads = repo.findByIsActiveTrueAndServiceTypeIsNullOrderByPositionAscCreatedAtAsc();
+        }
+        List<AdDTO> result = ads.stream().map(this::toDTO).collect(Collectors.toList());
         return ResponseEntity.ok(result);
     }
 
@@ -63,6 +69,8 @@ public class AdController {
             ad.setAdType(dto.getAdType() != null ? dto.getAdType() : "text");
             ad.setImageUrl(dto.getImageUrl());
             ad.setYoutubeId(dto.getYoutubeId());
+            ad.setServiceType(dto.getServiceType() != null && !dto.getServiceType().isBlank()
+                    ? dto.getServiceType().trim() : null);
             Ad saved = repo.save(ad);
             log.info("[AD] Updated id={}", id);
             return ResponseEntity.ok(toDTO(saved));
@@ -104,6 +112,7 @@ public class AdController {
         dto.setAdType(ad.getAdType() != null ? ad.getAdType() : "text");
         dto.setImageUrl(ad.getImageUrl());
         dto.setYoutubeId(ad.getYoutubeId());
+        dto.setServiceType(ad.getServiceType());
         dto.setCreatedAt(ad.getCreatedAt());
         dto.setUpdatedAt(ad.getUpdatedAt());
         return dto;
@@ -121,6 +130,8 @@ public class AdController {
         ad.setAdType(dto.getAdType() != null ? dto.getAdType() : "text");
         ad.setImageUrl(dto.getImageUrl());
         ad.setYoutubeId(dto.getYoutubeId());
+        ad.setServiceType(dto.getServiceType() != null && !dto.getServiceType().isBlank()
+                ? dto.getServiceType().trim() : null);
         return ad;
     }
 }

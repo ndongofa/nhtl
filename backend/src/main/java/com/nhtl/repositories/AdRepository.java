@@ -12,4 +12,8 @@ public interface AdRepository extends JpaRepository<Ad, Long> {
     List<Ad> findByIsActiveTrueOrderByPositionAscCreatedAtAsc();
 
     List<Ad> findAllByOrderByPositionAscCreatedAtAsc();
+
+    List<Ad> findByIsActiveTrueAndServiceTypeOrderByPositionAscCreatedAtAsc(String serviceType);
+
+    List<Ad> findByIsActiveTrueAndServiceTypeIsNullOrderByPositionAscCreatedAtAsc();
 }
