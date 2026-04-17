@@ -5,6 +5,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,6 +17,7 @@ import java.util.List;
 @Converter
 public class StringListConverter implements AttributeConverter<List<String>, String> {
 
+    private static final Logger log = LoggerFactory.getLogger(StringListConverter.class);
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     @Override
@@ -23,6 +26,7 @@ public class StringListConverter implements AttributeConverter<List<String>, Str
         try {
             return MAPPER.writeValueAsString(list);
         } catch (JsonProcessingException e) {
+            log.error("Failed to serialize image URL list to JSON", e);
             return null;
         }
     }
@@ -33,6 +37,7 @@ public class StringListConverter implements AttributeConverter<List<String>, Str
         try {
             return MAPPER.readValue(json, new TypeReference<List<String>>() {});
         } catch (JsonProcessingException e) {
+            log.error("Failed to deserialize image URL list from JSON: {}", json, e);
             return new ArrayList<>();
         }
     }

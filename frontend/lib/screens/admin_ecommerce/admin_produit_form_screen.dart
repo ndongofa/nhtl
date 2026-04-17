@@ -448,7 +448,9 @@ class _AdminProduitFormScreenState extends State<AdminProduitFormScreen> {
                   return ReorderableDragStartListener(
                     key: ValueKey('img_$i'),
                     index: i,
-                    child: Stack(
+                    child: Semantics(
+                      label: 'Photo ${i + 1} sur ${_images.length}. Maintenez pour déplacer, appuyez pour changer.',
+                      child: Stack(
                       alignment: Alignment.topRight,
                       children: [
                         GestureDetector(
@@ -509,6 +511,7 @@ class _AdminProduitFormScreenState extends State<AdminProduitFormScreen> {
                           ),
                         ),
                       ],
+                    ),
                     ),
                   );
                 },
