@@ -7,6 +7,7 @@ import com.nhtl.repositories.ProduitRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -61,8 +62,6 @@ public class ProduitService {
         return convertToDTO(produitRepo.save(p));
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
     private void updateFromDto(Produit p, ProduitDTO dto) {
         if (dto.getServiceType() != null) {
             p.setServiceType(ServiceType.valueOf(dto.getServiceType().toUpperCase()));
@@ -72,7 +71,10 @@ public class ProduitService {
         p.setPrix(dto.getPrix());
         p.setDevise(dto.getDevise() != null ? dto.getDevise() : "EUR");
         p.setCategorie(dto.getCategorie());
-        p.setImageUrl(dto.getImageUrl());
+        // imageUrls is the authoritative list; imageUrl is kept as the first image for backward compat
+        List<String> urls = dto.getImageUrls() != null ? dto.getImageUrls() : new ArrayList<>();
+        p.setImageUrls(urls);
+        p.setImageUrl(!urls.isEmpty() ? urls.get(0) : dto.getImageUrl());
         if (dto.getStock() != null) p.setStock(dto.getStock());
         p.setUnite(dto.getUnite());
         if (dto.getActif() != null) p.setActif(dto.getActif());
@@ -87,7 +89,13 @@ public class ProduitService {
         dto.setPrix(p.getPrix());
         dto.setDevise(p.getDevise());
         dto.setCategorie(p.getCategorie());
-        dto.setImageUrl(p.getImageUrl());
+        // Build imageUrls from stored list; fall back to imageUrl for backward compat
+        List<String> urls = p.getImageUrls() != null ? new ArrayList<>(p.getImageUrls()) : new ArrayList<>();
+        if (urls.isEmpty() && p.getImageUrl() != null && !p.getImageUrl().isBlank()) {
+            urls.add(p.getImageUrl());
+        }
+        dto.setImageUrls(urls);
+        dto.setImageUrl(!urls.isEmpty() ? urls.get(0) : p.getImageUrl());
         dto.setStock(p.getStock());
         dto.setUnite(p.getUnite());
         dto.setActif(p.getActif());
