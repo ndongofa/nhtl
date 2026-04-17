@@ -293,38 +293,80 @@ class _CatalogueScreenState extends State<CatalogueScreen> {
                               const AlwaysScrollableScrollPhysics(),
                           children: [_emptyState(t)],
                         )
-                      : GridView.builder(
-                          physics:
-                              const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.all(16),
-                          gridDelegate:
-                              const SliverGridDelegateWithMaxCrossAxisExtent(
-                            maxCrossAxisExtent: 200,
-                            childAspectRatio: 0.62,
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 12,
-                          ),
-                          itemCount: _filtered.length,
-                          itemBuilder: (ctx, i) => _ProduitCard(
-                            produit: _filtered[i],
-                            accentColor: widget.accentColor,
-                            t: t,
-                            panier: panier,
-                            onTap: () => Navigator.push(
-                              ctx,
-                              MaterialPageRoute(
-                                builder: (_) => ChangeNotifierProvider.value(
-                                  value: ctx.read<PanierProvider>(),
-                                  child: ProductDetailScreen(
-                                    produit: _filtered[i],
-                                    serviceType: widget.serviceType,
-                                    accentColor: widget.accentColor,
+                      : _filtered.length <= 2
+                          ? SingleChildScrollView(
+                              physics:
+                                  const AlwaysScrollableScrollPhysics(),
+                              padding: const EdgeInsets.all(16),
+                              child: Wrap(
+                                alignment: WrapAlignment.center,
+                                spacing: 12,
+                                runSpacing: 12,
+                                children: List.generate(
+                                  _filtered.length,
+                                  (i) => SizedBox(
+                                    width: 180,
+                                    height: 290,
+                                    child: _ProduitCard(
+                                      produit: _filtered[i],
+                                      accentColor: widget.accentColor,
+                                      t: t,
+                                      panier: panier,
+                                      onTap: () => Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              ChangeNotifierProvider.value(
+                                            value: context
+                                                .read<PanierProvider>(),
+                                            child: ProductDetailScreen(
+                                              produit: _filtered[i],
+                                              serviceType:
+                                                  widget.serviceType,
+                                              accentColor:
+                                                  widget.accentColor,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            )
+                          : GridView.builder(
+                              physics:
+                                  const AlwaysScrollableScrollPhysics(),
+                              padding: const EdgeInsets.all(16),
+                              gridDelegate:
+                                  const SliverGridDelegateWithMaxCrossAxisExtent(
+                                maxCrossAxisExtent: 200,
+                                childAspectRatio: 0.62,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                              ),
+                              itemCount: _filtered.length,
+                              itemBuilder: (ctx, i) => _ProduitCard(
+                                produit: _filtered[i],
+                                accentColor: widget.accentColor,
+                                t: t,
+                                panier: panier,
+                                onTap: () => Navigator.push(
+                                  ctx,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        ChangeNotifierProvider.value(
+                                      value: ctx.read<PanierProvider>(),
+                                      child: ProductDetailScreen(
+                                        produit: _filtered[i],
+                                        serviceType: widget.serviceType,
+                                        accentColor: widget.accentColor,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                        ),
                 ),
         ),
       ]),
