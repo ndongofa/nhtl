@@ -9,6 +9,7 @@ class Produit {
   final String devise;
   final String? categorie;
   final String? imageUrl;
+  final List<String> imageUrls;
   final int stock;
   final String? unite;
   final bool actif;
@@ -26,6 +27,7 @@ class Produit {
     this.devise = 'EUR',
     this.categorie,
     this.imageUrl,
+    this.imageUrls = const [],
     this.stock = 0,
     this.unite,
     this.actif = true,
@@ -34,6 +36,10 @@ class Produit {
   });
 
   factory Produit.fromJson(Map<String, dynamic> json) {
+    final rawUrls = json['imageUrls'];
+    final List<String> imageUrls = rawUrls is List
+        ? rawUrls.map((e) => e.toString()).toList()
+        : [];
     return Produit(
       id: (json['id'] as num?)?.toInt(),
       serviceType: json['serviceType'] as String? ?? '',
@@ -45,6 +51,7 @@ class Produit {
       devise: json['devise'] as String? ?? 'EUR',
       categorie: json['categorie'] as String?,
       imageUrl: json['imageUrl'] as String?,
+      imageUrls: imageUrls,
       stock: (json['stock'] as num?)?.toInt() ?? 0,
       unite: json['unite'] as String?,
       actif: json['actif'] as bool? ?? true,
@@ -66,6 +73,7 @@ class Produit {
         'devise': devise,
         'categorie': categorie,
         'imageUrl': imageUrl,
+        'imageUrls': imageUrls,
         'stock': stock,
         'unite': unite,
         'actif': actif,

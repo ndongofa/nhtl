@@ -2,6 +2,8 @@ package com.nhtl.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ProduitDTO {
     private Long id;
@@ -12,6 +14,7 @@ public class ProduitDTO {
     private String devise;
     private String categorie;
     private String imageUrl;
+    private List<String> imageUrls = new ArrayList<>();
     private Integer stock;
     private String unite;
     private Boolean actif;
@@ -43,6 +46,9 @@ public class ProduitDTO {
 
     public String getImageUrl() { return imageUrl; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+
+    public List<String> getImageUrls() { return imageUrls; }
+    public void setImageUrls(List<String> imageUrls) { this.imageUrls = imageUrls != null ? imageUrls : new ArrayList<>(); }
 
     public Integer getStock() { return stock; }
     public void setStock(Integer stock) { this.stock = stock; }

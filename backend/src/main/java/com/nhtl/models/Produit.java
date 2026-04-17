@@ -3,6 +3,8 @@ package com.nhtl.models;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "produits")
@@ -31,6 +33,10 @@ public class Produit {
 
     @Column(name = "image_url", columnDefinition = "TEXT")
     private String imageUrl;
+
+    @Convert(converter = StringListConverter.class)
+    @Column(name = "image_urls", columnDefinition = "TEXT")
+    private List<String> imageUrls = new ArrayList<>();
 
     @Column(nullable = false)
     private Integer stock = 0;
@@ -82,6 +88,9 @@ public class Produit {
 
     public String getImageUrl() { return imageUrl; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+
+    public List<String> getImageUrls() { return imageUrls; }
+    public void setImageUrls(List<String> imageUrls) { this.imageUrls = imageUrls != null ? imageUrls : new ArrayList<>(); }
 
     public Integer getStock() { return stock; }
     public void setStock(Integer stock) { this.stock = stock; }

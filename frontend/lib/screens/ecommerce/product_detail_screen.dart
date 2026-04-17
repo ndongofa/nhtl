@@ -31,6 +31,30 @@ class ProductDetailScreen extends StatefulWidget {
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   int _quantite = 1;
   bool _adding = false;
+  int _currentImageIndex = 0;
+  late final PageController _pageController;
+
+  /// Returns the effective list of image URLs for this product.
+  List<String> get _imageUrls {
+    if (widget.produit.imageUrls.isNotEmpty) return widget.produit.imageUrls;
+    if (widget.produit.imageUrl != null &&
+        widget.produit.imageUrl!.isNotEmpty) {
+      return [widget.produit.imageUrl!];
+    }
+    return [];
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   void _showLoginRequiredDialog(BuildContext context) {
     showDialog(
@@ -74,6 +98,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final t = context.watch<AppThemeProvider>();
     final panier = context.watch<PanierProvider>();
     final p = widget.produit;
+    final urls = _imageUrls;
 
     return Scaffold(
       backgroundColor: t.bg,
@@ -170,28 +195,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       ),
       body: SingleChildScrollView(
         child: Column(children: [
-          // ── Image ────────────────────────────────────────────────────
-          SizedBox(
-            height: 280,
-            width: double.infinity,
-            child: p.imageUrl != null && p.imageUrl!.isNotEmpty
-                ? CachedNetworkImage(
-                    imageUrl: p.imageUrl!,
-                    fit: BoxFit.cover,
-                    placeholder: (_, __) => Container(
-                        color: t.bgSection,
-                        child: Icon(Icons.image_outlined,
-                            color: t.textMuted, size: 48)),
-                    errorWidget: (_, __, ___) => Container(
-                        color: t.bgSection,
-                        child: Icon(Icons.image_not_supported_outlined,
-                            color: t.textMuted, size: 48)),
-                  )
-                : Container(
-                    color: widget.accentColor.withValues(alpha: 0.08),
-                    child: Icon(Icons.storefront,
-                        color: widget.accentColor, size: 80)),
-          ),
+          // ── Image carousel ────────────────────────────────────────────
+          _buildImageCarousel(t, urls),
 
           Padding(
             padding: const EdgeInsets.all(20),
@@ -333,7 +338,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               p.id!,
                               _quantite,
                               nom: p.nom,
-                              imageUrl: p.imageUrl,
+                              imageUrl: urls.isNotEmpty ? urls.first : p.imageUrl,
                               prix: p.prix,
                               devise: p.devise,
                             );
@@ -360,6 +365,131 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       ),
     );
   }
+
+  Widget _buildImageCarousel(AppThemeProvider t, List<String> urls) {
+    if (urls.isEmpty) {
+      return SizedBox(
+        height: 280,
+        width: double.infinity,
+        child: Container(
+          color: widget.accentColor.withValues(alpha: 0.08),
+          child: Icon(Icons.storefront,
+              color: widget.accentColor, size: 80)),
+      );
+    }
+
+    if (urls.length == 1) {
+      return SizedBox(
+        height: 280,
+        width: double.infinity,
+        child: CachedNetworkImage(
+          imageUrl: urls.first,
+          fit: BoxFit.cover,
+          placeholder: (_, __) => Container(
+              color: t.bgSection,
+              child: Icon(Icons.image_outlined,
+                  color: t.textMuted, size: 48)),
+          errorWidget: (_, __, ___) => Container(
+              color: t.bgSection,
+              child: Icon(Icons.image_not_supported_outlined,
+                  color: t.textMuted, size: 48)),
+        ),
+      );
+    }
+
+    return Stack(
+      alignment: Alignment.bottomCenter,
+      children: [
+        SizedBox(
+          height: 280,
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: urls.length,
+            onPageChanged: (i) =>
+                setState(() => _currentImageIndex = i),
+            itemBuilder: (_, i) => CachedNetworkImage(
+              imageUrl: urls[i],
+              fit: BoxFit.cover,
+              width: double.infinity,
+              placeholder: (_, __) => Container(
+                  color: t.bgSection,
+                  child: Icon(Icons.image_outlined,
+                      color: t.textMuted, size: 48)),
+              errorWidget: (_, __, ___) => Container(
+                  color: t.bgSection,
+                  child: Icon(Icons.image_not_supported_outlined,
+                      color: t.textMuted, size: 48)),
+            ),
+          ),
+        ),
+        // Dots indicator
+        Positioned(
+          bottom: 10,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: List.generate(urls.length, (i) {
+              final active = i == _currentImageIndex;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                width: active ? 18 : 7,
+                height: 7,
+                decoration: BoxDecoration(
+                  color: active
+                      ? Colors.white
+                      : Colors.white.withValues(alpha: 0.55),
+                  borderRadius: BorderRadius.circular(4),
+                  boxShadow: [
+                    BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 2,
+                        offset: const Offset(0, 1))
+                  ],
+                ),
+              );
+            }),
+          ),
+        ),
+        // Navigation arrows (only on wider screens / tablet)
+        if (MediaQuery.of(context).size.width > 500) ...[
+          Positioned(
+            left: 8,
+            top: 110,
+            child: _arrowBtn(Icons.chevron_left, () {
+              if (_currentImageIndex > 0) {
+                _pageController.previousPage(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeInOut);
+              }
+            }),
+          ),
+          Positioned(
+            right: 8,
+            top: 110,
+            child: _arrowBtn(Icons.chevron_right, () {
+              if (_currentImageIndex < urls.length - 1) {
+                _pageController.nextPage(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeInOut);
+              }
+            }),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _arrowBtn(IconData icon, VoidCallback onTap) => GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+              color: Colors.black38,
+              shape: BoxShape.circle),
+          child: Icon(icon, color: Colors.white, size: 22),
+        ),
+      );
 }
 
 class _QtyBtn extends StatelessWidget {
@@ -385,3 +515,4 @@ class _QtyBtn extends StatelessWidget {
     );
   }
 }
+

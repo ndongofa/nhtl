@@ -43,10 +43,9 @@ class _AdminProduitFormScreenState extends State<AdminProduitFormScreen> {
   bool _actif = true;
   bool _loading = false;
 
-  // Image state
-  XFile? _pickedImage;
-  Uint8List? _pickedImageBytes;
-  String? _currentImageUrl;
+  // Multi-image state: list of (XFile?, Uint8List?, existingUrl?)
+  // Each entry represents one image slot
+  final List<_ImageEntry> _images = [];
   bool _uploadingImage = false;
 
   static const _imageBucket = 'sama-produits';
@@ -70,10 +69,16 @@ class _AdminProduitFormScreenState extends State<AdminProduitFormScreen> {
       _prixController.text = p.prix.toString();
       _stockController.text = p.stock.toString();
       _categorieController.text = p.categorie ?? '';
-      _currentImageUrl = p.imageUrl;
       _uniteController.text = p.unite ?? '';
       _devise = p.devise;
       _actif = p.actif;
+      // Populate images from existing imageUrls (fall back to imageUrl)
+      final urls = p.imageUrls.isNotEmpty
+          ? p.imageUrls
+          : (p.imageUrl != null ? [p.imageUrl!] : []);
+      for (final url in urls) {
+        _images.add(_ImageEntry(existingUrl: url));
+      }
     }
   }
 
@@ -88,7 +93,7 @@ class _AdminProduitFormScreenState extends State<AdminProduitFormScreen> {
     super.dispose();
   }
 
-  Future<void> _pickImage() async {
+  Future<void> _addImage() async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(
       source: ImageSource.gallery,
@@ -97,7 +102,6 @@ class _AdminProduitFormScreenState extends State<AdminProduitFormScreen> {
     );
     if (picked == null) return;
 
-    // Validate MIME type / extension
     final mime = (picked.mimeType ?? '').toLowerCase();
     final ext = _resolveExt(picked);
     if (!_allowedMimes.contains(mime) && !_allowedExts.contains(ext)) {
@@ -109,38 +113,54 @@ class _AdminProduitFormScreenState extends State<AdminProduitFormScreen> {
 
     final bytes = await picked.readAsBytes();
     setState(() {
-      _pickedImage = picked;
-      _pickedImageBytes = bytes;
-      _currentImageUrl = null;
+      _images.add(_ImageEntry(file: picked, bytes: bytes));
     });
   }
 
-  Future<String?> _uploadImage(XFile file) async {
-    try {
-      setState(() => _uploadingImage = true);
-      final supa = Supabase.instance.client;
-      final bytes = _pickedImageBytes ?? await file.readAsBytes();
-      final ext = _resolveExt(file);
-      final rnd = Random.secure();
-      final randomSuffix = List.generate(
-              8, (_) => rnd.nextInt(256).toRadixString(16).padLeft(2, '0'))
-          .join();
-      final path =
-          '${widget.serviceType.toLowerCase()}/${DateTime.now().millisecondsSinceEpoch}_$randomSuffix.$ext';
-      await supa.storage.from(_imageBucket).uploadBinary(
-            path,
-            bytes,
-            fileOptions: FileOptions(
-                contentType: _extToMime(ext), upsert: false),
-          );
-      return supa.storage.from(_imageBucket).getPublicUrl(path);
-    } catch (e) {
+  Future<void> _replaceImage(int index) async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+      maxWidth: 1920,
+    );
+    if (picked == null) return;
+
+    final mime = (picked.mimeType ?? '').toLowerCase();
+    final ext = _resolveExt(picked);
+    if (!_allowedMimes.contains(mime) && !_allowedExts.contains(ext)) {
       Fluttertoast.showToast(
-          msg: '❌ Erreur upload image : $e', backgroundColor: Colors.red);
-      return null;
-    } finally {
-      if (mounted) setState(() => _uploadingImage = false);
+          msg: '❌ Format non supporté. Utilisez JPEG, PNG ou WebP.',
+          backgroundColor: Colors.red);
+      return;
     }
+
+    final bytes = await picked.readAsBytes();
+    setState(() {
+      _images[index] = _ImageEntry(file: picked, bytes: bytes);
+    });
+  }
+
+  void _removeImage(int index) {
+    setState(() => _images.removeAt(index));
+  }
+
+  Future<String?> _uploadImage(XFile file, Uint8List bytes) async {
+    final supa = Supabase.instance.client;
+    final ext = _resolveExt(file);
+    final rnd = Random.secure();
+    final randomSuffix = List.generate(
+            8, (_) => rnd.nextInt(256).toRadixString(16).padLeft(2, '0'))
+        .join();
+    final path =
+        '${widget.serviceType.toLowerCase()}/${DateTime.now().millisecondsSinceEpoch}_$randomSuffix.$ext';
+    await supa.storage.from(_imageBucket).uploadBinary(
+          path,
+          bytes,
+          fileOptions: FileOptions(
+              contentType: _extToMime(ext), upsert: false),
+        );
+    return supa.storage.from(_imageBucket).getPublicUrl(path);
   }
 
   String _resolveExt(XFile file) {
@@ -171,15 +191,24 @@ class _AdminProduitFormScreenState extends State<AdminProduitFormScreen> {
     setState(() => _loading = true);
 
     try {
-      // Upload image if a new one was picked
-      String? imageUrl = _currentImageUrl;
-      if (_pickedImage != null) {
-        imageUrl = await _uploadImage(_pickedImage!);
-        if (imageUrl == null) {
-          // Upload failed; error already shown — abort
-          return;
+      setState(() => _uploadingImage = true);
+      final List<String> imageUrls = [];
+      for (final entry in _images) {
+        if (entry.file != null && entry.bytes != null) {
+          final url = await _uploadImage(entry.file!, entry.bytes!);
+          if (url == null) {
+            Fluttertoast.showToast(
+                msg: '❌ Erreur upload image',
+                backgroundColor: Colors.red);
+            return;
+          }
+          imageUrls.add(url);
+        } else if (entry.existingUrl != null) {
+          imageUrls.add(entry.existingUrl!);
         }
       }
+      if (mounted) setState(() => _uploadingImage = false);
+
       final prix = double.tryParse(
               _prixController.text.trim().replaceAll(',', '.')) ??
           0.0;
@@ -198,7 +227,8 @@ class _AdminProduitFormScreenState extends State<AdminProduitFormScreen> {
         categorie: _categorieController.text.trim().isEmpty
             ? null
             : _categorieController.text.trim(),
-        imageUrl: imageUrl,
+        imageUrl: imageUrls.isNotEmpty ? imageUrls.first : null,
+        imageUrls: imageUrls,
         stock: stock,
         unite: _uniteController.text.trim().isEmpty
             ? null
@@ -229,7 +259,7 @@ class _AdminProduitFormScreenState extends State<AdminProduitFormScreen> {
       Fluttertoast.showToast(
           msg: '❌ Erreur : $e', backgroundColor: Colors.red);
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) setState(() { _loading = false; _uploadingImage = false; });
     }
   }
 
@@ -326,7 +356,7 @@ class _AdminProduitFormScreenState extends State<AdminProduitFormScreen> {
                 _field(t, _categorieController, 'Catégorie',
                     Icons.category_outlined),
                 const SizedBox(height: 14),
-                _imagePickerWidget(t),
+                _multiImagePickerWidget(t),
                 const SizedBox(height: 14),
                 Row(children: [
                   Icon(Icons.toggle_on_outlined,
@@ -355,7 +385,7 @@ class _AdminProduitFormScreenState extends State<AdminProduitFormScreen> {
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14)),
                         elevation: 0),
-                    child: _loading
+                    child: _loading || _uploadingImage
                         ? const SizedBox(
                             width: 18,
                             height: 18,
@@ -375,67 +405,136 @@ class _AdminProduitFormScreenState extends State<AdminProduitFormScreen> {
     );
   }
 
-  Widget _imagePickerWidget(AppThemeProvider t) {
-    final hasImage = _pickedImage != null || (_currentImageUrl?.isNotEmpty == true);
-
+  Widget _multiImagePickerWidget(AppThemeProvider t) {
     return Container(
       decoration: BoxDecoration(
         color: t.bgCard,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: t.border),
       ),
+      padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Preview
-          ClipRRect(
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(9)),
-            child: SizedBox(
-              height: 160,
-              width: double.infinity,
-              child: _buildImagePreview(t),
-            ),
-          ),
-          // Actions
-          Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    icon: Icon(
-                        hasImage
-                            ? Icons.image_search_outlined
-                            : Icons.add_photo_alternate_outlined,
-                        size: 18),
-                    label: Text(
-                        hasImage ? 'Changer la photo' : 'Choisir une photo',
-                        style: const TextStyle(fontSize: 13)),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppThemeProvider.appBlue,
-                      side: const BorderSide(color: AppThemeProvider.appBlue),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
+          Row(children: [
+            Icon(Icons.photo_library_outlined, color: t.textMuted, size: 18),
+            const SizedBox(width: 8),
+            Text('Photos du produit',
+                style: TextStyle(
+                    color: t.textPrimary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13)),
+            const Spacer(),
+            Text('${_images.length} photo${_images.length > 1 ? 's' : ''}',
+                style: TextStyle(color: t.textMuted, fontSize: 12)),
+          ]),
+          if (_images.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 110,
+              child: ReorderableListView.builder(
+                scrollDirection: Axis.horizontal,
+                buildDefaultDragHandles: false,
+                itemCount: _images.length,
+                onReorder: (oldIndex, newIndex) {
+                  setState(() {
+                    if (newIndex > oldIndex) newIndex--;
+                    final item = _images.removeAt(oldIndex);
+                    _images.insert(newIndex, item);
+                  });
+                },
+                itemBuilder: (ctx, i) {
+                  final entry = _images[i];
+                  return ReorderableDragStartListener(
+                    key: ValueKey('img_$i'),
+                    index: i,
+                    child: Semantics(
+                      label: 'Photo ${i + 1} sur ${_images.length}. Maintenez pour déplacer, appuyez pour changer.',
+                      child: Stack(
+                      alignment: Alignment.topRight,
+                      children: [
+                        GestureDetector(
+                          onTap: () => _replaceImage(i),
+                          child: Container(
+                            width: 100,
+                            height: 100,
+                            margin: const EdgeInsets.only(right: 8),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                  color: i == 0
+                                      ? AppThemeProvider.appBlue
+                                      : t.border,
+                                  width: i == 0 ? 2 : 1),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(7),
+                              child: _buildThumbnail(entry, t),
+                            ),
+                          ),
+                        ),
+                        // Badge "principale" for first image
+                        if (i == 0)
+                          Positioned(
+                            bottom: 4,
+                            left: 4,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 4, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppThemeProvider.appBlue,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text('1ère',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w800)),
+                            ),
+                          ),
+                        // Delete button
+                        Positioned(
+                          top: 2,
+                          right: 10,
+                          child: GestureDetector(
+                            onTap: () => _removeImage(i),
+                            child: Container(
+                              width: 20,
+                              height: 20,
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.close,
+                                  color: Colors.white, size: 12),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    onPressed: _uploadingImage ? null : _pickImage,
-                  ),
-                ),
-                if (hasImage) ...[
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon:
-                        const Icon(Icons.delete_outline, color: Colors.red, size: 20),
-                    tooltip: 'Supprimer la photo',
-                    onPressed: () => setState(() {
-                      _pickedImage = null;
-                      _pickedImageBytes = null;
-                      _currentImageUrl = null;
-                    }),
-                  ),
-                ],
-              ],
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text('Maintenez et glissez pour réordonner • Appuyez pour changer',
+                style: TextStyle(color: t.textMuted, fontSize: 11)),
+          ],
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.add_photo_alternate_outlined, size: 18),
+              label: const Text('Ajouter une photo',
+                  style: TextStyle(fontSize: 13)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppThemeProvider.appBlue,
+                side: const BorderSide(color: AppThemeProvider.appBlue),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: _uploadingImage ? null : _addImage,
             ),
           ),
         ],
@@ -443,16 +542,17 @@ class _AdminProduitFormScreenState extends State<AdminProduitFormScreen> {
     );
   }
 
-  Widget _buildImagePreview(AppThemeProvider t) {
-    if (_pickedImageBytes != null) {
-      return Image.memory(_pickedImageBytes!, fit: BoxFit.cover,
-          width: double.infinity);
+  Widget _buildThumbnail(_ImageEntry entry, AppThemeProvider t) {
+    if (entry.bytes != null) {
+      return Image.memory(entry.bytes!, fit: BoxFit.cover,
+          width: double.infinity, height: double.infinity);
     }
-    if (_currentImageUrl?.isNotEmpty == true) {
+    if (entry.existingUrl != null) {
       return Image.network(
-        _currentImageUrl!,
+        entry.existingUrl!,
         fit: BoxFit.cover,
         width: double.infinity,
+        height: double.infinity,
         errorBuilder: (_, __, ___) => _imagePlaceholder(t),
       );
     }
@@ -461,12 +561,7 @@ class _AdminProduitFormScreenState extends State<AdminProduitFormScreen> {
 
   Widget _imagePlaceholder(AppThemeProvider t) => Container(
         color: t.bgSection,
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(Icons.image_outlined, color: t.textMuted, size: 40),
-          const SizedBox(height: 8),
-          Text('Aucune photo',
-              style: TextStyle(color: t.textMuted, fontSize: 12)),
-        ]),
+        child: Icon(Icons.image_outlined, color: t.textMuted, size: 32),
       );
 
   InputDecoration _inputDeco(AppThemeProvider t, String label, IconData icon) =>
@@ -511,3 +606,13 @@ class _AdminProduitFormScreenState extends State<AdminProduitFormScreen> {
                 : null),
       );
 }
+
+/// Represents one image slot in the multi-image picker.
+class _ImageEntry {
+  final XFile? file;
+  final Uint8List? bytes;
+  final String? existingUrl;
+
+  _ImageEntry({this.file, this.bytes, this.existingUrl});
+}
+
