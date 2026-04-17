@@ -356,7 +356,6 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
       key: ValueKey('$_fieldKey-$_countryCode'),
       controller: _controller,
       focusNode: _focusNode,
-      autocorrect: false,
       decoration: InputDecoration(
         labelText: widget.label,
         border: const OutlineInputBorder(),
