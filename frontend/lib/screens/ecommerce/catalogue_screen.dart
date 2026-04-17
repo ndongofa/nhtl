@@ -7,11 +7,14 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 
+import '../../models/ad_model.dart';
 import '../../models/produit.dart';
 import '../../providers/app_theme_provider.dart';
 import '../../providers/panier_provider.dart';
+import '../../services/ad_api_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/ecommerce_service.dart';
+import '../../widgets/promo_carousel_widget.dart';
 import '../../widgets/sama_account_menu.dart';
 import 'ecommerce_hub_screen.dart';
 import 'product_detail_screen.dart';
@@ -278,6 +281,9 @@ class _CatalogueScreenState extends State<CatalogueScreen> {
             ),
           ),
 
+        // ── Vidéos promo / publicités spécifiques au service ──────────
+        _PromoSection(serviceType: widget.serviceType),
+
         // ── Liste de produits ──────────────────────────────────────────
         Expanded(
           child: _loading
@@ -395,6 +401,47 @@ class _CatalogueScreenState extends State<CatalogueScreen> {
 }
 
 // ── Carte produit ─────────────────────────────────────────────────────────────
+
+// ── Section vidéos promo / publicités spécifiques au service ─────────────────
+
+class _PromoSection extends StatefulWidget {
+  final String serviceType;
+  const _PromoSection({required this.serviceType});
+
+  @override
+  State<_PromoSection> createState() => _PromoSectionState();
+}
+
+class _PromoSectionState extends State<_PromoSection> {
+  final _api = AdApiService();
+  List<AdModel> _ads = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final result = await _api.getPublicAds(serviceType: widget.serviceType);
+    if (result != null && result.isNotEmpty && mounted) {
+      setState(() => _ads = result);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_ads.isEmpty) return const SizedBox.shrink();
+    final w = MediaQuery.of(context).size.width;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      child: PromoCarouselWidget(
+        ads: _ads,
+        isDesktop: w >= 900,
+      ),
+    );
+  }
+}
 
 class _ProduitCard extends StatefulWidget {
   final Produit produit;

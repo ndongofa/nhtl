@@ -25,12 +25,16 @@ class AdApiService {
   // Returns null when the request fails (network error, non-200 status), so
   // callers can distinguish "no active ads" (empty list) from "request failed"
   // (null) and avoid overwriting a previously loaded ad list with stale data.
-  Future<List<AdModel>?> getPublicAds() async {
-    final url = '${ApiConfig.baseUrl}/api/ads/public';
+  Future<List<AdModel>?> getPublicAds({String? serviceType}) async {
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/ads/public').replace(
+      queryParameters: serviceType != null && serviceType.isNotEmpty
+          ? {'serviceType': serviceType}
+          : null,
+    );
     try {
-      _log.i('GET $url [ADS PUBLIC]');
+      _log.i('GET $uri [ADS PUBLIC]');
       final res = await http
-          .get(Uri.parse(url), headers: _headers)
+          .get(uri, headers: _headers)
           .timeout(ApiConfig.receiveTimeout);
       if (res.statusCode == 200) {
         final list = jsonDecode(res.body) as List<dynamic>;

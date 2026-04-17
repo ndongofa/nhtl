@@ -227,6 +227,27 @@ class _AdTile extends StatelessWidget {
     }
   }
 
+  String _serviceLabel(String? serviceType) {
+    switch (serviceType) {
+      case 'maad':
+        return '🌿 Maad';
+      case 'teranga':
+        return '🥂 Téranga';
+      case 'bestseller':
+        return '⭐ Best Seller';
+      case 'commande':
+        return '🛒 Commande';
+      case 'achat':
+        return '🏪 Achat';
+      case 'techdigital':
+        return '💻 Tech Digital';
+      case 'maillot':
+        return '🇸🇳 Maillot';
+      default:
+        return '🏠 Global';
+    }
+  }
+
   Widget _buildPreviewSwatch() {
     if (ad.adType == AdModel.typeImage && (ad.imageUrl ?? '').isNotEmpty) {
       return SizedBox(
@@ -353,7 +374,7 @@ class _AdTile extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Position: ${ad.position} · ${_adTypeLabel(ad.adType)}',
+                        'Position: ${ad.position} · ${_adTypeLabel(ad.adType)} · ${_serviceLabel(ad.serviceType)}',
                         style: const TextStyle(
                             color: _textMuted,
                             fontSize: 10,
@@ -430,7 +451,20 @@ class _AdFormSheetState extends State<_AdFormSheet> {
   late final TextEditingController _youtubeIdCtrl;
   late bool _isActive;
   late String _adType;
+  late String? _serviceType;
   bool _saving = false;
+
+  // Available service targets: null = page d'accueil, value = service specific
+  static const List<_ServiceTarget> _serviceTargets = [
+    _ServiceTarget(value: null, label: '🏠 Page d\'accueil (global)'),
+    _ServiceTarget(value: 'maad', label: '🌿 Sama Maad'),
+    _ServiceTarget(value: 'teranga', label: '🥂 Sama Téranga'),
+    _ServiceTarget(value: 'bestseller', label: '⭐ Sama Best Seller'),
+    _ServiceTarget(value: 'commande', label: '🛒 Sama Commande'),
+    _ServiceTarget(value: 'achat', label: '🏪 Sama Achat'),
+    _ServiceTarget(value: 'techdigital', label: '💻 Sama Tech Digital'),
+    _ServiceTarget(value: 'maillot', label: '🇸🇳 Sama Maillot'),
+  ];
 
   @override
   void initState() {
@@ -447,6 +481,7 @@ class _AdFormSheetState extends State<_AdFormSheet> {
     _youtubeIdCtrl = TextEditingController(text: ad?.youtubeId ?? '');
     _isActive = ad?.isActive ?? true;
     _adType = ad?.adType ?? AdModel.typeText;
+    _serviceType = ad?.serviceType;
   }
 
   @override
@@ -509,6 +544,7 @@ class _AdFormSheetState extends State<_AdFormSheet> {
       adType: _adType,
       imageUrl: imageUrl.isNotEmpty ? imageUrl : null,
       youtubeId: youtubeId.isNotEmpty ? youtubeId : null,
+      serviceType: _serviceType,
     );
     Navigator.pop(context, ad);
   }
@@ -610,6 +646,35 @@ class _AdFormSheetState extends State<_AdFormSheet> {
                 const SizedBox(width: 8),
                 _typeChip(AdModel.typeYoutube, '▶️ YouTube'),
               ],
+            ),
+            const SizedBox(height: 16),
+            // ── Service cible ───────────────────────────────────────────────
+            Text('Afficher sur',
+                style: const TextStyle(color: _textMuted, fontSize: 12)),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+              decoration: BoxDecoration(
+                color: _bg,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: _border),
+              ),
+              child: DropdownButton<String?>(
+                value: _serviceType,
+                isExpanded: true,
+                dropdownColor: _bgCard,
+                underline: const SizedBox.shrink(),
+                style: const TextStyle(color: _textPrimary, fontSize: 13),
+                icon: const Icon(Icons.keyboard_arrow_down, color: _textMuted),
+                onChanged: (v) => setState(() => _serviceType = v),
+                items: _serviceTargets
+                    .map((t) => DropdownMenuItem<String?>(
+                          value: t.value,
+                          child: Text(t.label,
+                              style: const TextStyle(color: _textPrimary, fontSize: 13)),
+                        ))
+                    .toList(),
+              ),
             ),
             const SizedBox(height: 16),
             // ── Media URL fields (conditional) ──────────────────────────────
@@ -747,4 +812,12 @@ class _AdFormSheetState extends State<_AdFormSheet> {
       ),
     );
   }
+}
+
+// ── Helper: service target ────────────────────────────────────────────────────
+
+class _ServiceTarget {
+  final String? value;
+  final String label;
+  const _ServiceTarget({required this.value, required this.label});
 }

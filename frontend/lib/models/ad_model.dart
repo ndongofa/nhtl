@@ -22,6 +22,7 @@ class AdModel {
   final String adType;
   final String? imageUrl;
   final String? youtubeId;
+  final String? serviceType;
 
   const AdModel({
     this.id,
@@ -35,6 +36,7 @@ class AdModel {
     this.adType = AdModel.typeText,
     this.imageUrl,
     this.youtubeId,
+    this.serviceType,
   });
 
   Color get color => _hexToColor(colorHex);
@@ -62,6 +64,7 @@ class AdModel {
         adType: json['adType'] as String? ?? AdModel.typeText,
         imageUrl: json['imageUrl'] as String?,
         youtubeId: json['youtubeId'] as String?,
+        serviceType: json['serviceType'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
@@ -76,6 +79,7 @@ class AdModel {
         'adType': adType,
         if (imageUrl != null) 'imageUrl': imageUrl,
         if (youtubeId != null) 'youtubeId': youtubeId,
+        if (serviceType != null) 'serviceType': serviceType,
       };
 
   AdModel copyWith({
@@ -90,6 +94,7 @@ class AdModel {
     String? adType,
     String? imageUrl,
     String? youtubeId,
+    String? serviceType,
   }) =>
       AdModel(
         id: id ?? this.id,
@@ -103,5 +108,6 @@ class AdModel {
         adType: adType ?? this.adType,
         imageUrl: imageUrl ?? this.imageUrl,
         youtubeId: youtubeId ?? this.youtubeId,
+        serviceType: serviceType ?? this.serviceType,
       );
 }

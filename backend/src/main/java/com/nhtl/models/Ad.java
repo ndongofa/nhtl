@@ -41,6 +41,9 @@ public class Ad {
     @Column(length = 20)
     private String youtubeId;
 
+    @Column(length = 50)
+    private String serviceType;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -87,6 +90,9 @@ public class Ad {
 
     public String getYoutubeId() { return youtubeId; }
     public void setYoutubeId(String youtubeId) { this.youtubeId = youtubeId; }
+
+    public String getServiceType() { return serviceType; }
+    public void setServiceType(String serviceType) { this.serviceType = serviceType; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
