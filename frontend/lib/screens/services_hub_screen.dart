@@ -18,6 +18,7 @@ import '../services/ad_service.dart';
 import '../models/ad_model.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
+import 'package:pointer_interceptor/pointer_interceptor.dart';
 import '../models/logged_user.dart';
 
 class ServicesHubScreen extends StatelessWidget {
@@ -1082,52 +1083,56 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
             ),
           ),
           // Bottom bar: title + subtitle + dots + close button
-          Container(
-            padding: EdgeInsets.symmetric(
-                horizontal: p, vertical: widget.isDesktop ? 14 : 10),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF111111), Color(0xFF1A1A1A)],
+          // PointerInterceptor ensures the close button receives clicks on
+          // desktop web even though the YouTube iframe sits above this bar.
+          PointerInterceptor(
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                  horizontal: p, vertical: widget.isDesktop ? 14 : 10),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF111111), Color(0xFF1A1A1A)],
+                ),
+                borderRadius:
+                    BorderRadius.vertical(bottom: Radius.circular(16)),
               ),
-              borderRadius:
-                  BorderRadius.vertical(bottom: Radius.circular(16)),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        ad.title,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                          fontSize: widget.isDesktop ? 14 : 12,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (ad.subtitle.isNotEmpty) ...[
-                        const SizedBox(height: 2),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          ad.subtitle,
+                          ad.title,
                           style: TextStyle(
-                            color: Colors.white54,
-                            fontSize: widget.isDesktop ? 12 : 10,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: widget.isDesktop ? 14 : 12,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
+                        if (ad.subtitle.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            ad.subtitle,
+                            style: TextStyle(
+                              color: Colors.white54,
+                              fontSize: widget.isDesktop ? 12 : 10,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                _buildDots(safeIndex, total),
-                const SizedBox(width: 8),
-                closeButton,
-              ],
+                  const SizedBox(width: 12),
+                  _buildDots(safeIndex, total),
+                  const SizedBox(width: 8),
+                  closeButton,
+                ],
+              ),
             ),
           ),
         ],
