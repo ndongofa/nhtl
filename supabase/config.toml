@@ -1,9 +1,9 @@
 # Supabase project configuration
 # Run `supabase link --project-ref <your-project-ref>` to link this project.
 # Deploy OTP hooks:
-#   supabase functions deploy send-sms-twilio       ← recommended (worldwide, any country)
+#   supabase functions deploy send-sms-twilio       ← ACTIVE (worldwide, any country)
 #   supabase functions deploy send-whatsapp-brevo   ← WhatsApp via Brevo (requires Pro plan)
-#   supabase functions deploy send-sms-brevo        ← SMS via Brevo (limited countries)
+#   supabase functions deploy send-sms-brevo        ← SMS via Brevo (limited countries, deprecated)
 
 [api]
 enabled = true
@@ -26,7 +26,7 @@ enable_confirmations = true
 
 # OTP delivery is handled by Edge Function auth hooks.
 #
-# ── RECOMMENDED: SMS via Twilio (worldwide, any country) ─────────────────────
+# ── ACTIVE: SMS via Twilio (worldwide, any country) ──────────────────────────
 # Configure in Supabase Dashboard → Authentication → Hooks → Send SMS hook:
 #   URL: https://<project-ref>.supabase.co/functions/v1/send-sms-twilio
 # Required secrets (Dashboard → Edge Functions → Secrets):
@@ -49,7 +49,7 @@ verify_jwt = false
 [functions.send-whatsapp-brevo]
 verify_jwt = false
 
-# ── SMS via Brevo (limited country support, free plan) ───────────────────────
+# ── SMS via Brevo (limited country support, deprecated) ──────────────────────
 # Configure in Supabase Dashboard → Authentication → Hooks → Send SMS hook:
 #   URL: https://<project-ref>.supabase.co/functions/v1/send-sms-brevo
 # Required secrets: BREVO_API_KEY, BREVO_SMS_SENDER, SEND_SMS_HOOK_SECRET

@@ -19,8 +19,8 @@ import com.twilio.type.PhoneNumber;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Provider SMS de production avec basculement automatique : Brevo en premier,
- * Twilio en fallback si Brevo échoue (pas d'interruption de service).
+ * Provider SMS de production avec basculement automatique : Twilio en premier,
+ * Brevo en fallback si Twilio échoue (pas d'interruption de service).
  */
 @Slf4j
 @Component
@@ -61,26 +61,27 @@ public class FallbackSmsProvider implements SmsProvider {
             return;
         }
 
-        // 1. Tentative Brevo
+        // 1. Tentative Twilio (fournisseur principal)
+        try {
+            sendViaTwilio(to, message);
+            return; // succès Twilio → on s'arrête
+        } catch (Exception e) {
+            log.warn("[SMS-FALLBACK] Twilio failed to='{}', switching to Brevo. err='{}'", to, e.getMessage());
+        }
+
+        // 2. Fallback Brevo
         if (brevoApiKey != null && !brevoApiKey.isBlank()) {
             try {
                 sendViaBrevo(to, message);
                 return; // succès Brevo → on s'arrête
             } catch (Exception e) {
-                log.warn("[SMS-FALLBACK] Brevo failed to='{}', switching to Twilio. err='{}'", to, e.getMessage());
+                log.error("[SMS-FALLBACK] Both Twilio and Brevo failed to='{}' — SMS skipped, registration proceeds. err='{}'",
+                        to, e.getMessage());
+                // Ne pas relancer l'exception : l'inscription ne doit pas être bloquée
+                // par une panne SMS. Le message est perdu, mais le flux utilisateur continue.
             }
         } else {
-            log.info("[SMS-FALLBACK] Brevo not configured, trying Twilio directly for to='{}'", to);
-        }
-
-        // 2. Fallback Twilio
-        try {
-            sendViaTwilio(to, message);
-        } catch (Exception e) {
-            log.error("[SMS-FALLBACK] Both Brevo and Twilio failed to='{}' — SMS skipped, registration proceeds. err='{}'",
-                    to, e.getMessage());
-            // Ne pas relancer l'exception : l'inscription ne doit pas être bloquée
-            // par une panne SMS. Le message est perdu, mais le flux utilisateur continue.
+            log.error("[SMS-FALLBACK] Twilio failed and Brevo not configured — SMS skipped to='{}'", to);
         }
     }
 

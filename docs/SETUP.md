@@ -1,23 +1,25 @@
 # NHTL – Guide de configuration
 
-## 1. Authentification par SMS via Brevo
+## 1. Authentification par SMS via Twilio
 
 L'application utilise Supabase pour l'authentification par numéro de téléphone.
-Les OTP SMS sont envoyés via **Brevo** (ex-Sendinblue) à travers un Auth Hook Supabase.
+Les OTP SMS sont envoyés via **Twilio** à travers un Auth Hook Supabase.
 
 ### Étapes de configuration
 
-#### 1.1 Créer un compte Brevo et obtenir une API Key
+#### 1.1 Créer un compte Twilio et obtenir les identifiants
 
-1. Connectez-vous sur [https://app.brevo.com](https://app.brevo.com)
-2. Allez dans **Paramètres → Clés API**
-3. Créez une nouvelle clé API avec les droits **Transactional SMS**
-4. Notez votre clé API (`api-key`)
+1. Inscrivez-vous sur [https://www.twilio.com](https://www.twilio.com)
+2. Dans la **Console Twilio** ([console.twilio.com](https://console.twilio.com)), notez :
+   - **Account SID** (commence par `AC…`)
+   - **Auth Token**
+3. Achetez un numéro de téléphone SMS-capable **ou** créez un
+   [Messaging Service](https://console.twilio.com/us1/develop/sms/services) (recommandé
+   pour la livraison internationale : `MG…`).
 
-> **Prérequis Brevo** : Votre compte doit avoir accès aux SMS transactionnels.
-> Les numéros de téléphone doivent être au format E.164 (ex: `+33652383258`).
+> **Prérequis** : Les numéros de téléphone doivent être au format E.164 (ex: `+221783042838`).
 
-#### 1.2 Déployer la fonction Edge `send-sms-brevo`
+#### 1.2 Déployer la fonction Edge `send-sms-twilio`
 
 ```bash
 # Installez le CLI Supabase
@@ -27,14 +29,21 @@ npm install -g supabase
 supabase link --project-ref <votre-project-ref>
 
 # Configurez les secrets (remplacez par vos valeurs)
-supabase secrets set BREVO_API_KEY=votre_cle_api_brevo
-supabase secrets set BREVO_SMS_SENDER=NHTL
+supabase secrets set TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+supabase secrets set TWILIO_AUTH_TOKEN=your-twilio-auth-token
+supabase secrets set SEND_SMS_HOOK_SECRET=v1,whsec_<votre-secret>
+
+# Expéditeur — choisissez l'une des deux options :
+# Option A (recommandé) : Messaging Service (international)
+supabase secrets set TWILIO_MESSAGING_SERVICE_SID=MGxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# Option B : numéro fixe en E.164
+supabase secrets set TWILIO_FROM_NUMBER=+12025550100
 
 # Optionnel : personnalisez le message (utilisez {otp} comme placeholder)
-# supabase secrets set BREVO_SMS_TEMPLATE="Votre code NHTL : {otp}. Valable 10 min."
+# supabase secrets set TWILIO_SMS_TEMPLATE="Votre code NHTL : {otp}. Valable 10 min."
 
 # Déployez la fonction
-supabase functions deploy send-sms-brevo --no-verify-jwt
+supabase functions deploy send-sms-twilio --no-verify-jwt
 ```
 
 #### 1.3 Configurer l'Auth Hook dans Supabase Dashboard
@@ -43,21 +52,23 @@ supabase functions deploy send-sms-brevo --no-verify-jwt
 2. Allez dans **Authentication → Hooks**
 3. Activez le hook **"Send SMS"**
 4. Choisissez **"Supabase Edge Functions"**
-5. Sélectionnez la fonction **`send-sms-brevo`**
+5. Sélectionnez la fonction **`send-sms-twilio`**
 6. Cliquez **Save**
 
-#### 1.4 Désactiver Twilio dans Supabase
+#### 1.4 Désactiver le hook Brevo dans Supabase (si actif)
 
-1. Dans **Authentication → Providers → Phone**
-2. Désactivez ou supprimez les identifiants Twilio existants
-3. Le SMS sera maintenant géré exclusivement par l'Auth Hook Brevo
+Si le hook `send-sms-brevo` était précédemment actif :
+
+1. Dans **Authentication → Hooks**, désactivez ou remplacez le hook "Send SMS" par `send-sms-twilio`
+2. Les secrets Brevo (`BREVO_API_KEY`, `BREVO_SMS_SENDER`) peuvent être conservés pour le
+   fallback côté backend, ou supprimés s'ils ne sont plus nécessaires.
 
 #### 1.5 Vérification
 
 Pour tester, essayez de créer un compte avec un numéro de téléphone valide.
 Les logs de la fonction sont visibles dans :
-- Supabase Dashboard → **Edge Functions → send-sms-brevo → Logs**
-- Brevo Dashboard → **Transactional → SMS → Logs**
+- Supabase Dashboard → **Edge Functions → send-sms-twilio → Logs**
+- Twilio Console → **Monitor → Logs → Messaging**
 
 ### Format des numéros de téléphone
 
@@ -88,6 +99,10 @@ cp backend/.env.example backend/.env
 | `SUPABASE_URL` | URL de votre projet Supabase | Oui |
 | `SUPABASE_ANON_KEY` | Clé anonyme Supabase | Oui |
 | `SUPABASE_JWT_SECRET` | Secret JWT Supabase (Settings → API → JWT Secret) | Oui |
+| `TWILIO_ACCOUNT_SID` | Account SID Twilio (SMS + WhatsApp) | Recommandé |
+| `TWILIO_AUTH_TOKEN` | Auth Token Twilio (SMS + WhatsApp) | Recommandé |
+| `TWILIO_FROM_NUMBER` | Numéro Twilio SMS (E.164) | Oui (si pas de Messaging Service) |
+| `TWILIO_WHATSAPP_FROM` | Expéditeur WhatsApp Twilio (ex : `whatsapp:+14155238886`) | Non |
 | `BREVO_API_KEY` | Clé API Brevo pour l'envoi d'emails transactionnels | Recommandé |
 | `MAIL_FROM` | Adresse expéditeur des emails | Non |
 | `MAIL_FROMNAME` | Nom affiché de l'expéditeur | Non |
@@ -95,11 +110,6 @@ cp backend/.env.example backend/.env
 | `SMTP_PORT` | Port SMTP (défaut : 587) | Non |
 | `SMTP_USERNAME` | Identifiant SMTP | Non |
 | `SMTP_PASSWORD` | Mot de passe SMTP | Non |
-| `BREVO_SMS_FROM` | Nom expéditeur SMS Brevo (max 11 car.) | Non |
-| `TWILIO_ACCOUNT_SID` | Account SID Twilio (WhatsApp) | Non |
-| `TWILIO_AUTH_TOKEN` | Auth Token Twilio (WhatsApp) | Non |
-| `TWILIO_FROM_NUMBER` | Numéro Twilio SMS (E.164) | Non |
-| `TWILIO_WHATSAPP_FROM` | Expéditeur WhatsApp Twilio (ex : `whatsapp:+14155238886`) | Non |
 
 ---
 
@@ -136,7 +146,7 @@ Le sandbox Twilio WhatsApp permet de tester sans numéro approuvé :
 # Sur Railway / votre hébergeur
 TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_AUTH_TOKEN=your-twilio-auth-token
-TWILIO_FROM_NUMBER=+33700000000   # optionnel si SMS géré par Brevo
+TWILIO_FROM_NUMBER=+33700000000   # numéro Twilio SMS en E.164
 TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
 ```
 
@@ -146,7 +156,7 @@ TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
 |---|---|---|---|
 | In-app | ✅ | ✅ | BDD (Supabase/PostgreSQL) |
 | Email | Stub (log) | ✅ | Brevo API ou SMTP |
-| SMS | Stub (log) | ✅ | Brevo SMS |
+| SMS | Stub (log) | ✅ | Twilio (Brevo en fallback) |
 | WhatsApp | Stub (log) | ✅ si Twilio configuré | Twilio |
 
 > **Note** : Si `TWILIO_ACCOUNT_SID` est absent en prod, les notifications WhatsApp
