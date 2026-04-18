@@ -4,6 +4,8 @@ import com.nhtl.dto.CommandeEcommerceDTO;
 import com.nhtl.dto.CommandeEcommerceDTO.CommandeEcommerceItemDTO;
 import com.nhtl.dto.PanierItemDTO;
 import com.nhtl.models.*;
+import com.nhtl.notifications.NotificationDispatcher;
+import com.nhtl.notifications.NotificationTemplates;
 import com.nhtl.repositories.CommandeEcommerceRepository;
 import com.nhtl.repositories.ProduitRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +28,12 @@ public class CommandeEcommerceService {
 
     @Autowired
     private PanierService panierService;
+
+    @Autowired
+    private NotificationDispatcher notificationDispatcher;
+
+    @Autowired
+    private NotificationTemplates templates;
 
     @Transactional
     public CommandeEcommerceDTO validerPanier(CommandeEcommerceDTO dto, String userId) {
@@ -71,6 +79,14 @@ public class CommandeEcommerceService {
         // Vider le panier après validation
         panierService.viderPanier(userId, dto.getServiceType());
 
+        try {
+            notificationDispatcher.dispatch(templates.commandeEcommerceCreated(
+                    saved.getUserId(), saved.getEmail(), saved.getNumeroTelephone(),
+                    saved.getId(), serviceLabel(saved.getServiceType())));
+        } catch (Exception e) {
+            System.out.println("⚠️ Notification commandeEcommerceCreated échouée: " + e.getMessage());
+        }
+
         return convertToDTO(saved);
     }
 
@@ -106,13 +122,31 @@ public class CommandeEcommerceService {
         Optional<CommandeEcommerce> opt = commandeRepo.findById(id);
         if (opt.isEmpty()) return null;
         CommandeEcommerce c = opt.get();
+        EcommerceStatus statut;
         try {
-            c.setStatut(EcommerceStatus.valueOf(nouveauStatut.toUpperCase()));
+            statut = EcommerceStatus.valueOf(nouveauStatut.toUpperCase());
         } catch (IllegalArgumentException e) {
             return null;
         }
+        c.setStatut(statut);
         c.setDateModification(java.time.LocalDateTime.now());
-        return convertToDTO(commandeRepo.save(c));
+        CommandeEcommerce saved = commandeRepo.save(c);
+
+        try {
+            String label = serviceLabel(saved.getServiceType());
+            notificationDispatcher.dispatch(templates.commandeEcommerceStatutUpdated(
+                    saved.getUserId(), saved.getEmail(), saved.getNumeroTelephone(),
+                    saved.getId(), statut, label));
+            if (statut == EcommerceStatus.LIVREE) {
+                notificationDispatcher.dispatch(templates.commandeEcommerceLivree(
+                        saved.getUserId(), saved.getEmail(), saved.getNumeroTelephone(),
+                        saved.getId(), label));
+            }
+        } catch (Exception e) {
+            System.out.println("⚠️ Notification updateStatut e-commerce échouée: " + e.getMessage());
+        }
+
+        return convertToDTO(saved);
     }
 
     public CommandeEcommerceDTO archiver(Long id) {
@@ -140,6 +174,15 @@ public class CommandeEcommerceService {
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private String serviceLabel(ServiceType type) {
+        if (type == null) return "E-commerce";
+        return switch (type) {
+            case MAAD -> "Sama Maad";
+            case TERANGA -> "Sama Téranga Apéro";
+            case BESTSELLER -> "Sama Best Seller";
+        };
+    }
 
     private CommandeEcommerceDTO convertToDTO(CommandeEcommerce c) {
         CommandeEcommerceDTO dto = new CommandeEcommerceDTO();
