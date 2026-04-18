@@ -34,16 +34,26 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
   bool _loading = false;
   String? _errorMsg;
 
-  // ✅ Cooldown — démarre dès l'arrivée sur l'écran car Supabase
-  // a déjà envoyé un OTP lors du signUp.
+  // Countdown before the user can ask for a new code.
+  // Starts only after a successful OTP send to give honest feedback.
   static const int _resendCooldownSeconds = 60;
-  int _resendCountdown = _resendCooldownSeconds;
+  int _resendCountdown = 0; // 0 = not started yet
   Timer? _resendTimer;
+
+  // Whether to show the "activate without SMS code" bypass button.
+  // Only displayed when an OTP send attempt has failed (signup flow).
+  bool _showSkipButton = false;
 
   @override
   void initState() {
     super.initState();
-    _startResendCooldown();
+    if (widget.isPasswordReset) {
+      // Password-reset flow: OTP was already sent by ForgotPasswordScreen via Supabase.
+      _startResendCooldown();
+    } else {
+      // Signup flow: backend sends OTP via WhatsApp → SMS.
+      WidgetsBinding.instance.addPostFrameCallback((_) => _sendInitialOtp());
+    }
   }
 
   @override
@@ -71,11 +81,32 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
     });
   }
 
+  /// Initial OTP send for the signup flow (backend: WhatsApp → SMS).
+  Future<void> _sendInitialOtp() async {
+    setState(() {
+      _loading = true;
+      _errorMsg = null;
+    });
+    try {
+      await AuthService.sendSignupPhoneOtp(widget.phoneE164);
+      if (!mounted) return;
+      _startResendCooldown();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMsg = e.toString().replaceFirst('Exception: ', '');
+        _showSkipButton = true; // OTP couldn't be sent → offer bypass
+      });
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   Future<void> _verify() async {
     final code = _codeController.text.trim();
 
     if (code.isEmpty) {
-      setState(() => _errorMsg = "Veuillez entrer le code reçu par SMS.");
+      setState(() => _errorMsg = "Veuillez entrer le code reçu par WhatsApp ou SMS.");
       return;
     }
 
@@ -85,22 +116,27 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
     });
 
     try {
-      await AuthService.verifyPhoneOtp(
-        phoneE164: widget.phoneE164,
-        token: code,
-      );
-
-      if (!mounted) return;
-
       if (widget.isPasswordReset) {
-        // ✅ Flux reset password — la session est déjà créée par verifyOTP.
-        // On va directement à l'écran de nouveau mot de passe.
+        // Password-reset flow: verify via Supabase (session required for password update).
+        await AuthService.verifyPhoneOtp(
+          phoneE164: widget.phoneE164,
+          token: code,
+        );
+        if (!mounted) return;
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const ResetPasswordScreen()),
           (_) => false,
         );
         return;
       }
+
+      // Signup flow: verify via backend (WhatsApp/SMS OTP) → backend confirms phone.
+      await AuthService.verifySignupPhoneOtp(
+        phoneE164: widget.phoneE164,
+        token: code,
+      );
+
+      if (!mounted) return;
 
       // ✅ Flux signup — modale de succès
       await showDialog(
@@ -188,17 +224,28 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
     });
 
     try {
-      await AuthService.sendPhoneOtp(widget.phoneE164);
+      if (widget.isPasswordReset) {
+        // Password-reset flow: resend via Supabase.
+        await AuthService.sendPhoneOtp(widget.phoneE164);
+      } else {
+        // Signup flow: resend via backend (WhatsApp → SMS).
+        await AuthService.sendSignupPhoneOtp(widget.phoneE164);
+      }
       if (!mounted) return;
       _startResendCooldown();
       Fluttertoast.showToast(
-        msg: "Code renvoyé par SMS.",
+        msg: "Code renvoyé.",
         backgroundColor: Colors.green,
         toastLength: Toast.LENGTH_SHORT,
       );
     } catch (e) {
       if (!mounted) return;
-      setState(() => _errorMsg = e.toString().replaceFirst('Exception: ', ''));
+      setState(() {
+        _errorMsg = e.toString().replaceFirst('Exception: ', '');
+        if (!widget.isPasswordReset) {
+          _showSkipButton = true; // Resend also failed → offer bypass
+        }
+      });
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -321,7 +368,6 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final canResend = _resendCountdown == 0 && !_loading;
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -346,7 +392,9 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  "Entrez le code envoyé au :",
+                  widget.isPasswordReset
+                      ? "Entrez le code envoyé au :"
+                      : "Entrez le code envoyé via WhatsApp ou SMS au :",
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium,
                 ),
@@ -421,31 +469,32 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
 
                 const SizedBox(height: 16),
 
-                // ✅ Minuteur visible + bouton renvoyer
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  child: _resendCountdown > 0
-                      ? Row(
-                          key: const ValueKey('countdown'),
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.timer_outlined,
-                                size: 16, color: Colors.grey),
-                            const SizedBox(width: 6),
-                            Text(
-                              "Renvoyer le code dans ${_resendCountdown}s",
-                              style: theme.textTheme.bodySmall
-                                  ?.copyWith(color: Colors.grey),
-                            ),
-                          ],
-                        )
-                      : TextButton.icon(
-                          key: const ValueKey('resend'),
-                          onPressed: canResend ? _resend : null,
-                          icon: const Icon(Icons.refresh, size: 16),
-                          label: const Text("Renvoyer le code"),
+                // Minuteur + bouton renvoyer
+                // During initial OTP send (_loading && _resendCountdown == 0), show nothing extra.
+                if (_resendCountdown > 0)
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: Row(
+                      key: const ValueKey('countdown'),
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.timer_outlined,
+                            size: 16, color: Colors.grey),
+                        const SizedBox(width: 6),
+                        Text(
+                          "Renvoyer le code dans ${_resendCountdown}s",
+                          style: theme.textTheme.bodySmall
+                              ?.copyWith(color: Colors.grey),
                         ),
-                ),
+                      ],
+                    ),
+                  )
+                else if (!_loading)
+                  TextButton.icon(
+                    onPressed: _resend,
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: const Text("Renvoyer le code"),
+                  ),
 
                 const SizedBox(height: 24),
                 Text(
@@ -455,8 +504,8 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
                       theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
                 ),
 
-                // ── Bypass OTP (flux signup uniquement, pas reset password) ──
-                if (!widget.isPasswordReset) ...[
+                // ── Bypass OTP (signup uniquement, uniquement après échec d'envoi) ──
+                if (!widget.isPasswordReset && _showSkipButton) ...[
                   const SizedBox(height: 20),
                   const Divider(),
                   const SizedBox(height: 8),
