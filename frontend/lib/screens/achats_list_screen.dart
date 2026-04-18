@@ -4,6 +4,7 @@
 // Adapté depuis commandes_list_screen.dart.
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../models/achat.dart';
 import '../services/achat_service.dart';
 import '../services/auth_service.dart';
@@ -70,6 +71,9 @@ String _labelSuivi(String s) {
     default:                return s;
   }
 }
+
+String _formatDate(DateTime? dt) =>
+    dt != null ? DateFormat('dd/MM/yyyy').format(dt) : '—';
 
 // ── Couleurs UI ───────────────────────────────────────────────────────────────
 const Color _bg = Color(0xFF0D1B2E);
@@ -269,11 +273,16 @@ class _AchatTile extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                     Text(
-                      '#${achat.id ?? '—'} — ${achat.marche.isNotEmpty ? achat.marche : achat.typeProduit}',
+                      achat.marche.isNotEmpty ? achat.marche : achat.typeProduit,
                       style: const TextStyle(
                           color: _textPrimary,
                           fontWeight: FontWeight.w800,
                           fontSize: 14),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '#${achat.id ?? '—'} · ${_formatDate(achat.dateCreation)}',
+                      style: const TextStyle(color: _textMuted, fontSize: 11),
                     ),
                     const SizedBox(height: 4),
                     Text(

@@ -4,6 +4,7 @@
 // Adapté depuis commandes_archives_screen.dart.
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../services/achat_service.dart';
 import '../services/auth_service.dart';
 import '../models/achat.dart';
@@ -11,6 +12,9 @@ import '../widgets/sama_account_menu.dart';
 import 'achat_tracking_screen.dart';
 
 // ── Couleurs UI ────────────────────────────────────────────────────────────
+String _formatDate(DateTime? dt) =>
+    dt != null ? DateFormat('dd/MM/yyyy').format(dt) : '—';
+
 const Color _bg = Color(0xFF0D1B2E);
 const Color _bgCard = Color(0xFF1A2E45);
 const Color _teal = Color(0xFF00BCD4);
@@ -187,11 +191,17 @@ class _ArchiveTile extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                   Text(
-                    '#${achat.id ?? '—'} — ${achat.marche.isNotEmpty ? achat.marche : achat.typeProduit}',
+                    achat.marche.isNotEmpty ? achat.marche : achat.typeProduit,
                     style: const TextStyle(
                         color: _textPrimary,
                         fontWeight: FontWeight.w700,
                         fontSize: 14),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '#${achat.id ?? '—'} · ${_formatDate(achat.dateCreation)}',
+                    style: const TextStyle(
+                        color: _textMuted, fontSize: 11),
                   ),
                   const SizedBox(height: 4),
                   Text(

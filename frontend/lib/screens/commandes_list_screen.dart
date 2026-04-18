@@ -6,6 +6,7 @@
 // ✅ Structure miroir de TransportListScreen
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../models/commande.dart';
 import '../services/auth_service.dart';
 import '../services/commande_service.dart';
@@ -82,6 +83,9 @@ String _labelSuivi(String s) {
 }
 
 // ── Couleurs UI ───────────────────────────────────────────────────────────────
+String _formatDate(DateTime? dt) =>
+    dt != null ? DateFormat('dd/MM/yyyy').format(dt) : '—';
+
 const Color _bg = Color(0xFF0D1B2E);
 const Color _bgSection = Color(0xFF112236);
 const Color _bgCard = Color(0xFF1A2E45);
@@ -375,6 +379,11 @@ class CommandeTile extends StatelessWidget {
                   color: _textPrimary,
                   fontWeight: FontWeight.w800,
                   fontSize: 15)),
+          const SizedBox(height: 2),
+          Text(
+            '#${commande.id ?? '—'} · ${_formatDate(commande.dateCreation)}',
+            style: const TextStyle(color: _textMuted, fontSize: 11),
+          ),
           const SizedBox(height: 2),
           Text(
               "${commande.plateforme} — ${commande.quantite}x "

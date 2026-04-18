@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:sama/screens/transports_list_screen.dart';
 import '../models/transport.dart';
 import '../services/auth_service.dart';
@@ -8,6 +9,9 @@ import '../widgets/sama_account_menu.dart';
 // Réutilise statutColors/statutIcons définis dans transports_list_screen.dart
 // (EN_ATTENTE, EN_COURS, LIVRE, ANNULE)
 import 'transports_list_screen.dart' show statutColors, statutIcons;
+
+String _formatDate(DateTime? dt) =>
+    dt != null ? DateFormat('dd/MM/yyyy').format(dt) : '—';
 
 class TransportArchivesScreen extends StatefulWidget {
   final bool isAdmin;
@@ -201,6 +205,12 @@ class _TransportArchivesScreenState extends State<TransportArchivesScreen> {
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
                         ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '#${t.id ?? '—'} · ${_formatDate(t.dateCreation)}',
+                        style: const TextStyle(
+                            color: Colors.grey, fontSize: 11),
                       ),
                       const SizedBox(height: 2),
                       Text(
