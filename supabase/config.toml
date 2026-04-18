@@ -3,7 +3,7 @@
 # Deploy OTP hook:
 #   supabase functions deploy send-sms-twilio   ← RECOMMENDED (worldwide, including Sénégal +221)
 #
-# ── Sénégal (+221) not receiving SMS? ────────────────────────────────────────
+# ── Senegal (+221) not receiving SMS? ────────────────────────────────────────
 # Enable Senegal in Twilio Console → Account → Settings → SMS Geographic Permissions:
 #   https://console.twilio.com/us1/account/sms-geographic-permissions
 # Without this, Twilio returns error 21408 (geographic permission not enabled).

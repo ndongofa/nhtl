@@ -20,8 +20,8 @@
  *   TWILIO_SMS_TEMPLATE           – Custom message template. Use {otp} as placeholder.
  *                                   Default: "Votre code Sama Services est: {otp}"
  *
- * ── Sénégal (+221) not receiving SMS? ────────────────────────────────────────
- * Twilio disables high-risk regions by default. To enable Sénégal:
+ * ── Senegal (+221) not receiving SMS? ────────────────────────────────────────
+ * Twilio disables high-risk regions by default. To enable Senegal:
  *   1. Go to Twilio Console → Account → Settings → SMS Geographic Permissions
  *      https://console.twilio.com/us1/account/sms-geographic-permissions
  *   2. Search for "Senegal" and toggle it ON.
@@ -36,7 +36,7 @@
  *   30006 – Landline or unreachable carrier                    → error returned
  *
  * Pricing note:
- *   Twilio rates vary by destination country. Sénégal (+221) ≈ $0.085/SMS,
+ *   Twilio rates vary by destination country. Senegal (+221) ≈ $0.085/SMS,
  *   Maroc (+212) ≈ $0.045/SMS. See: https://www.twilio.com/en-us/sms/pricing
  *
  * Twilio REST API reference:
@@ -231,7 +231,7 @@ serve(async (req: Request): Promise<Response> => {
         // Parse the Twilio error code to distinguish between different 400 causes.
         let twilioCode: number | null = null;
         try {
-          twilioCode = JSON.parse(body)?.code ?? null;
+          twilioCode = (JSON.parse(body) as { code?: number }).code ?? null;
         } catch (_) { /* non-JSON body, leave twilioCode as null */ }
 
         // 21211 = Invalid 'To' phone number (bad format / user typo).
