@@ -1073,18 +1073,31 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // YouTube player
+          // YouTube player with close button overlaid at top-right.
+          // On large screens the 16/9 player grows very tall (banner width
+          // can exceed 1,000 px), pushing the bottom bar off-screen.
+          // Overlaying the close button on the video ensures it is always
+          // visible regardless of the available viewport height.
           ClipRRect(
             borderRadius:
                 const BorderRadius.vertical(top: Radius.circular(16)),
-            child: _YoutubeAdWidget(
-              youtubeId: ad.youtubeId!,
-              onVideoEnded: _advanceToNext,
+            child: Stack(
+              children: [
+                _YoutubeAdWidget(
+                  youtubeId: ad.youtubeId!,
+                  onVideoEnded: _advanceToNext,
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: PointerInterceptor(child: closeButton),
+                ),
+              ],
             ),
           ),
-          // Bottom bar: title + subtitle + dots + close button
-          // PointerInterceptor ensures the close button receives clicks on
-          // desktop web even though the YouTube iframe sits above this bar.
+          // Bottom bar: title + subtitle + dots.
+          // PointerInterceptor ensures taps are registered on desktop web
+          // even though the YouTube iframe sits behind this bar.
           PointerInterceptor(
             child: Container(
               padding: EdgeInsets.symmetric(
@@ -1129,8 +1142,6 @@ class _AdsBannerCardState extends State<_AdsBannerCard>
                   ),
                   const SizedBox(width: 12),
                   _buildDots(safeIndex, total),
-                  const SizedBox(width: 8),
-                  closeButton,
                 ],
               ),
             ),

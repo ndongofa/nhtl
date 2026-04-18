@@ -8,6 +8,7 @@ import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
 import '../models/ad_model.dart';
@@ -313,9 +314,18 @@ class _PromoCarouselWidgetState extends State<PromoCarouselWidget>
           ClipRRect(
             borderRadius:
                 const BorderRadius.vertical(top: Radius.circular(16)),
-            child: _YoutubeAdWidget(
-              youtubeId: ad.youtubeId!,
-              onVideoEnded: _advanceToNext,
+            child: Stack(
+              children: [
+                _YoutubeAdWidget(
+                  youtubeId: ad.youtubeId!,
+                  onVideoEnded: _advanceToNext,
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: PointerInterceptor(child: closeButton),
+                ),
+              ],
             ),
           ),
           Container(
@@ -361,8 +371,6 @@ class _PromoCarouselWidgetState extends State<PromoCarouselWidget>
                 ),
                 const SizedBox(width: 12),
                 _buildDots(safeIndex, total),
-                const SizedBox(width: 8),
-                closeButton,
               ],
             ),
           ),
