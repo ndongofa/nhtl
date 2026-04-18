@@ -100,4 +100,28 @@ public class NotificationTemplates {
 		return new NotificationEvent(userId, email, phone, NotificationEventType.ACHAT_COMPLETED,
 				"Achat terminé", "Votre achat #" + achatId + " est terminé. Merci !");
 	}
+
+	public NotificationEvent adminCommandeCreated(Long commandeId, String clientNom, String clientPrenom,
+			String clientPhone) {
+		String msg = "Nouvelle commande #" + commandeId + " reçue de " + clientPrenom + " " + clientNom
+				+ (clientPhone != null && !clientPhone.isBlank() ? " (Tél: " + clientPhone + ")" : "") + ".";
+		return new NotificationEvent(null, null, null, NotificationEventType.ADMIN_COMMANDE_CREATED,
+				"Nouvelle commande reçue", msg).withTarget(NotificationTarget.ADMIN);
+	}
+
+	public NotificationEvent adminTransportCreated(Long transportId, String clientNom, String clientPrenom,
+			String clientPhone) {
+		String msg = "Nouvelle demande de transport #" + transportId + " reçue de " + clientPrenom + " " + clientNom
+				+ (clientPhone != null && !clientPhone.isBlank() ? " (Tél: " + clientPhone + ")" : "") + ".";
+		return new NotificationEvent(null, null, null, NotificationEventType.ADMIN_TRANSPORT_CREATED,
+				"Nouvelle demande de transport", msg).withTarget(NotificationTarget.ADMIN);
+	}
+
+	public NotificationEvent adminAchatCreated(Long achatId, String clientNom, String clientPrenom,
+			String clientPhone) {
+		String msg = "Nouvelle demande d'achat #" + achatId + " reçue de " + clientPrenom + " " + clientNom
+				+ (clientPhone != null && !clientPhone.isBlank() ? " (Tél: " + clientPhone + ")" : "") + ".";
+		return new NotificationEvent(null, null, null, NotificationEventType.ADMIN_ACHAT_CREATED,
+				"Nouvelle demande d'achat", msg).withTarget(NotificationTarget.ADMIN);
+	}
 }
