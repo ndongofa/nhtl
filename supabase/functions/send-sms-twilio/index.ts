@@ -20,10 +20,24 @@
  *   TWILIO_SMS_TEMPLATE           – Custom message template. Use {otp} as placeholder.
  *                                   Default: "Votre code Sama Services est: {otp}"
  *
+ * ── Senegal (+221) not receiving SMS? ────────────────────────────────────────
+ * Twilio disables high-risk regions by default. To enable Senegal:
+ *   1. Go to Twilio Console → Account → Settings → SMS Geographic Permissions
+ *      https://console.twilio.com/us1/account/sms-geographic-permissions
+ *   2. Search for "Senegal" and toggle it ON.
+ *   3. If using a Messaging Service, also check per-service geo permissions.
+ * Without this, Twilio returns error 21408 for all +221 numbers and this
+ * function returns an explicit error (does NOT silently swallow it).
+ *
+ * ── Common Twilio error codes ─────────────────────────────────────────────────
+ *   21211 – Invalid 'To' phone number (bad format, user typo) → logged, signup allowed
+ *   21408 – Geographic permission not enabled for this country  → error returned
+ *   21614 – Not a valid mobile number (landline)               → error returned
+ *   30006 – Landline or unreachable carrier                    → error returned
+ *
  * Pricing note:
- *   Twilio rates vary by destination country. Sénégal (+221) ≈ $0.085/SMS,
- *   Maroc (+212) ≈ $0.045/SMS – much higher than the US rate ($0.008/SMS).
- *   Budget accordingly. See: https://www.twilio.com/en-us/sms/pricing
+ *   Twilio rates vary by destination country. Senegal (+221) ≈ $0.085/SMS,
+ *   Maroc (+212) ≈ $0.045/SMS. See: https://www.twilio.com/en-us/sms/pricing
  *
  * Twilio REST API reference:
  *   https://www.twilio.com/docs/sms/api/message-resource#create-a-message-resource
@@ -212,17 +226,47 @@ serve(async (req: Request): Promise<Response> => {
       console.error(
         `[send-sms-twilio] Twilio API error status=${twilioRes.status} body=${body}`,
       );
-      // 400 with code 21211 = invalid 'To' number – allow Supabase signup
-      // so a bad phone entry doesn't block the auth flow entirely.
+
       if (twilioRes.status === 400) {
-        console.warn(
-          "[send-sms-twilio] Twilio 400 – invalid request (bad number?). Signup allowed but OTP not sent.",
+        // Parse the Twilio error code to distinguish between different 400 causes.
+        let twilioCode: number | null = null;
+        try {
+          twilioCode = (JSON.parse(body) as { code?: number }).code ?? null;
+        } catch (_) { /* non-JSON body, leave twilioCode as null */ }
+
+        // 21211 = Invalid 'To' phone number (bad format / user typo).
+        // Allow signup so a malformed number doesn't permanently block the flow.
+        // All other 400 codes (especially 21408 = Geographic permission not enabled)
+        // are returned as errors so the problem is visible in logs.
+        if (twilioCode === 21211) {
+          console.warn(
+            `[send-sms-twilio] Twilio 21211 – invalid phone format for to='${to}'. Signup allowed but OTP not sent.`,
+          );
+          return new Response(JSON.stringify({}), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+
+        // 21408 = Geographic permission not enabled for this country.
+        // ➜ Enable the destination country in Twilio Console:
+        //   Account → Settings → SMS Geographic Permissions
+        //   https://console.twilio.com/us1/account/sms-geographic-permissions
+        if (twilioCode === 21408) {
+          console.error(
+            `[send-sms-twilio] Twilio 21408 – Geographic permission not enabled for to='${to}'. ` +
+            "Enable the destination country in Twilio Console → Account → Settings → SMS Geographic Permissions.",
+          );
+        }
+
+        return new Response(
+          JSON.stringify({
+            error: `Twilio error 400 (code ${twilioCode ?? "unknown"}): ${body}`,
+          }),
+          { status: 502, headers: { "Content-Type": "application/json" } },
         );
-        return new Response(JSON.stringify({}), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        });
       }
+
       return new Response(
         JSON.stringify({
           error: `Twilio error ${twilioRes.status}: ${body}`,

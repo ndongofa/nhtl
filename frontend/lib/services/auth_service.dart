@@ -180,7 +180,7 @@ class AuthService {
         }
         // Supabase envoie automatiquement un OTP SMS ici — ne pas appeler
         // sendPhoneOtp() ensuite, ce serait un double envoi → 429.
-        // Le numéro doit être en format E.164 complet (avec "+") pour Brevo.
+        // Phone must be in full E.164 format (with "+") for Twilio OTP delivery.
         res = await _supabase.auth.signUp(
           phone: cleanIdentifier,
           password: password,
@@ -234,7 +234,7 @@ class AuthService {
     print("[AuthService][sendPhoneOtp] start phone=$cleanPhone");
 
     try {
-      // Le numéro est passé en format E.164 complet (avec "+") pour Brevo.
+      // Phone must be in full E.164 format (with "+") for Twilio OTP delivery.
       await _supabase.auth.signInWithOtp(
         phone: cleanPhone,
       );
@@ -280,7 +280,7 @@ class AuthService {
         "[AuthService][verifyPhoneOtp] start phone=$cleanPhone tokenLen=${cleanToken.length}");
 
     try {
-      // Le numéro est passé en format E.164 complet (avec "+") pour Brevo.
+      // Phone must be in full E.164 format (with "+") for Twilio OTP delivery.
       await _supabase.auth.verifyOTP(
         type: OtpType.sms,
         phone: cleanPhone,
