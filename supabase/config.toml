@@ -1,11 +1,12 @@
 # Supabase project configuration
 # Run `supabase link --project-ref <your-project-ref>` to link this project.
-# Deploy OTP hooks:
-#   supabase functions deploy send-sms-fallback     ← RECOMMENDED for Sénégal and worldwide
-#                                                      (Brevo primary → Twilio fallback, any country)
-#   supabase functions deploy send-sms-twilio       ← Twilio only (worldwide, any country)
-#   supabase functions deploy send-whatsapp-brevo   ← WhatsApp via Brevo (requires Pro plan)
-#   supabase functions deploy send-sms-brevo        ← SMS via Brevo only (limited countries, NOT Sénégal +221)
+# Deploy OTP hook:
+#   supabase functions deploy send-sms-twilio   ← RECOMMENDED (worldwide, including Sénégal +221)
+#
+# ── Sénégal (+221) not receiving SMS? ────────────────────────────────────────
+# Enable Senegal in Twilio Console → Account → Settings → SMS Geographic Permissions:
+#   https://console.twilio.com/us1/account/sms-geographic-permissions
+# Without this, Twilio returns error 21408 (geographic permission not enabled).
 
 [api]
 enabled = true
@@ -26,23 +27,9 @@ minimum_password_length = 8
 enable_signup = true
 enable_confirmations = true
 
-# OTP delivery is handled by Edge Function auth hooks.
+# OTP delivery is handled by the send-sms-twilio Edge Function auth hook.
 #
-# ── RECOMMENDED (Sénégal + mondial): Brevo → Twilio fallback ─────────────
-# Brevo is tried first (free/low-cost). If Brevo fails for any reason
-# (e.g. Sénégal +221 is not supported by Brevo transactional SMS), the
-# function automatically retries via Twilio so delivery is guaranteed.
-# Configure in Supabase Dashboard → Authentication → Hooks → Send SMS hook:
-#   URL: https://<project-ref>.supabase.co/functions/v1/send-sms-fallback
-# Required secrets (Dashboard → Edge Functions → Secrets):
-#   SEND_SMS_HOOK_SECRET
-# Brevo (primary): BREVO_API_KEY, BREVO_SMS_SENDER
-# Twilio (fallback): TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN,
-#                    TWILIO_MESSAGING_SERVICE_SID (recommended) or TWILIO_FROM_NUMBER
-[functions.send-sms-fallback]
-verify_jwt = false
-
-# ── SMS via Twilio only (worldwide, any country) ──────────────────────────
+# ── SMS via Twilio (worldwide, any country including Sénégal +221) ────────────
 # Configure in Supabase Dashboard → Authentication → Hooks → Send SMS hook:
 #   URL: https://<project-ref>.supabase.co/functions/v1/send-sms-twilio
 # Required secrets (Dashboard → Edge Functions → Secrets):
@@ -54,20 +41,4 @@ verify_jwt = false
 # Pricing: rates vary by country – Sénégal ≈ $0.085/SMS, Maroc ≈ $0.045/SMS
 #   See full pricing: https://www.twilio.com/en-us/sms/pricing
 [functions.send-sms-twilio]
-verify_jwt = false
-
-# ── WhatsApp via Brevo (requires Brevo Pro plan) ─────────────────────────────
-# Configure in Supabase Dashboard → Authentication → Hooks → Send SMS hook:
-#   URL: https://<project-ref>.supabase.co/functions/v1/send-whatsapp-brevo
-# Required secrets: BREVO_API_KEY, BREVO_WHATSAPP_PHONE_NUMBER_ID, SEND_SMS_HOOK_SECRET
-# Optional: BREVO_WHATSAPP_TEMPLATE_NAME (default: otp_verification)
-#           BREVO_WHATSAPP_TEMPLATE_LANG  (default: fr)
-[functions.send-whatsapp-brevo]
-verify_jwt = false
-
-# ── SMS via Brevo (limited country support, free plan) ───────────────────────
-# Configure in Supabase Dashboard → Authentication → Hooks → Send SMS hook:
-#   URL: https://<project-ref>.supabase.co/functions/v1/send-sms-brevo
-# Required secrets: BREVO_API_KEY, BREVO_SMS_SENDER, SEND_SMS_HOOK_SECRET
-[functions.send-sms-brevo]
 verify_jwt = false
