@@ -98,6 +98,13 @@ public class CommandeService {
             System.out.println("⚠️ Notification commandeCreated échouée: " + e.getMessage());
         }
 
+        try {
+            notificationDispatcher.dispatch(templates.adminCommandeCreated(saved.getId(), saved.getNom(),
+                    saved.getPrenom(), saved.getNumeroTelephone()));
+        } catch (Exception e) {
+            System.out.println("⚠️ Notification adminCommandeCreated échouée: " + e.getMessage());
+        }
+
         return convertToDTO(saved);
     }
 

@@ -1,5 +1,6 @@
 package com.nhtl.notifications;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -15,16 +16,25 @@ import lombok.extern.slf4j.Slf4j;
 public class NotificationDispatcher {
 
 	private final EmailProvider emailProvider;
-	private final SmsProvider smsProvider;
 	private final InAppProvider inAppProvider;
 	private final WhatsAppProvider whatsAppProvider;
+	private final SmsProvider smsProvider;
 
-	public NotificationDispatcher(EmailProvider emailProvider, SmsProvider smsProvider, InAppProvider inAppProvider,
-			WhatsAppProvider whatsAppProvider) {
+	@Value("${admin.email:}")
+	private String adminEmail;
+
+	@Value("${admin.whatsapp.number:}")
+	private String adminWhatsAppNumber;
+
+	@Value("${admin.user.id:}")
+	private String adminUserId;
+
+	public NotificationDispatcher(EmailProvider emailProvider, InAppProvider inAppProvider,
+			WhatsAppProvider whatsAppProvider, SmsProvider smsProvider) {
 		this.emailProvider = emailProvider;
-		this.smsProvider = smsProvider;
 		this.inAppProvider = inAppProvider;
 		this.whatsAppProvider = whatsAppProvider;
+		this.smsProvider = smsProvider;
 	}
 
 	@Async("notificationExecutor")
@@ -33,7 +43,15 @@ public class NotificationDispatcher {
 			return;
 		}
 
-		// In-app (toujours si userId) - ✅ ultra-safe
+		if (NotificationTarget.ADMIN.equals(evt.getTarget())) {
+			dispatchAdmin(evt);
+		} else {
+			dispatchUser(evt);
+		}
+	}
+
+	private void dispatchUser(NotificationEvent evt) {
+		// In-app (si userId présent)
 		if (evt.getUserId() != null && !evt.getUserId().isBlank()) {
 			try {
 				inAppProvider.createInApp(evt.getUserId(), evt.getType().name(), evt.getTitle(), evt.getMessage());
@@ -42,7 +60,7 @@ public class NotificationDispatcher {
 			}
 		}
 
-		// Email
+		// Email utilisateur
 		if (evt.getEmail() != null && !evt.getEmail().isBlank()) {
 			try {
 				emailProvider.sendEmail(evt.getEmail(), evt.getTitle(), evt.getMessage());
@@ -51,21 +69,49 @@ public class NotificationDispatcher {
 			}
 		}
 
-		// SMS
+		// WhatsApp utilisateur, SMS en fallback
 		if (evt.getPhoneNumber() != null && !evt.getPhoneNumber().isBlank()) {
+			sendWhatsAppWithSmsFallback(evt.getPhoneNumber(), evt.getMessage(), evt.getType().name());
+		}
+	}
+
+	private void dispatchAdmin(NotificationEvent evt) {
+		// In-app admin (si admin.user.id configuré)
+		if (adminUserId != null && !adminUserId.isBlank()) {
 			try {
-				smsProvider.sendSms(evt.getPhoneNumber(), evt.getMessage());
+				inAppProvider.createInApp(adminUserId, evt.getType().name(), evt.getTitle(), evt.getMessage());
 			} catch (Exception e) {
-				log.warn("SMS failed type={} to={}: {}", evt.getType(), evt.getPhoneNumber(), e.getMessage());
+				log.warn("Admin InApp failed type={}: {}", evt.getType(), e.getMessage());
 			}
 		}
 
-		// WhatsApp
-		if (evt.getPhoneNumber() != null && !evt.getPhoneNumber().isBlank()) {
+		// Email admin
+		if (adminEmail != null && !adminEmail.isBlank()) {
 			try {
-				whatsAppProvider.sendWhatsApp(evt.getPhoneNumber(), evt.getMessage());
+				emailProvider.sendEmail(adminEmail, evt.getTitle(), evt.getMessage());
 			} catch (Exception e) {
-				log.warn("WhatsApp failed type={} to={}: {}", evt.getType(), evt.getPhoneNumber(), e.getMessage());
+				log.warn("Admin email failed type={}: {}", evt.getType(), e.getMessage());
+			}
+		}
+
+		// WhatsApp admin, SMS en fallback
+		if (adminWhatsAppNumber != null && !adminWhatsAppNumber.isBlank()) {
+			sendWhatsAppWithSmsFallback(adminWhatsAppNumber, evt.getMessage(), evt.getType().name());
+		}
+	}
+
+	/**
+	 * Tente d'envoyer via WhatsApp. En cas d'échec, bascule automatiquement sur SMS.
+	 */
+	private void sendWhatsAppWithSmsFallback(String to, String message, String type) {
+		try {
+			whatsAppProvider.sendWhatsApp(to, message);
+		} catch (Exception waEx) {
+			log.warn("WhatsApp failed type={} to='{}', falling back to SMS. err='{}'", type, to, waEx.getMessage());
+			try {
+				smsProvider.sendSms(to, message);
+			} catch (Exception smsEx) {
+				log.warn("SMS fallback also failed type={} to='{}': {}", type, to, smsEx.getMessage());
 			}
 		}
 	}
