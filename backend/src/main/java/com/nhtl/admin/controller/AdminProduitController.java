@@ -83,6 +83,11 @@ public class AdminProduitController {
         return ResponseEntity.ok(commandeEcommerceService.getAllByServiceAdmin(service.toUpperCase()));
     }
 
+    @GetMapping("/{service}/commandes/archives")
+    public ResponseEntity<List<CommandeEcommerceDTO>> getCommandesArchives(@PathVariable String service) {
+        return ResponseEntity.ok(commandeEcommerceService.getArchivedByServiceAdmin(service.toUpperCase()));
+    }
+
     @GetMapping("/{service}/commandes/{id}")
     public ResponseEntity<?> getCommande(
             @PathVariable String service, @PathVariable Long id) {

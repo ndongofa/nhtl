@@ -339,6 +339,27 @@ class EcommerceService {
     }
   }
 
+  Future<List<CommandeEcommerce>> getCommandesArchivedAdmin() async {
+    final url = '${ApiConfig.baseUrl}/api/admin/$_service/commandes/archives';
+    try {
+      final headers = await _authHeaders();
+      final response = await http
+          .get(Uri.parse(url), headers: headers)
+          .timeout(ApiConfig.receiveTimeout);
+      if (response.statusCode == 200) {
+        final list = jsonDecode(response.body) as List;
+        return list
+            .map((c) => CommandeEcommerce.fromJson(c as Map<String, dynamic>))
+            .toList();
+      }
+      _logger.e('❌ getCommandesArchivedAdmin ${response.statusCode}');
+      return [];
+    } catch (e) {
+      _logger.e('❌ getCommandesArchivedAdmin exception: $e');
+      return [];
+    }
+  }
+
   Future<bool> updateStatutAdmin(int id, String statut) async {
     final url =
         '${ApiConfig.baseUrl}/api/admin/$_service/commandes/$id/statut';
@@ -351,6 +372,51 @@ class EcommerceService {
       return response.statusCode == 200;
     } catch (e) {
       _logger.e('❌ updateStatutAdmin exception: $e');
+      return false;
+    }
+  }
+
+  Future<bool> archiverCommandeAdmin(int id) async {
+    final url =
+        '${ApiConfig.baseUrl}/api/admin/$_service/commandes/$id/archive';
+    try {
+      final headers = await _authHeaders();
+      final response = await http
+          .patch(Uri.parse(url), headers: headers)
+          .timeout(ApiConfig.connectTimeout);
+      return response.statusCode == 200;
+    } catch (e) {
+      _logger.e('❌ archiverCommandeAdmin exception: $e');
+      return false;
+    }
+  }
+
+  Future<bool> desarchiverCommandeAdmin(int id) async {
+    final url =
+        '${ApiConfig.baseUrl}/api/admin/$_service/commandes/$id/unarchive';
+    try {
+      final headers = await _authHeaders();
+      final response = await http
+          .patch(Uri.parse(url), headers: headers)
+          .timeout(ApiConfig.connectTimeout);
+      return response.statusCode == 200;
+    } catch (e) {
+      _logger.e('❌ desarchiverCommandeAdmin exception: $e');
+      return false;
+    }
+  }
+
+  Future<bool> deleteCommandeAdmin(int id) async {
+    final url =
+        '${ApiConfig.baseUrl}/api/admin/$_service/commandes/$id';
+    try {
+      final headers = await _authHeaders();
+      final response = await http
+          .delete(Uri.parse(url), headers: headers)
+          .timeout(ApiConfig.connectTimeout);
+      return response.statusCode == 200;
+    } catch (e) {
+      _logger.e('❌ deleteCommandeAdmin exception: $e');
       return false;
     }
   }

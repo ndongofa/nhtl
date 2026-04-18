@@ -88,7 +88,13 @@ public class CommandeEcommerceService {
 
     public List<CommandeEcommerceDTO> getAllByServiceAdmin(String serviceTypeStr) {
         ServiceType type = ServiceType.valueOf(serviceTypeStr.toUpperCase());
-        return commandeRepo.findByServiceType(type).stream()
+        return commandeRepo.findByServiceTypeAndArchived(type, false).stream()
+                .map(this::convertToDTO).collect(Collectors.toList());
+    }
+
+    public List<CommandeEcommerceDTO> getArchivedByServiceAdmin(String serviceTypeStr) {
+        ServiceType type = ServiceType.valueOf(serviceTypeStr.toUpperCase());
+        return commandeRepo.findByServiceTypeAndArchived(type, true).stream()
                 .map(this::convertToDTO).collect(Collectors.toList());
     }
 
