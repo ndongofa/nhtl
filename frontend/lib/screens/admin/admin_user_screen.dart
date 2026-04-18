@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:sama/services/user_service.dart';
 import 'package:sama/widgets/user_form_dialog.dart';
 import 'package:sama/services/admin_user_api_service.dart';
@@ -318,6 +319,12 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
                               Text(contact.isEmpty ? "—" : contact,
                                   style: const TextStyle(
                                       color: _textMuted, fontSize: 12)),
+                              if (u.createdAt != null)
+                                Text(
+                                  "Inscrit le ${DateFormat('dd/MM/yyyy').format(u.createdAt!.toLocal())}",
+                                  style: const TextStyle(
+                                      color: _textMuted, fontSize: 11),
+                                ),
                               Container(
                                 margin: const EdgeInsets.only(top: 4),
                                 padding: const EdgeInsets.symmetric(

@@ -13,7 +13,7 @@ class UserService {
   /// Liste des utilisateurs (table custom Supabase)
   Future<List<appUser.User>?> getUsers() async {
     try {
-      final res = await _supabase.from('utilisateurs').select();
+      final res = await _supabase.from('utilisateurs').select('id, prenom, nom, email, phone, role, created_at').order('created_at', ascending: false);
       final list = res as List<dynamic>;
       return list.map((u) => appUser.User.fromJson(u)).toList();
     } catch (e) {

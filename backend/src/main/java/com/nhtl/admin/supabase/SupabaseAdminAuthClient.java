@@ -82,6 +82,7 @@ public class SupabaseAdminAuthClient {
 		}
 		if (req.getPhone() != null && !req.getPhone().isBlank()) {
 			body.put("phone", req.getPhone().trim());
+			body.put("phone_confirm", true);
 		}
 
 		Map<String, Object> userMeta = new HashMap<>();
