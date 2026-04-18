@@ -273,7 +273,7 @@ class _AchatTile extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                     Text(
-                      '#${achat.id ?? '—'} — ${achat.marche.isNotEmpty ? achat.marche : achat.typeProduit}',
+                      achat.marche.isNotEmpty ? achat.marche : achat.typeProduit,
                       style: const TextStyle(
                           color: _textPrimary,
                           fontWeight: FontWeight.w800,
@@ -281,7 +281,7 @@ class _AchatTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      _formatDate(achat.dateCreation),
+                      '#${achat.id ?? '—'} · ${_formatDate(achat.dateCreation)}',
                       style: const TextStyle(color: _textMuted, fontSize: 11),
                     ),
                     const SizedBox(height: 4),
