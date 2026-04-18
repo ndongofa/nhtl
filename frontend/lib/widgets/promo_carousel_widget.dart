@@ -31,7 +31,7 @@ class _PromoCarouselWidgetState extends State<PromoCarouselWidget>
     with WidgetsBindingObserver {
   int _index = 0;
   Timer? _timer;
-  bool _youtubeDismissed = false;
+  bool _dismissed = false;
 
   @override
   void initState() {
@@ -59,13 +59,19 @@ class _PromoCarouselWidgetState extends State<PromoCarouselWidget>
     if (ads.isEmpty) return;
     setState(() {
       _index = (_index + 1) % ads.length;
-      _youtubeDismissed = false;
     });
   }
 
   void _dismissYoutubeAd() {
     if (!mounted) return;
-    setState(() => _youtubeDismissed = true);
+    final ads = widget.ads;
+    if (ads.length == 1) {
+      // Only ad: hide the entire banner
+      setState(() => _dismissed = true);
+    } else if (ads.length > 1) {
+      // Multiple ads: advance to the next one
+      _advanceToNext();
+    }
   }
 
   void _prevSlide() {
@@ -74,7 +80,6 @@ class _PromoCarouselWidgetState extends State<PromoCarouselWidget>
     if (ads.isEmpty) return;
     setState(() {
       _index = (_index - 1 + ads.length) % ads.length;
-      _youtubeDismissed = false;
     });
   }
 
@@ -382,7 +387,7 @@ class _PromoCarouselWidgetState extends State<PromoCarouselWidget>
   @override
   Widget build(BuildContext context) {
     final ads = widget.ads;
-    if (ads.isEmpty) return const SizedBox.shrink();
+    if (ads.isEmpty || _dismissed) return const SizedBox.shrink();
 
     final safeIndex = _index % ads.length;
     final ad = ads[safeIndex];
@@ -405,9 +410,7 @@ class _PromoCarouselWidgetState extends State<PromoCarouselWidget>
           AdModel.typeImage when (ad.imageUrl ?? '').isNotEmpty =>
             _buildImageContent(ad, safeIndex, ads.length),
           AdModel.typeYoutube when (ad.youtubeId ?? '').isNotEmpty =>
-            _youtubeDismissed
-                ? _buildTextContent(ad, safeIndex, ads.length, isDark, textPrimary, textMuted)
-                : _buildYoutubeContent(ad, safeIndex, ads.length, isDark, textPrimary, textMuted),
+            _buildYoutubeContent(ad, safeIndex, ads.length, isDark, textPrimary, textMuted),
           _ => _buildTextContent(ad, safeIndex, ads.length, isDark, textPrimary, textMuted),
         },
       ),
