@@ -4,6 +4,7 @@ import org.springframework.stereotype.Component;
 
 import com.nhtl.models.AchatStatus;
 import com.nhtl.models.CommandeStatus;
+import com.nhtl.models.EcommerceStatus;
 import com.nhtl.models.TransportStatus;
 
 @Component
@@ -99,6 +100,28 @@ public class NotificationTemplates {
 	public NotificationEvent achatCompleted(String userId, String email, String phone, Long achatId) {
 		return new NotificationEvent(userId, email, phone, NotificationEventType.ACHAT_COMPLETED,
 				"Achat terminé", "Votre achat #" + achatId + " est terminé. Merci !");
+	}
+
+	public NotificationEvent commandeEcommerceCreated(String userId, String email, String phone,
+			Long commandeId, String serviceLabel) {
+		return new NotificationEvent(userId, email, phone, NotificationEventType.COMMANDE_ECOMMERCE_CREATED,
+				"Commande " + serviceLabel + " reçue",
+				"Votre commande e-commerce a bien été enregistrée. Référence : #" + commandeId
+						+ ". Notre équipe vous contactera prochainement pour confirmer les détails.");
+	}
+
+	public NotificationEvent commandeEcommerceStatutUpdated(String userId, String email, String phone,
+			Long commandeId, EcommerceStatus statut, String serviceLabel) {
+		return new NotificationEvent(userId, email, phone, NotificationEventType.COMMANDE_ECOMMERCE_STATUT_UPDATED,
+				"Commande " + serviceLabel + " mise à jour",
+				"Votre commande #" + commandeId + " (" + serviceLabel + ") est maintenant : " + statut.name() + ".");
+	}
+
+	public NotificationEvent commandeEcommerceLivree(String userId, String email, String phone,
+			Long commandeId, String serviceLabel) {
+		return new NotificationEvent(userId, email, phone, NotificationEventType.COMMANDE_ECOMMERCE_LIVREE,
+				"Commande " + serviceLabel + " livrée",
+				"Votre commande #" + commandeId + " (" + serviceLabel + ") a été livrée. Merci pour votre confiance !");
 	}
 
 	public NotificationEvent adminCommandeCreated(Long commandeId, String clientNom, String clientPrenom,

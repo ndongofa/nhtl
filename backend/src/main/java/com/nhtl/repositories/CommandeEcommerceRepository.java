@@ -27,4 +27,6 @@ public interface CommandeEcommerceRepository extends JpaRepository<CommandeEcomm
 
     List<CommandeEcommerce> findByUserIdAndServiceTypeAndArchived(
             String userId, ServiceType serviceType, Boolean archived);
+
+    List<CommandeEcommerce> findByServiceTypeAndArchived(ServiceType serviceType, Boolean archived);
 }
