@@ -8,6 +8,7 @@ public class NotificationEvent {
 	private String email; // optionnel
 	private String phoneNumber; // optionnel
 	private NotificationEventType type;
+	private NotificationTarget target = NotificationTarget.USER;
 
 	private String title;
 	private String message;
@@ -26,6 +27,11 @@ public class NotificationEvent {
 		this.type = type;
 		this.title = title;
 		this.message = message;
+	}
+
+	public NotificationEvent withTarget(NotificationTarget target) {
+		this.target = target;
+		return this;
 	}
 
 	public String getUserId() {
@@ -82,6 +88,14 @@ public class NotificationEvent {
 
 	public void setData(Map<String, Object> data) {
 		this.data = data;
+	}
+
+	public NotificationTarget getTarget() {
+		return target;
+	}
+
+	public void setTarget(NotificationTarget target) {
+		this.target = target;
 	}
 
 	public NotificationEvent put(String key, Object value) {
