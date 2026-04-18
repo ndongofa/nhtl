@@ -291,20 +291,33 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 12),
                       child: Row(children: [
-                        Container(
-                          width: 42,
-                          height: 42,
-                          decoration: BoxDecoration(
-                            color: (isAdmin ? _amber : _appBlue)
-                                .withValues(alpha: 0.15),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                              child: Text(u.role[0].toUpperCase(),
-                                  style: TextStyle(
-                                      color: isAdmin ? _amber : _appBlue,
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 16))),
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: 42,
+                              height: 42,
+                              decoration: BoxDecoration(
+                                color: (isAdmin ? _amber : _appBlue)
+                                    .withValues(alpha: 0.15),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                  child: Text(u.role[0].toUpperCase(),
+                                      style: TextStyle(
+                                          color: isAdmin ? _amber : _appBlue,
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 16))),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '#${index + 1}',
+                              style: const TextStyle(
+                                  color: _textMuted,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600),
+                            ),
+                          ],
                         ),
                         const SizedBox(width: 12),
                         Expanded(
