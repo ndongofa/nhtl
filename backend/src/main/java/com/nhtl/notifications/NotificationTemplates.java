@@ -20,6 +20,16 @@ public class NotificationTemplates {
 				"Code de réinitialisation", "Votre code OTP est : " + otp + " (valide pour une durée limitée).");
 	}
 
+	/**
+	 * Variante sans le code OTP — utilisée pour la notification in-app uniquement,
+	 * quand le code a déjà été envoyé directement via WhatsApp/SMS.
+	 */
+	public NotificationEvent passwordResetOtpSent(String userId, String email, String phone) {
+		return new NotificationEvent(userId, email, phone, NotificationEventType.PASSWORD_RESET_OTP_SENT,
+				"Code de réinitialisation envoyé",
+				"Un code de réinitialisation a été envoyé à votre téléphone via WhatsApp ou SMS.");
+	}
+
 	public NotificationEvent passwordResetSuccess(String userId, String email, String phone) {
 		return new NotificationEvent(userId, email, phone, NotificationEventType.PASSWORD_RESET_SUCCESS,
 				"Mot de passe modifié", "Votre mot de passe a été réinitialisé avec succès.");

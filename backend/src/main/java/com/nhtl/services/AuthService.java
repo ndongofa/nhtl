@@ -19,8 +19,13 @@ import com.nhtl.dto.auth.SignupRequest;
 import com.nhtl.dto.auth.SignupResponse;
 import com.nhtl.notifications.NotificationDispatcher;
 import com.nhtl.notifications.NotificationTemplates;
+import com.nhtl.notifications.providers.SmsProvider;
+import com.nhtl.notifications.providers.WhatsAppProvider;
 import com.nhtl.security.JwtTokenProvider;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Service
 public class AuthService {
 
@@ -41,6 +46,12 @@ public class AuthService {
 
 	@Autowired
 	private NotificationTemplates templates;
+
+	@Autowired
+	private WhatsAppProvider whatsAppProvider;
+
+	@Autowired
+	private SmsProvider smsProvider;
 
 	/**
 	 * Login avec email ou téléphone
@@ -183,22 +194,23 @@ public class AuthService {
 			if (success && otp != null) {
 				System.out.println("3️⃣ ✅ OTP généré: " + otp);
 
-				// 3. Envoyer par email ou SMS (COMPORTEMENT EXISTANT => conservé)
+				// 3. Envoyer par email ou WhatsApp→SMS selon l'identifiant
 				if (identifier.contains("@")) {
 					sendOtpEmail(identifier, otp);
 					System.out.println("4️⃣ 📧 OTP envoyé à l'email: " + identifier);
 				} else {
+					// WhatsApp en priorité, SMS en fallback
 					sendOtpSms(identifier, otp);
-					System.out.println("4️⃣ 📱 OTP envoyé au téléphone: " + identifier);
+					System.out.println("4️⃣ 📱 OTP envoyé via WhatsApp/SMS au téléphone: " + identifier);
 				}
 
-				// ✅ 4bis. Notifications centralisées (ne doit jamais casser)
+				// ✅ 4bis. Notification in-app uniquement (sans le code OTP pour éviter le double envoi)
 				try {
 					String userId = (String) userInfo.get("id");
 					String email = (String) userInfo.get("email");
 					String phone = (String) userInfo.get("phone");
 
-					notificationDispatcher.dispatch(templates.passwordResetOtpSent(userId, email, phone, otp));
+					notificationDispatcher.dispatch(templates.passwordResetOtpSent(userId, email, phone));
 				} catch (Exception e) {
 					System.out.println("⚠️ Notification reset OTP échouée: " + e.getMessage());
 				}
@@ -634,18 +646,33 @@ public class AuthService {
 	}
 
 	/**
-	 * Envoyer un OTP par email
+	 * Envoie un OTP par WhatsApp en priorité, SMS Twilio en fallback.
+	 * Lève une exception si les deux canaux échouent.
 	 */
-	private void sendOtpEmail(String email, String otp) {
-		// À implémenter avec JavaMailSender
-		System.out.println("📧 OTP pour " + email + ": " + otp);
+	private void sendOtpSms(String phone, String otp) {
+		String message = "SAMA - Votre code de réinitialisation est : " + otp + " (valide 10 minutes).";
+		try {
+			whatsAppProvider.sendWhatsApp(phone, message);
+			log.info("[AuthService] Reset OTP sent via WhatsApp to phone={}", phone);
+		} catch (Exception waEx) {
+			log.warn("[AuthService] WhatsApp failed for reset OTP phone={}, falling back to SMS: {}",
+					phone, waEx.getMessage());
+			try {
+				smsProvider.sendSms(phone, message);
+				log.info("[AuthService] Reset OTP sent via SMS fallback to phone={}", phone);
+			} catch (Exception smsEx) {
+				log.error("[AuthService] Both WhatsApp and SMS failed for phone={}: {}", phone, smsEx.getMessage());
+				throw new RuntimeException(
+						"Impossible d'envoyer le code. Vérifiez votre numéro et réessayez dans quelques instants.",
+						smsEx);
+			}
+		}
 	}
 
 	/**
-	 * Envoyer un OTP par SMS
+	 * Envoie un OTP par email.
 	 */
-	private void sendOtpSms(String phone, String otp) {
-		// À implémenter avec un service SMS (Twilio, etc.)
-		System.out.println("📱 OTP pour " + phone + ": " + otp);
+	private void sendOtpEmail(String email, String otp) {
+		System.out.println("📧 OTP pour " + email + ": " + otp);
 	}
 }

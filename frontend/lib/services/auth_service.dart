@@ -1,5 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../config/api_config.dart';
 
 /// Résultat du signup:
 /// - signedIn: session créée (pas de confirmation requise ou auto-confirm)
@@ -303,6 +308,82 @@ class AuthService {
     } catch (e) {
       // ignore: avoid_print
       print("[AuthService][verifyPhoneOtp] Unknown error: $e");
+      throw Exception(_friendlyUnknownError(e));
+    }
+  }
+
+  /// Envoi d'un code OTP pour confirmer le signup par téléphone.
+  /// Le backend tente WhatsApp en premier, puis SMS Twilio en fallback.
+  /// À utiliser à la place de [sendPhoneOtp] pour le flux signup.
+  static Future<void> sendSignupPhoneOtp(String phoneE164) async {
+    final cleanPhone = phoneE164.trim();
+    if (!_looksLikeE164Phone(cleanPhone)) {
+      throw Exception(
+        "Numéro invalide. Utilisez le format international E.164, ex: +221783042838",
+      );
+    }
+
+    // ignore: avoid_print
+    print("[AuthService][sendSignupPhoneOtp] start phone=$cleanPhone");
+
+    try {
+      final url = Uri.parse('${ApiConfig.baseUrl}/api/auth/phone-otp/send');
+      final resp = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'phone': cleanPhone}),
+      );
+      // ignore: avoid_print
+      print("[AuthService][sendSignupPhoneOtp] status=${resp.statusCode}");
+      if (resp.statusCode != 200) {
+        final decoded = jsonDecode(resp.body) as Map<String, dynamic>?;
+        final msg = decoded?['error']?.toString() ??
+            "Impossible d'envoyer le code. Réessayez ou contactez le support.";
+        throw Exception(msg);
+      }
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception(_friendlyUnknownError(e));
+    }
+  }
+
+  /// Vérifie le code OTP signup via le backend.
+  /// En cas de succès, le backend confirme le téléphone dans Supabase via l'API admin.
+  static Future<void> verifySignupPhoneOtp({
+    required String phoneE164,
+    required String token,
+  }) async {
+    final cleanPhone = phoneE164.trim();
+    final cleanToken = token.trim();
+
+    if (!_looksLikeE164Phone(cleanPhone)) {
+      throw Exception("Numéro invalide (E.164).");
+    }
+    if (cleanToken.length < 4) {
+      throw Exception("Code invalide.");
+    }
+
+    // ignore: avoid_print
+    print(
+        "[AuthService][verifySignupPhoneOtp] start phone=$cleanPhone tokenLen=${cleanToken.length}");
+
+    try {
+      final url = Uri.parse('${ApiConfig.baseUrl}/api/auth/phone-otp/verify');
+      final resp = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'phone': cleanPhone, 'otp': cleanToken}),
+      );
+      // ignore: avoid_print
+      print("[AuthService][verifySignupPhoneOtp] status=${resp.statusCode}");
+      if (resp.statusCode != 200) {
+        final decoded = jsonDecode(resp.body) as Map<String, dynamic>?;
+        final msg = decoded?['error']?.toString() ??
+            "Code invalide ou expiré. Demandez un nouveau code.";
+        throw Exception(msg);
+      }
+    } catch (e) {
+      if (e is Exception) rethrow;
       throw Exception(_friendlyUnknownError(e));
     }
   }
