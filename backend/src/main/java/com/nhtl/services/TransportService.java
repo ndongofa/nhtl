@@ -75,6 +75,13 @@ public class TransportService {
             System.out.println("⚠️ Notification transportCreated échouée: " + e.getMessage());
         }
 
+        try {
+            notificationDispatcher.dispatch(templates.adminTransportCreated(saved.getId(), saved.getNom(),
+                    saved.getPrenom(), saved.getNumeroTelephone()));
+        } catch (Exception e) {
+            System.out.println("⚠️ Notification adminTransportCreated échouée: " + e.getMessage());
+        }
+
         return convertToDTO(saved);
     }
 

@@ -98,6 +98,13 @@ public class AchatService {
             System.out.println("⚠️ Notification achatCreated échouée: " + e.getMessage());
         }
 
+        try {
+            notificationDispatcher.dispatch(templates.adminAchatCreated(saved.getId(), saved.getNom(),
+                    saved.getPrenom(), saved.getNumeroTelephone()));
+        } catch (Exception e) {
+            System.out.println("⚠️ Notification adminAchatCreated échouée: " + e.getMessage());
+        }
+
         return convertToDTO(saved);
     }
 
