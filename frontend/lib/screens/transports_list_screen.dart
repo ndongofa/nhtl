@@ -6,6 +6,7 @@
 // ✅ Zéro régression : edit, delete, archive, assign GP conservés
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:sama/screens/transports_archives_screen.dart';
 import '../models/transport.dart';
 import '../services/auth_service.dart';
@@ -85,6 +86,9 @@ String _labelSuivi(String s) {
 }
 
 // ── Couleurs UI ───────────────────────────────────────────────────────────────
+String _formatDate(DateTime? dt) =>
+    dt != null ? DateFormat('dd/MM/yyyy').format(dt) : '—';
+
 const Color _bg = Color(0xFF0D1B2E);
 const Color _bgSection = Color(0xFF112236);
 const Color _bgCard = Color(0xFF1A2E45);
@@ -482,6 +486,11 @@ class TransportTile extends StatelessWidget {
                   color: _textPrimary,
                   fontWeight: FontWeight.w800,
                   fontSize: 15)),
+          const SizedBox(height: 2),
+          Text(
+            '#${transport.id ?? '—'} · ${_formatDate(transport.dateCreation)}',
+            style: const TextStyle(color: _textMuted, fontSize: 11),
+          ),
           const SizedBox(height: 2),
           Text(
               "${transport.typesMarchandise} — "
