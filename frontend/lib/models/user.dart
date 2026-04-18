@@ -5,6 +5,7 @@ class User {
   final String? email;
   final String? phone;
   final String role;
+  final DateTime? createdAt;
 
   User({
     required this.id,
@@ -13,6 +14,7 @@ class User {
     this.email,
     this.phone,
     required this.role,
+    this.createdAt,
   });
 
   String get displayName {
@@ -30,6 +32,9 @@ class User {
       email: json['email'] as String?,
       phone: json['phone'] as String?,
       role: (json['role'] as String?) ?? 'user',
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'] as String)
+          : null,
     );
   }
 
@@ -40,5 +45,6 @@ class User {
         'email': email,
         'phone': phone,
         'role': role,
+        'created_at': createdAt?.toIso8601String(),
       };
 }
