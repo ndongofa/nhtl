@@ -14,7 +14,18 @@ import '../../../services/ad_api_service.dart';
 import '../../../services/ad_service.dart';
 
 class AdminAdsScreen extends StatefulWidget {
-  const AdminAdsScreen({Key? key}) : super(key: key);
+  /// When provided, only ads for this service are shown and new ads default to
+  /// this service. When null the full list (all services) is shown.
+  final String? serviceType;
+  final String? serviceLabel;
+  final Color? accentColor;
+
+  const AdminAdsScreen({
+    Key? key,
+    this.serviceType,
+    this.serviceLabel,
+    this.accentColor,
+  }) : super(key: key);
 
   @override
   State<AdminAdsScreen> createState() => _AdminAdsScreenState();
@@ -43,10 +54,13 @@ class _AdminAdsScreenState extends State<AdminAdsScreen> {
 
   Future<void> _load() async {
     setState(() => _loading = true);
-    final list = await _api.adminGetAll();
+    final all = await _api.adminGetAll();
     if (!mounted) return;
+    final filtered = widget.serviceType != null
+        ? all.where((a) => a.serviceType == widget.serviceType).toList()
+        : all;
     setState(() {
-      _ads = list;
+      _ads = filtered;
       _loading = false;
     });
   }
@@ -105,7 +119,10 @@ class _AdminAdsScreenState extends State<AdminAdsScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => _AdFormSheet(existing: ad),
+      builder: (ctx) => _AdFormSheet(
+        existing: ad,
+        defaultServiceType: widget.serviceType,
+      ),
     );
     if (result != null) {
       bool ok;
@@ -129,14 +146,18 @@ class _AdminAdsScreenState extends State<AdminAdsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final accent = widget.accentColor ?? _appBlue;
+    final title = widget.serviceLabel != null
+        ? 'Publicités – ${widget.serviceLabel}'
+        : 'Publicités carousel';
     return Scaffold(
       backgroundColor: _bg,
       appBar: AppBar(
         backgroundColor: _bgSection,
         iconTheme: const IconThemeData(color: _textPrimary),
-        title: const Text(
-          'Publicités carousel',
-          style: TextStyle(
+        title: Text(
+          title,
+          style: const TextStyle(
               color: _textPrimary, fontWeight: FontWeight.w800, fontSize: 18),
         ),
         actions: [
@@ -148,7 +169,7 @@ class _AdminAdsScreenState extends State<AdminAdsScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: _appBlue,
+        backgroundColor: accent,
         icon: const Icon(Icons.add, color: Colors.white),
         label: const Text('Nouvelle pub',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
@@ -426,7 +447,9 @@ class _AdTile extends StatelessWidget {
 
 class _AdFormSheet extends StatefulWidget {
   final AdModel? existing;
-  const _AdFormSheet({this.existing});
+  /// Pre-selects the service dropdown when creating a new ad.
+  final String? defaultServiceType;
+  const _AdFormSheet({this.existing, this.defaultServiceType});
 
   @override
   State<_AdFormSheet> createState() => _AdFormSheetState();
@@ -481,7 +504,7 @@ class _AdFormSheetState extends State<_AdFormSheet> {
     _youtubeIdCtrl = TextEditingController(text: ad?.youtubeId ?? '');
     _isActive = ad?.isActive ?? true;
     _adType = ad?.adType ?? AdModel.typeText;
-    _serviceType = ad?.serviceType;
+    _serviceType = ad?.serviceType ?? widget.defaultServiceType;
   }
 
   @override

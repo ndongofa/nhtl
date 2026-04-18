@@ -178,6 +178,20 @@ class AdminDashboardScreen extends StatelessWidget {
             ),
           ),
           _DashCard(
+            icon: Icons.campaign_outlined,
+            label: 'Publicités Maad',
+            sub: 'Pubs & vidéos Sama Maad',
+            color: const Color(0xFF16A34A),
+            onTap: () => _go(
+              context,
+              const AdminAdsScreen(
+                serviceType: 'maad',
+                serviceLabel: 'Sama Maad',
+                accentColor: Color(0xFF16A34A),
+              ),
+            ),
+          ),
+          _DashCard(
             icon: Icons.receipt_long_outlined,
             label: 'Commandes Maad',
             sub: 'Commandes Sama Maad',
@@ -200,6 +214,20 @@ class AdminDashboardScreen extends StatelessWidget {
               const AdminProduitListScreen(
                   serviceType: 'teranga',
                   serviceLabel: 'Sama Téranga Apéro'),
+            ),
+          ),
+          _DashCard(
+            icon: Icons.campaign_outlined,
+            label: 'Publicités Téranga',
+            sub: 'Pubs & vidéos Téranga Apéro',
+            color: const Color(0xFFDC2626),
+            onTap: () => _go(
+              context,
+              const AdminAdsScreen(
+                serviceType: 'teranga',
+                serviceLabel: 'Téranga Apéro',
+                accentColor: Color(0xFFDC2626),
+              ),
             ),
           ),
           _DashCard(
@@ -228,6 +256,20 @@ class AdminDashboardScreen extends StatelessWidget {
             ),
           ),
           _DashCard(
+            icon: Icons.campaign_outlined,
+            label: 'Publicités Best Seller',
+            sub: 'Pubs & vidéos Best Seller',
+            color: const Color(0xFF7C3AED),
+            onTap: () => _go(
+              context,
+              const AdminAdsScreen(
+                serviceType: 'bestseller',
+                serviceLabel: 'Best Seller',
+                accentColor: Color(0xFF7C3AED),
+              ),
+            ),
+          ),
+          _DashCard(
             icon: Icons.receipt_long_outlined,
             label: 'Commandes Best Seller',
             sub: 'Commandes Best Seller',
@@ -249,6 +291,20 @@ class AdminDashboardScreen extends StatelessWidget {
               context,
               const AdminProduitListScreen(
                   serviceType: 'maillot', serviceLabel: 'Sama Maillot'),
+            ),
+          ),
+          _DashCard(
+            icon: Icons.campaign_outlined,
+            label: 'Publicités Maillot',
+            sub: 'Pubs & vidéos Sama Maillot',
+            color: _kSamaMaillotColor,
+            onTap: () => _go(
+              context,
+              const AdminAdsScreen(
+                serviceType: 'maillot',
+                serviceLabel: 'Sama Maillot',
+                accentColor: _kSamaMaillotColor,
+              ),
             ),
           ),
           _DashCard(
