@@ -55,10 +55,10 @@ async function verifyHookSignature(
   sigHeader: string,
   secret: string,
 ): Promise<boolean> {
-  // Expected header format: "v1=<base64>"
+  // Expected header format: "v1=<base64>" or "v1=<base64url>"
   const match = sigHeader.match(/^v1=(.+)$/);
   if (!match) return false;
-  const receivedSig = match[1];
+  const receivedSigEncoded = match[1];
 
   // Secret format from the Supabase dashboard: "v1,whsec_<base64>"
   const secretMatch = secret.match(/^v1,whsec_(.+)$/);
@@ -70,19 +70,19 @@ async function verifyHookSignature(
     rawKey,
     { name: "HMAC", hash: "SHA-256" },
     false,
-    ["sign"],
+    ["verify"],
   );
 
-  const signature = await crypto.subtle.sign("HMAC", cryptoKey, rawBody);
-  const computedSig = btoa(String.fromCharCode(...new Uint8Array(signature)));
+  // Supabase may send the signature as base64url (uses '-' and '_').
+  // atob() requires standard base64 (uses '+' and '/'), so normalise first.
+  const base64 = receivedSigEncoded.replace(/-/g, "+").replace(/_/g, "/");
+  const receivedSigBytes = Uint8Array.from(
+    atob(base64),
+    (c) => c.charCodeAt(0),
+  );
 
-  // Constant-time comparison to prevent timing attacks
-  if (computedSig.length !== receivedSig.length) return false;
-  let diff = 0;
-  for (let i = 0; i < computedSig.length; i++) {
-    diff |= computedSig.charCodeAt(i) ^ receivedSig.charCodeAt(i);
-  }
-  return diff === 0;
+  // crypto.subtle.verify() performs a constant-time comparison internally.
+  return await crypto.subtle.verify("HMAC", cryptoKey, receivedSigBytes, rawBody);
 }
 
 serve(async (req: Request): Promise<Response> => {

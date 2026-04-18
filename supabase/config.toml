@@ -1,9 +1,11 @@
 # Supabase project configuration
 # Run `supabase link --project-ref <your-project-ref>` to link this project.
 # Deploy OTP hooks:
-#   supabase functions deploy send-sms-twilio       ← recommended (worldwide, any country)
+#   supabase functions deploy send-sms-fallback     ← RECOMMENDED for Sénégal and worldwide
+#                                                      (Brevo primary → Twilio fallback, any country)
+#   supabase functions deploy send-sms-twilio       ← Twilio only (worldwide, any country)
 #   supabase functions deploy send-whatsapp-brevo   ← WhatsApp via Brevo (requires Pro plan)
-#   supabase functions deploy send-sms-brevo        ← SMS via Brevo (limited countries)
+#   supabase functions deploy send-sms-brevo        ← SMS via Brevo only (limited countries, NOT Sénégal +221)
 
 [api]
 enabled = true
@@ -26,7 +28,21 @@ enable_confirmations = true
 
 # OTP delivery is handled by Edge Function auth hooks.
 #
-# ── RECOMMENDED: SMS via Twilio (worldwide, any country) ─────────────────────
+# ── RECOMMENDED (Sénégal + mondial): Brevo → Twilio fallback ─────────────
+# Brevo is tried first (free/low-cost). If Brevo fails for any reason
+# (e.g. Sénégal +221 is not supported by Brevo transactional SMS), the
+# function automatically retries via Twilio so delivery is guaranteed.
+# Configure in Supabase Dashboard → Authentication → Hooks → Send SMS hook:
+#   URL: https://<project-ref>.supabase.co/functions/v1/send-sms-fallback
+# Required secrets (Dashboard → Edge Functions → Secrets):
+#   SEND_SMS_HOOK_SECRET
+# Brevo (primary): BREVO_API_KEY, BREVO_SMS_SENDER
+# Twilio (fallback): TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN,
+#                    TWILIO_MESSAGING_SERVICE_SID (recommended) or TWILIO_FROM_NUMBER
+[functions.send-sms-fallback]
+verify_jwt = false
+
+# ── SMS via Twilio only (worldwide, any country) ──────────────────────────
 # Configure in Supabase Dashboard → Authentication → Hooks → Send SMS hook:
 #   URL: https://<project-ref>.supabase.co/functions/v1/send-sms-twilio
 # Required secrets (Dashboard → Edge Functions → Secrets):
