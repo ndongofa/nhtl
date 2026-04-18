@@ -65,10 +65,10 @@ class _PromoCarouselWidgetState extends State<PromoCarouselWidget>
   void _dismissYoutubeAd() {
     if (!mounted) return;
     final ads = widget.ads;
-    if (ads.length <= 1) {
+    if (ads.length == 1) {
       // Only ad: hide the entire banner
       setState(() => _dismissed = true);
-    } else {
+    } else if (ads.length > 1) {
       // Multiple ads: advance to the next one
       _advanceToNext();
     }
