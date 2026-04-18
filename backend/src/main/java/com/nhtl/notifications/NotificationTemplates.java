@@ -124,6 +124,15 @@ public class NotificationTemplates {
 				"Votre commande #" + commandeId + " (" + serviceLabel + ") a été livrée. Merci pour votre confiance !");
 	}
 
+	public NotificationEvent adminCommandeEcommerceCreated(Long commandeId, String serviceLabel,
+			String clientNom, String clientPrenom, String clientPhone) {
+		String msg = "Nouvelle commande " + serviceLabel + " #" + commandeId + " reçue de "
+				+ clientPrenom + " " + clientNom
+				+ (clientPhone != null && !clientPhone.isBlank() ? " (Tél: " + clientPhone + ")" : "") + ".";
+		return new NotificationEvent(null, null, null, NotificationEventType.ADMIN_COMMANDE_ECOMMERCE_CREATED,
+				"Nouvelle commande " + serviceLabel, msg).withTarget(NotificationTarget.ADMIN);
+	}
+
 	public NotificationEvent adminCommandeCreated(Long commandeId, String clientNom, String clientPrenom,
 			String clientPhone) {
 		String msg = "Nouvelle commande #" + commandeId + " reçue de " + clientPrenom + " " + clientNom

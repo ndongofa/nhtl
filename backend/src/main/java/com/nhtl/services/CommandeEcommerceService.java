@@ -87,6 +87,14 @@ public class CommandeEcommerceService {
             System.out.println("⚠️ Notification commandeEcommerceCreated échouée: " + e.getMessage());
         }
 
+        try {
+            notificationDispatcher.dispatch(templates.adminCommandeEcommerceCreated(
+                    saved.getId(), serviceLabel(saved.getServiceType()),
+                    saved.getNom(), saved.getPrenom(), saved.getNumeroTelephone()));
+        } catch (Exception e) {
+            System.out.println("⚠️ Notification adminCommandeEcommerceCreated échouée: " + e.getMessage());
+        }
+
         return convertToDTO(saved);
     }
 
