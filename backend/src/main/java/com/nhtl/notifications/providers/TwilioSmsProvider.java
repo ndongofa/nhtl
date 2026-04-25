@@ -27,16 +27,12 @@ public class TwilioSmsProvider implements SmsProvider {
 
 	private volatile boolean initialized = false;
 
-	private void initIfNeeded() {
-		if (initialized || accountSid == null || accountSid.isBlank()) {
-			return;
-		}
-		if (authToken == null || authToken.isBlank()) {
-			return;
-		}
+	private synchronized void initIfNeeded() {
+		if (initialized) return;
+		if (accountSid == null || accountSid.isBlank()) return;
+		if (authToken == null || authToken.isBlank()) return;
 		Twilio.init(accountSid, authToken);
 		initialized = true;
-
 		log.info("[TWILIO] Initialized accountSid={}", maskSid(accountSid));
 	}
 
