@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import '../../config/api_config.dart';
 import '../../services/auth_service.dart';
 import '../../ui/app_brand.dart';
+import 'login_screen.dart';
 import 'reset_password_screen.dart';
 
 class PhoneOtpScreen extends StatefulWidget {
@@ -206,7 +207,12 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
       );
 
       if (!mounted) return;
-      Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (_) => LoginScreen(redirectTo: widget.redirectTo),
+        ),
+        (_) => false,
+      );
     } catch (e) {
       if (!mounted) return;
       setState(() => _errorMsg = e.toString().replaceFirst('Exception: ', ''));
@@ -350,7 +356,12 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
           ),
         );
         if (!mounted) return;
-        Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (_) => LoginScreen(redirectTo: widget.redirectTo),
+          ),
+          (_) => false,
+        );
       } else {
         final decoded = jsonDecode(resp.body) as Map<String, dynamic>?;
         final errMsg = decoded?['error']?.toString() ??

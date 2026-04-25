@@ -10,6 +10,7 @@ import '../../providers/app_theme_provider.dart';
 import '../../providers/panier_provider.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/sama_account_menu.dart';
+import '../auth/login_screen.dart';
 import 'panier_screen.dart';
 
 class ProductDetailScreen extends StatefulWidget {
@@ -81,7 +82,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
-              Navigator.of(context).pushNamed('/login');
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => LoginScreen(
+                    redirectTo: ChangeNotifierProvider(
+                      create: (_) =>
+                          PanierProvider(serviceType: widget.serviceType),
+                      child: ProductDetailScreen(
+                        produit: widget.produit,
+                        serviceType: widget.serviceType,
+                        accentColor: widget.accentColor,
+                      ),
+                    ),
+                  ),
+                ),
+              );
             },
             style: ElevatedButton.styleFrom(
                 backgroundColor: widget.accentColor,

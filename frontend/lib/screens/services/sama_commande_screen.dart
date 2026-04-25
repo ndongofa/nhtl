@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:sama/screens/auth/login_screen.dart';
+import 'package:sama/screens/auth/signup_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../providers/app_theme_provider.dart';
@@ -228,7 +229,13 @@ class SamaCommandeScreen extends StatelessWidget {
                               borderRadius: BorderRadius.circular(12)),
                           padding: const EdgeInsets.symmetric(
                               horizontal: 20, vertical: 13)),
-                      onPressed: () => Navigator.pushNamed(context, '/signup'),
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const SignupScreen(
+                              redirectTo: CommandesListScreen()),
+                        ),
+                      ),
                     ),
                 ],
               ),

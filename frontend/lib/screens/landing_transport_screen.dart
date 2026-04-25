@@ -12,6 +12,7 @@ import '../providers/app_theme_provider.dart';
 import '../services/auth_service.dart';
 import '../services/departure_countdown_service.dart';
 import 'auth/login_screen.dart';
+import 'auth/signup_screen.dart';
 import 'transport_hub_screen.dart';
 
 class LandingTransportScreen extends StatefulWidget {
@@ -429,7 +430,13 @@ class _LandingTransportScreenState extends State<LandingTransportScreen> {
                         borderRadius: BorderRadius.circular(12)),
                     padding: const EdgeInsets.symmetric(
                         horizontal: 22, vertical: 14)),
-                onPressed: () => Navigator.pushNamed(context, '/signup'),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const SignupScreen(
+                        redirectTo: TransportHubScreen()),
+                  ),
+                ),
               ),
           ],
         ),
