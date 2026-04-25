@@ -145,6 +145,21 @@ class _SignupScreenState extends State<SignupScreen> {
         return;
       }
 
+      if (_usePhone && outcome == SignupOutcome.smsDeliveryFailed) {
+        // ✅ SMS indisponible (ex: crédit Twilio épuisé) → PhoneOtpScreen avec
+        // bouton bypass visible d'emblée (le compte est créé dans Supabase).
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => PhoneOtpScreen(
+              phoneE164: identifier,
+              redirectTo: widget.redirectTo,
+              smsUnavailable: true,
+            ),
+          ),
+        );
+        return;
+      }
+
       if (outcome == SignupOutcome.confirmationRequired) {
         await _showEmailConfirmationDialog(identifier);
         return;
