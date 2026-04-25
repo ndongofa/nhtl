@@ -284,6 +284,46 @@ class _TransportTrackingScreenState extends State<TransportTrackingScreen> {
             ]),
           ),
 
+          // ── Photos du colis (jointes lors de la demande) ─────────────
+          if (_transport.photosColisUrls.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 350),
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                  color: t.bgCard,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: t.border)),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Photos du colis',
+                        style: TextStyle(
+                            color: t.textPrimary,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14)),
+                    const SizedBox(height: 14),
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: _transport.photosColisUrls.length,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        crossAxisSpacing: 8,
+                        mainAxisSpacing: 8,
+                        childAspectRatio: 1,
+                      ),
+                      itemBuilder: (_, i) => _PhotoCard(
+                        t: t,
+                        url: _transport.photosColisUrls[i],
+                        label: '📦 ${i + 1}',
+                      ),
+                    ),
+                  ]),
+            ),
+          ],
+
           const SizedBox(height: 32),
         ]),
       ),
