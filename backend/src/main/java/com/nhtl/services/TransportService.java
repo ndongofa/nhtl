@@ -58,6 +58,8 @@ public class TransportService {
         t.setDevise(dto.getDevise());
         t.setStatut(parseOrDefault(dto.getStatut(), TransportStatus.EN_ATTENTE).name());
         t.setTypeTransport(dto.getTypeTransport());
+        t.setTelephoneDestinataire(dto.getTelephoneDestinataire());
+        t.setPhotosColisJson(dto.getPhotosColisJson());
         t.setDateCreation(java.time.LocalDateTime.now());
         t.setDateModification(java.time.LocalDateTime.now());
         t.setArchived(false);
@@ -310,6 +312,9 @@ public class TransportService {
         dto.setPhotoBordereauUrl(t.getPhotoBordereauUrl());
         dto.setNumeroBordereau(t.getNumeroBordereau());
         dto.setDeposePosteAt(t.getDeposePosteAt());
+        // ✅ Téléphone destinataire + photos colis utilisateur
+        dto.setTelephoneDestinataire(t.getTelephoneDestinataire());
+        dto.setPhotosColisJson(t.getPhotosColisJson());
         return dto;
     }
 
@@ -334,5 +339,7 @@ public class TransportService {
         t.setStatut(parseOrDefault(dto.getStatut(), TransportStatus.EN_ATTENTE).name());
         t.setTypeTransport(dto.getTypeTransport());
         t.setArchived(dto.getArchived());
+        t.setTelephoneDestinataire(dto.getTelephoneDestinataire());
+        t.setPhotosColisJson(dto.getPhotosColisJson());
     }
 }

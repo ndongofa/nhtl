@@ -90,7 +90,7 @@ public class TransportStatusController {
             log.warn("[SUIVI] in-app FAILED transport={}: {}", id, e.getMessage());
         }
 
-        // 6 — SMS
+        // 6 — SMS expéditeur
         String phone = transport.getNumeroTelephone();
         if (phone != null && !phone.isBlank()) {
             try {
@@ -98,6 +98,24 @@ public class TransportStatusController {
                 log.info("[SUIVI] SMS OK transport={}", id);
             } catch (Exception e) {
                 log.warn("[SUIVI] SMS FAILED transport={}: {}", id, e.getMessage());
+            }
+        }
+
+        // 6b — SMS destinataire
+        String phoneDestinataire = transport.getTelephoneDestinataire();
+        if (phoneDestinataire != null && !phoneDestinataire.isBlank()) {
+            String msgDestinataire = buildMessageDestinataire(reference, label, newStatus);
+            try {
+                smsProvider.sendSms(phoneDestinataire, msgDestinataire);
+                log.info("[SUIVI] SMS destinataire OK transport={}", id);
+            } catch (Exception e) {
+                log.warn("[SUIVI] SMS destinataire FAILED transport={}: {}", id, e.getMessage());
+            }
+            try {
+                whatsAppProvider.sendWhatsApp(phoneDestinataire, msgDestinataire);
+                log.info("[SUIVI] WhatsApp destinataire OK transport={}", id);
+            } catch (Exception e) {
+                log.warn("[SUIVI] WhatsApp destinataire FAILED transport={}: {}", id, e.getMessage());
             }
         }
 
@@ -131,13 +149,41 @@ public class TransportStatusController {
                 "label",       label));
     }
 
+    private String buildMessageDestinataire(String reference, String label, TransportStatus status) {
+        String detail = detailDestinataire(status);
+
+        return "Bonjour,\n\n"
+                + "Transport " + reference + "\n"
+                + "Statut : " + label + "\n\n"
+                + detail + "\n\n"
+                + footer();
+    }
+
     private String buildMessage(String client, String reference,
                                 String label, TransportStatus status) {
         String greeting = (client != null && !client.isBlank())
                 ? "Bonjour " + client + ","
                 : "Bonjour,";
 
-        String detail = switch (status) {
+        String detail = detailExpediteur(status);
+
+        return greeting + "\n\n"
+                + "Transport " + reference + "\n"
+                + "Nouveau statut : " + label + "\n\n"
+                + detail + "\n\n"
+                + footer();
+    }
+
+    private String footer() {
+        return "Questions ?\n"
+                + "• WhatsApp France : +33 76 891 30 74\n"
+                + "• WhatsApp Dakar  : +221 78 304 28 38\n\n"
+                + "— L'équipe SAMA Services International\n"
+                + "sama-services-intl.com";
+    }
+
+    private String detailExpediteur(TransportStatus status) {
+        return switch (status) {
             case DEPART_CONFIRME   -> "Votre transport a été confirmé pour le prochain départ SAMA.";
             case EN_TRANSIT        -> "Votre colis est en transit vers sa destination.";
             case EN_DOUANE         -> "Votre colis est en traitement douanier. Des délais peuvent survenir.";
@@ -146,16 +192,18 @@ public class TransportStatusController {
             case LIVRE             -> "Votre colis a été remis. Merci pour votre confiance !";
             default                -> "Votre transport a été mis à jour.";
         };
+    }
 
-        return greeting + "\n\n"
-                + "Transport " + reference + "\n"
-                + "Nouveau statut : " + label + "\n\n"
-                + detail + "\n\n"
-                + "Questions ?\n"
-                + "• WhatsApp France : +33 76 891 30 74\n"
-                + "• WhatsApp Dakar  : +221 78 304 28 38\n\n"
-                + "— L'équipe SAMA Services International\n"
-                + "sama-services-intl.com";
+    private String detailDestinataire(TransportStatus status) {
+        return switch (status) {
+            case DEPART_CONFIRME   -> "Un colis vous est destiné et a été confirmé pour le prochain départ SAMA.";
+            case EN_TRANSIT        -> "Un colis qui vous est destiné est en transit vers votre destination.";
+            case EN_DOUANE         -> "Un colis qui vous est destiné est en traitement douanier.";
+            case ARRIVE            -> "Un colis qui vous est destiné est arrivé à destination.";
+            case PRET_RECUPERATION -> "Un colis vous attend et est prêt à être récupéré. Présentez-vous avec une pièce d'identité.";
+            case LIVRE             -> "Un colis qui vous était destiné a été remis.";
+            default                -> "Un transport vous concernant a été mis à jour.";
+        };
     }
 
     private String label(TransportStatus s) {

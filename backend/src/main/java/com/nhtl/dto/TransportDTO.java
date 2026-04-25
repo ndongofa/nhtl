@@ -49,6 +49,10 @@ public class TransportDTO {
     private String numeroBordereau;
     private LocalDateTime deposePosteAt;
 
+    // ✅ Téléphone destinataire + photos colis utilisateur
+    private String telephoneDestinataire;
+    private String photosColisJson;
+
     // ── Getters & Setters ──────────────────────────────────────────────────────
 
     public Long getId() { return id; }
@@ -150,4 +154,10 @@ public class TransportDTO {
 
     public LocalDateTime getDeposePosteAt() { return deposePosteAt; }
     public void setDeposePosteAt(LocalDateTime d) { this.deposePosteAt = d; }
+
+    public String getTelephoneDestinataire() { return telephoneDestinataire; }
+    public void setTelephoneDestinataire(String t) { this.telephoneDestinataire = t; }
+
+    public String getPhotosColisJson() { return photosColisJson; }
+    public void setPhotosColisJson(String p) { this.photosColisJson = p; }
 }

@@ -1,5 +1,7 @@
 // lib/models/transport.dart
 
+import 'dart:convert';
+
 class Transport {
   final int? id;
   final String nom;
@@ -38,6 +40,12 @@ class Transport {
   final String? gpNom;
   final String? gpPhoneNumber;
 
+  // ✅ Téléphone du destinataire
+  final String? telephoneDestinataire;
+
+  // ✅ Photos colis ajoutées par l'utilisateur
+  final List<String> photosColisUrls;
+
   // ✅ Suivi postal
   final String? photoColisUrl;
   final String? photoBordereauUrl;
@@ -73,6 +81,8 @@ class Transport {
     this.gpPrenom,
     this.gpNom,
     this.gpPhoneNumber,
+    this.telephoneDestinataire,
+    this.photosColisUrls = const [],
     this.photoColisUrl,
     this.photoBordereauUrl,
     this.numeroBordereau,
@@ -106,6 +116,8 @@ class Transport {
     String? gpPrenom,
     String? gpNom,
     String? gpPhoneNumber,
+    String? telephoneDestinataire,
+    List<String>? photosColisUrls,
     String? photoColisUrl,
     String? photoBordereauUrl,
     String? numeroBordereau,
@@ -138,6 +150,8 @@ class Transport {
       gpPrenom: gpPrenom ?? this.gpPrenom,
       gpNom: gpNom ?? this.gpNom,
       gpPhoneNumber: gpPhoneNumber ?? this.gpPhoneNumber,
+      telephoneDestinataire: telephoneDestinataire ?? this.telephoneDestinataire,
+      photosColisUrls: photosColisUrls ?? this.photosColisUrls,
       photoColisUrl: photoColisUrl ?? this.photoColisUrl,
       photoBordereauUrl: photoBordereauUrl ?? this.photoBordereauUrl,
       numeroBordereau: numeroBordereau ?? this.numeroBordereau,
@@ -184,6 +198,8 @@ class Transport {
       gpPrenom: json['gpPrenom'] as String?,
       gpNom: json['gpNom'] as String?,
       gpPhoneNumber: json['gpPhoneNumber'] as String?,
+      telephoneDestinataire: json['telephoneDestinataire'] as String?,
+      photosColisUrls: _parsePhotosColisJson(json['photosColisJson']),
       photoColisUrl: json['photoColisUrl'] as String?,
       photoBordereauUrl: json['photoBordereauUrl'] as String?,
       numeroBordereau: json['numeroBordereau'] as String?,
@@ -191,6 +207,18 @@ class Transport {
           ? DateTime.tryParse(json['deposePosteAt'].toString())
           : null,
     );
+  }
+
+  static List<String> _parsePhotosColisJson(dynamic raw) {
+    if (raw == null) return const [];
+    try {
+      final List<dynamic> list = raw is String
+          ? (jsonDecode(raw) as List<dynamic>)
+          : (raw is List ? raw : []);
+      return list.whereType<String>().toList();
+    } catch (_) {
+      return const [];
+    }
   }
 
   Map<String, dynamic> toJson() {
@@ -217,6 +245,8 @@ class Transport {
       'gpPrenom': gpPrenom,
       'gpNom': gpNom,
       'gpPhoneNumber': gpPhoneNumber,
+      'telephoneDestinataire': telephoneDestinataire,
+      'photosColisJson': photosColisUrls.isEmpty ? null : jsonEncode(photosColisUrls),
     };
   }
 }

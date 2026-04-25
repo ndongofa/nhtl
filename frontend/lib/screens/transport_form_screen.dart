@@ -1,8 +1,11 @@
 // lib/screens/transport_form_screen.dart
 
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/transport.dart';
 import '../services/auth_service.dart';
@@ -49,6 +52,10 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
   final _deviseController = TextEditingController();
 
   String? _phoneE164;
+  String? _phoneDestE164;
+  final List<XFile> _pendingPhotos = [];
+  final List<String> _uploadedPhotoUrls = [];
+  final _imagePicker = ImagePicker();
   String _statut = "EN_ATTENTE";
 
   static const List<String> _statuts = [
@@ -88,6 +95,8 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
       _valeurEstimeeController.text = t.valeurEstimee.toString();
       _deviseController.text = t.devise;
       _statut = t.statut;
+      _phoneDestE164 = t.telephoneDestinataire;
+      _uploadedPhotoUrls.addAll(t.photosColisUrls);
     } else {
       // ── Nouveau formulaire : auto-remplissage depuis le profil connecté ──
       _deviseController.text = 'EUR';
@@ -121,6 +130,41 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
     super.dispose();
   }
 
+  String _resolveExt(XFile file) {
+    final name = file.name;
+    if (name.contains('.')) {
+      final ext = name.split('.').last.toLowerCase();
+      if (['jpg', 'jpeg', 'png', 'webp'].contains(ext)) {
+        return ext == 'jpeg' ? 'jpg' : ext;
+      }
+    }
+    final mime = file.mimeType ?? '';
+    if (mime.contains('jpeg') || mime.contains('jpg')) return 'jpg';
+    if (mime.contains('png')) return 'png';
+    if (mime.contains('webp')) return 'webp';
+    return 'jpg';
+  }
+
+  Future<void> _pickPhoto() async {
+    final file = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+      maxWidth: 1920,
+    );
+    if (file != null) {
+      setState(() => _pendingPhotos.add(file));
+    }
+  }
+
+  void _removePhoto(int index) {
+    if (index < _uploadedPhotoUrls.length) {
+      setState(() => _uploadedPhotoUrls.removeAt(index));
+    } else {
+      final pendingIndex = index - _uploadedPhotoUrls.length;
+      setState(() => _pendingPhotos.removeAt(pendingIndex));
+    }
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_phoneE164 == null || _phoneE164!.isEmpty) {
@@ -132,6 +176,25 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
     }
     setState(() => _isLoading = true);
     try {
+      // Upload pending photos to Supabase storage
+      final supa = Supabase.instance.client;
+      final List<String> allPhotoUrls = List.from(_uploadedPhotoUrls);
+      for (int i = 0; i < _pendingPhotos.length; i++) {
+        final file = _pendingPhotos[i];
+        final ext = _resolveExt(file);
+        final path =
+            'transports/colis/${DateTime.now().microsecondsSinceEpoch}_$i.$ext';
+        final Uint8List bytes = await file.readAsBytes();
+        await supa.storage.from('sama-postal').uploadBinary(
+              path,
+              bytes,
+              fileOptions:
+                  FileOptions(contentType: 'image/$ext', upsert: true),
+            );
+        allPhotoUrls
+            .add(supa.storage.from('sama-postal').getPublicUrl(path));
+      }
+
       final data = Transport(
         id: widget.transport?.id,
         nom: _nomController.text.trim(),
@@ -158,6 +221,11 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
             ? 'EUR'
             : _deviseController.text.trim(),
         statut: _statut,
+        telephoneDestinataire:
+            (_phoneDestE164 == null || _phoneDestE164!.isEmpty)
+                ? null
+                : _phoneDestE164,
+        photosColisUrls: allPhotoUrls,
       );
       final result = widget.transport == null
           ? await _service.createTransport(data)
@@ -281,6 +349,15 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
                   _sectionHeader(Icons.place_outlined, _teal, "Destinataire",
                       "Informations de livraison"),
                   const SizedBox(height: 20),
+                  PhoneInputField(
+                    label: 'Téléphone destinataire (optionnel)',
+                    initialCountryCode: 'SN',
+                    initialValue: _phoneDestE164,
+                    required: false,
+                    onChanged: (e164) =>
+                        setState(() => _phoneDestE164 = e164),
+                  ),
+                  const SizedBox(height: 14),
                   _field(_paysDestController, "Pays de destination",
                       Icons.flag_outlined,
                       hint: "Ex : Sénégal, France, Maroc", required: true),
@@ -363,10 +440,21 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
 
                 const SizedBox(height: 16),
 
-                // ── Section 4 : Statut (édition uniquement) ─────────────────
+                // ── Section 4 : Photos du colis ─────────────────────────────
+                _card(children: [
+                  _sectionHeader(Icons.photo_library_outlined, _green,
+                      "Photos du colis",
+                      "Ajoutez des photos du colis à envoyer (optionnel)"),
+                  const SizedBox(height: 16),
+                  _buildPhotosSection(),
+                ]),
+
+                const SizedBox(height: 16),
+
+                // ── Section 5 : Statut (édition uniquement) ─────────────────
                 if (isEdit)
                   _card(children: [
-                    _sectionHeader(Icons.track_changes_outlined, _green,
+                    _sectionHeader(Icons.track_changes_outlined, _amber,
                         "Statut", "État actuel du transport"),
                     const SizedBox(height: 16),
                     _dropdown("Statut du transport", _statut, _statuts,
@@ -420,6 +508,86 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
   }
 
   // ── Helpers UI ─────────────────────────────────────────────────────────────
+
+  Widget _buildPhotosSection() {
+    final totalCount = _uploadedPhotoUrls.length + _pendingPhotos.length;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      if (totalCount > 0) ...[
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: List.generate(totalCount, (index) {
+            final isUploaded = index < _uploadedPhotoUrls.length;
+            return Stack(children: [
+              Container(
+                width: 90,
+                height: 90,
+                decoration: BoxDecoration(
+                  border: Border.all(color: _border),
+                  borderRadius: BorderRadius.circular(10),
+                  color: _bgLight,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: isUploaded
+                      ? Image.network(_uploadedPhotoUrls[index],
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Icon(
+                              Icons.broken_image_outlined,
+                              color: _textMuted))
+                      : FutureBuilder<Uint8List>(
+                          future: _pendingPhotos[index - _uploadedPhotoUrls.length]
+                              .readAsBytes(),
+                          builder: (ctx, snap) {
+                            if (snap.hasData) {
+                              return Image.memory(snap.data!, fit: BoxFit.cover);
+                            }
+                            return const Center(
+                                child: SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2)));
+                          }),
+                ),
+              ),
+              Positioned(
+                top: 2,
+                right: 2,
+                child: GestureDetector(
+                  onTap: () => _removePhoto(index),
+                  child: Container(
+                    width: 22,
+                    height: 22,
+                    decoration: const BoxDecoration(
+                        color: Colors.red, shape: BoxShape.circle),
+                    child: const Icon(Icons.close,
+                        color: Colors.white, size: 14),
+                  ),
+                ),
+              ),
+            ]);
+          }),
+        ),
+        const SizedBox(height: 12),
+      ],
+      OutlinedButton.icon(
+        onPressed: _pickPhoto,
+        icon: const Icon(Icons.add_a_photo_outlined, size: 18),
+        label: Text(totalCount == 0
+            ? 'Ajouter une photo du colis'
+            : 'Ajouter une autre photo'),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: _appBlue,
+          side: const BorderSide(color: _appBlue),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          padding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        ),
+      ),
+    ]);
+  }
 
   Widget _card({required List<Widget> children}) => Container(
         width: double.infinity,
