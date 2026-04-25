@@ -310,7 +310,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             children: [
               const Text(
                 'Veuillez corriger les points suivants avant de soumettre :',
-                style: TextStyle(fontSize: 13),
+                style: TextStyle(fontSize: 13, color: Colors.black54),
               ),
               const SizedBox(height: 12),
               ...errors.map((e) => Padding(
@@ -324,7 +324,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 fontWeight: FontWeight.w700)),
                         Expanded(
                             child: Text(e,
-                                style: const TextStyle(fontSize: 13))),
+                                style: const TextStyle(
+                                    fontSize: 13, color: Colors.black87))),
                       ],
                     ),
                   )),
