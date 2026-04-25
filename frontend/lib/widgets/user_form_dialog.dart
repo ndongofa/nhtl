@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/user.dart';
+import 'phone_input_field.dart';
 
 /// Dialogue formulaire (création/édition utilisateur)
 /// Retourne Map<String, dynamic> ou null si annulé.
@@ -26,7 +27,7 @@ Future<Map<String, dynamic>?> showUserFormDialog({
 
   // Pour l'édition: champs séparés (optionnel mais plus clair)
   final emailController = TextEditingController(text: user?.email ?? '');
-  final phoneController = TextEditingController(text: user?.phone ?? '');
+  String? phoneE164 = user?.phone;
 
   final passwordController = TextEditingController();
   String selectedRole = user?.role ?? 'user';
@@ -85,15 +86,12 @@ Future<Map<String, dynamic>?> showUserFormDialog({
                   ),
                   keyboardType: TextInputType.emailAddress,
                 ),
-                TextField(
-                  controller: phoneController,
-                  decoration: const InputDecoration(
-                    labelText: "Téléphone E.164 (optionnel)",
-                    hintText: "+221783042838",
-                  ),
-                  keyboardType: TextInputType.phone,
-                  autocorrect: false,
-                  enableSuggestions: false,
+                const SizedBox(height: 8),
+                PhoneInputField(
+                  label: 'Téléphone (optionnel)',
+                  required: false,
+                  initialValue: user?.phone,
+                  onChanged: (e164) => phoneE164 = e164,
                 ),
               ],
               const SizedBox(height: 20),
@@ -142,17 +140,15 @@ Future<Map<String, dynamic>?> showUserFormDialog({
               } else {
                 // édition
                 final email = emailController.text.trim();
-                final phone = phoneController.text.trim();
 
-                // Autoriser email/phone vides, mais si fournis, valider:
+                // Autoriser email vide, mais si fourni, valider:
                 if (email.isNotEmpty && !looksLikeEmail(email)) return;
-                if (phone.isNotEmpty && !looksLikeE164Phone(phone)) return;
 
                 Navigator.pop(context, {
                   'prenom': prenom,
                   'nom': nom,
                   'email': email.isEmpty ? null : email,
-                  'phone': phone.isEmpty ? null : phone,
+                  'phone': (phoneE164?.isEmpty ?? true) ? null : phoneE164,
                   'role': selectedRole,
                 });
               }
