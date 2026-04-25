@@ -1,23 +1,41 @@
 /**
- * Supabase Auth Hook – Send OTP via Twilio SMS (worldwide)
+ * Supabase Auth Hook – Send OTP via WhatsApp (primary) then SMS (fallback)
  *
  * Configure this Edge Function as the "Send SMS" auth hook in:
  *   Supabase Dashboard → Authentication → Hooks → Send SMS hook
  *   URL: https://<project-ref>.supabase.co/functions/v1/send-sms-twilio
  *
+ * ── Delivery strategy ────────────────────────────────────────────────────────
+ *   1. If TWILIO_WHATSAPP_FROM is set, the OTP is sent via WhatsApp first.
+ *   2. If the WhatsApp attempt fails (e.g. the number is not on WhatsApp,
+ *      error 63001 / 63003), the function automatically falls back to SMS.
+ *   3. If TWILIO_WHATSAPP_FROM is NOT set, only SMS is attempted (legacy mode).
+ *
  * Required environment variables (set via Supabase Dashboard → Edge Functions → Secrets):
  *   TWILIO_ACCOUNT_SID            – Account SID from https://console.twilio.com
  *   TWILIO_AUTH_TOKEN             – Auth Token from https://console.twilio.com
  *
- * Sender – use ONE of the following (Messaging Service SID recommended for worldwide delivery):
+ * WhatsApp sender (optional – enables WhatsApp-first mode):
+ *   TWILIO_WHATSAPP_FROM          – WhatsApp-enabled number in E.164 format
+ *                                   (e.g. "+33652383258").  Do NOT include the
+ *                                   "whatsapp:" prefix here; the function adds it.
+ *   TWILIO_WHATSAPP_CONTENT_SID   – Meta-approved Content Template SID (HXxxx…).
+ *                                   Required in production for business-initiated
+ *                                   messages sent outside the 24-hour reply window.
+ *                                   The template must expose a single {{1}} variable
+ *                                   that receives the full OTP message text.
+ *                                   If omitted the message is sent as free-form text
+ *                                   (only works inside the 24-hour window / sandbox).
+ *
+ * SMS sender – use ONE of the following (Messaging Service SID recommended):
  *   TWILIO_MESSAGING_SERVICE_SID  – Messaging Service SID (starts with "MG…")
- *                                   → Twilio selects the best sender per destination country.
+ *                                   → Twilio selects the best sender per country.
  *                                   Create one at: console.twilio.com/us1/develop/sms/services
  *   TWILIO_FROM_NUMBER            – E.164 Twilio phone number (e.g. "+12025550100")
- *                                   Fallback if TWILIO_MESSAGING_SERVICE_SID is not set.
+ *                                   Used when TWILIO_MESSAGING_SERVICE_SID is not set.
  *
  * Optional:
- *   TWILIO_SMS_TEMPLATE           – Custom message template. Use {otp} as placeholder.
+ *   TWILIO_SMS_TEMPLATE           – Custom message template for SMS. Use {otp} as placeholder.
  *                                   Default: "Votre code Sama Services est: {otp}"
  *
  * ── Senegal (+221) not receiving SMS? ────────────────────────────────────────
@@ -26,14 +44,15 @@
  *      https://console.twilio.com/us1/account/sms-geographic-permissions
  *   2. Search for "Senegal" and toggle it ON.
  *   3. If using a Messaging Service, also check per-service geo permissions.
- * Without this, Twilio returns error 21408 for all +221 numbers and this
- * function returns an explicit error (does NOT silently swallow it).
+ * Without this, Twilio returns error 21408 for all +221 numbers.
  *
  * ── Common Twilio error codes ─────────────────────────────────────────────────
  *   21211 – Invalid 'To' phone number (bad format, user typo) → logged, signup allowed
  *   21408 – Geographic permission not enabled for this country  → error returned
  *   21614 – Not a valid mobile number (landline)               → error returned
  *   30006 – Landline or unreachable carrier                    → error returned
+ *   63001 – WhatsApp: number not found / not on WhatsApp       → SMS fallback
+ *   63003 – WhatsApp: channel returned an error                → SMS fallback
  *
  * Pricing note:
  *   Twilio rates vary by destination country. Senegal (+221) ≈ $0.085/SMS,
@@ -41,6 +60,7 @@
  *
  * Twilio REST API reference:
  *   https://www.twilio.com/docs/sms/api/message-resource#create-a-message-resource
+ *   https://www.twilio.com/docs/whatsapp/api#sending-messages-with-whatsapp
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -53,6 +73,155 @@ interface SMSHookPayload {
   sms: {
     otp: string;
   };
+}
+
+// ── WhatsApp-specific error codes that should trigger an SMS fallback ─────────
+// 63001 – WhatsApp number not found (number not registered on WhatsApp)
+// 63003 – WhatsApp channel returned an error (unreachable, opt-out, etc.)
+const WHATSAPP_FALLBACK_CODES = new Set([63001, 63003]);
+
+/**
+ * Attempt to send an OTP via WhatsApp.
+ *
+ * @param to           Destination in E.164 format (e.g. "+221XXXXXXXXX").
+ * @param messageBody  Plain-text OTP message (used as free-form body or as the
+ *                     {{1}} template variable when a ContentSid is configured).
+ * @param accountSid   Twilio Account SID.
+ * @param authToken    Twilio Auth Token.
+ * @param whatsappFrom WhatsApp-enabled sender number in E.164 format (without prefix).
+ * @param contentSid   Optional Meta-approved Content Template SID (HXxxx…).
+ *
+ * @returns `{ ok: true }` on success, or `{ ok: false, fallback: boolean }`
+ *          where `fallback` is true when the error is recoverable via SMS.
+ */
+async function sendViaWhatsApp(
+  to: string,
+  messageBody: string,
+  accountSid: string,
+  authToken: string,
+  whatsappFrom: string,
+  contentSid: string | undefined,
+): Promise<{ ok: true } | { ok: false; fallback: boolean; reason: string }> {
+  const waFrom = `whatsapp:${whatsappFrom}`;
+  const waTo = `whatsapp:${to}`;
+
+  let bodyParams: string;
+  if (contentSid) {
+    // Meta-approved template: pass the full OTP text as the {{1}} variable.
+    const contentVariables = JSON.stringify({ "1": messageBody });
+    bodyParams =
+      `From=${encodeURIComponent(waFrom)}` +
+      `&To=${encodeURIComponent(waTo)}` +
+      `&ContentSid=${encodeURIComponent(contentSid)}` +
+      `&ContentVariables=${encodeURIComponent(contentVariables)}`;
+  } else {
+    // Free-form message (sandbox / inside the 24-hour reply window).
+    bodyParams =
+      `From=${encodeURIComponent(waFrom)}` +
+      `&To=${encodeURIComponent(waTo)}` +
+      `&Body=${encodeURIComponent(messageBody)}`;
+  }
+
+  console.log(
+    `[send-sms-twilio] Attempting WhatsApp OTP to ${waTo}` +
+      (contentSid ? ` via template ${contentSid}` : " (free-form)"),
+  );
+
+  const res = await fetch(
+    `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${btoa(`${accountSid}:${authToken}`)}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: bodyParams,
+    },
+  );
+
+  if (res.ok) {
+    const body = await res.json();
+    console.log(
+      "[send-sms-twilio] WhatsApp sent: sid=%s status=%s",
+      body.sid,
+      body.status,
+    );
+    return { ok: true };
+  }
+
+  const rawBody = await res.text();
+  let twilioCode: number | null = null;
+  try {
+    twilioCode = (JSON.parse(rawBody) as { code?: number }).code ?? null;
+  } catch (_) { /* non-JSON */ }
+
+  const fallback = twilioCode !== null && WHATSAPP_FALLBACK_CODES.has(twilioCode);
+  console.warn(
+    `[send-sms-twilio] WhatsApp failed: status=${res.status} code=${twilioCode ?? "unknown"} fallback=${fallback} body=${rawBody}`,
+  );
+  return {
+    ok: false,
+    fallback,
+    reason: `Twilio WhatsApp error ${res.status} (code ${twilioCode ?? "unknown"})`,
+  };
+}
+
+/**
+ * Send an OTP via regular SMS.
+ *
+ * @returns `{ ok: true }` on success, or
+ *          `{ ok: false, status: number, twilioCode: number|null, body: string }` on failure.
+ */
+async function sendViaSms(
+  to: string,
+  messageBody: string,
+  accountSid: string,
+  authToken: string,
+  messagingServiceSid: string | undefined,
+  fromNumber: string | undefined,
+): Promise<{ ok: true } | { ok: false; status: number; twilioCode: number | null; rawBody: string }> {
+  if (!messagingServiceSid && !fromNumber) {
+    return { ok: false, status: 500, twilioCode: null, rawBody: "No SMS sender configured" };
+  }
+  const senderParam = messagingServiceSid
+    ? `MessagingServiceSid=${encodeURIComponent(messagingServiceSid)}`
+    : `From=${encodeURIComponent(fromNumber as string)}`;
+
+  console.log(
+    `[send-sms-twilio] Sending SMS OTP to ${to} via ${
+      messagingServiceSid ? "MessagingService " + messagingServiceSid : "number " + fromNumber
+    }`,
+  );
+
+  const res = await fetch(
+    `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${btoa(`${accountSid}:${authToken}`)}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: `${senderParam}&To=${encodeURIComponent(to)}&Body=${encodeURIComponent(messageBody)}`,
+    },
+  );
+
+  if (res.ok) {
+    const body = await res.json();
+    console.log(
+      "[send-sms-twilio] SMS sent: sid=%s status=%s",
+      body.sid,
+      body.status,
+    );
+    return { ok: true };
+  }
+
+  const rawBody = await res.text();
+  let twilioCode: number | null = null;
+  try {
+    twilioCode = (JSON.parse(rawBody) as { code?: number }).code ?? null;
+  } catch (_) { /* non-JSON */ }
+
+  return { ok: false, status: res.status, twilioCode, rawBody };
 }
 
 /**
@@ -173,6 +342,8 @@ serve(async (req: Request): Promise<Response> => {
 
     const messagingServiceSid = Deno.env.get("TWILIO_MESSAGING_SERVICE_SID");
     const fromNumber = Deno.env.get("TWILIO_FROM_NUMBER");
+    const whatsappFrom = Deno.env.get("TWILIO_WHATSAPP_FROM");
+    const whatsappContentSid = Deno.env.get("TWILIO_WHATSAPP_CONTENT_SID");
 
     if (!messagingServiceSid && !fromNumber) {
       console.error(
@@ -200,93 +371,95 @@ serve(async (req: Request): Promise<Response> => {
       ? templateEnv.replace("{otp}", otp)
       : `Votre code Sama Services est: ${otp}`;
 
-    const senderParam = messagingServiceSid
-      ? `MessagingServiceSid=${encodeURIComponent(messagingServiceSid)}`
-      : `From=${encodeURIComponent(fromNumber!)}`;
-
-    console.log(
-      `[send-sms-twilio] Sending OTP to ${to} via ${messagingServiceSid ? "MessagingService " + messagingServiceSid : "number " + fromNumber}`,
-    );
-
-    // Twilio Messages API – application/x-www-form-urlencoded
-    const twilioRes = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Basic ${btoa(`${accountSid}:${authToken}`)}`,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: `${senderParam}&To=${encodeURIComponent(to)}&Body=${encodeURIComponent(messageBody)}`,
-      },
-    );
-
-    if (!twilioRes.ok) {
-      const body = await twilioRes.text();
-      console.error(
-        `[send-sms-twilio] Twilio API error status=${twilioRes.status} body=${body}`,
+    // ── 1. Try WhatsApp first (if configured) ──────────────────────────────
+    if (whatsappFrom) {
+      const waResult = await sendViaWhatsApp(
+        to,
+        messageBody,
+        accountSid,
+        authToken,
+        whatsappFrom,
+        whatsappContentSid,
       );
 
-      if (twilioRes.status === 400) {
-        // Parse the Twilio error code to distinguish between different 400 causes.
-        let twilioCode: number | null = null;
-        try {
-          twilioCode = (JSON.parse(body) as { code?: number }).code ?? null;
-        } catch (_) { /* non-JSON body, leave twilioCode as null */ }
+      if (waResult.ok) {
+        return new Response(JSON.stringify({}), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
 
-        // 21211 = Invalid 'To' phone number (bad format / user typo).
-        // Allow signup so a malformed number doesn't permanently block the flow.
-        // All other 400 codes (especially 21408 = Geographic permission not enabled)
-        // are returned as errors so the problem is visible in logs.
-        if (twilioCode === 21211) {
-          console.warn(
-            `[send-sms-twilio] Twilio 21211 – invalid phone format for to='${to}'. Signup allowed but OTP not sent.`,
-          );
-          return new Response(JSON.stringify({}), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          });
-        }
-
-        // 21408 = Geographic permission not enabled for this country.
-        // ➜ Enable the destination country in Twilio Console:
-        //   Account → Settings → SMS Geographic Permissions
-        //   https://console.twilio.com/us1/account/sms-geographic-permissions
-        if (twilioCode === 21408) {
-          console.error(
-            `[send-sms-twilio] Twilio 21408 – Geographic permission not enabled for to='${to}'. ` +
-            "Enable the destination country in Twilio Console → Account → Settings → SMS Geographic Permissions.",
-          );
-        }
-
+      if (!waResult.fallback) {
+        // Non-recoverable WhatsApp error – surface it instead of silently using SMS.
         return new Response(
-          JSON.stringify({
-            error: `Twilio error 400 (code ${twilioCode ?? "unknown"}): ${body}`,
-          }),
+          JSON.stringify({ error: waResult.reason }),
           { status: 502, headers: { "Content-Type": "application/json" } },
+        );
+      }
+
+      console.log(
+        `[send-sms-twilio] WhatsApp not available for ${to} – falling back to SMS`,
+      );
+    }
+
+    // ── 2. SMS (primary when WhatsApp not configured, fallback otherwise) ──
+    const smsResult = await sendViaSms(
+      to,
+      messageBody,
+      accountSid,
+      authToken,
+      messagingServiceSid,
+      fromNumber,
+    );
+
+    if (smsResult.ok) {
+      return new Response(JSON.stringify({}), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // ── Handle SMS errors ──────────────────────────────────────────────────
+    const { status: smsStatus, twilioCode, rawBody } = smsResult;
+    console.error(
+      `[send-sms-twilio] Twilio SMS API error status=${smsStatus} body=${rawBody}`,
+    );
+
+    if (smsStatus === 400) {
+      // 21211 = Invalid 'To' phone number (bad format / user typo).
+      // Allow signup so a malformed number doesn't permanently block the flow.
+      if (twilioCode === 21211) {
+        console.warn(
+          `[send-sms-twilio] Twilio 21211 – invalid phone format for to='${to}'. Signup allowed but OTP not sent.`,
+        );
+        return new Response(JSON.stringify({}), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      // 21408 = Geographic permission not enabled for this country.
+      if (twilioCode === 21408) {
+        console.error(
+          `[send-sms-twilio] Twilio 21408 – Geographic permission not enabled for to='${to}'. ` +
+          "Enable the destination country in Twilio Console → Account → Settings → SMS Geographic Permissions.",
         );
       }
 
       return new Response(
         JSON.stringify({
-          error: `Twilio error ${twilioRes.status}: ${body}`,
+          error: `Twilio error 400 (code ${twilioCode ?? "unknown"}): ${rawBody}`,
         }),
         { status: 502, headers: { "Content-Type": "application/json" } },
       );
     }
 
-    const twilioBody = await twilioRes.json();
-    console.log(
-      "[send-sms-twilio] Twilio response: sid=%s status=%s",
-      twilioBody.sid,
-      twilioBody.status,
+    return new Response(
+      JSON.stringify({
+        error: `Twilio error ${smsStatus}: ${rawBody}`,
+      }),
+      { status: 502, headers: { "Content-Type": "application/json" } },
     );
-
-    // Supabase Auth Hook expects an empty object on success
-    return new Response(JSON.stringify({}), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
   } catch (err) {
     console.error("[send-sms-twilio] Unexpected error:", err);
     return new Response(
