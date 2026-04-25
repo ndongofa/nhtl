@@ -31,8 +31,10 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
   static const Color _amber = Color(0xFFFFB300);
   static const Color _teal = Color(0xFF00BCD4);
   static const Color _green = Color(0xFF22C55E);
+  static const Color _red = Color(0xFFEF4444);
 
   final _formKey = GlobalKey<FormState>();
+  final _scrollController = ScrollController();
   final _service = TransportService();
   bool _isLoading = false;
 
@@ -113,6 +115,7 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _nomController.dispose();
     _prenomController.dispose();
     _emailController.dispose();
@@ -166,14 +169,21 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-    if (_phoneE164 == null || _phoneE164!.isEmpty) {
-      Fluttertoast.showToast(
-          msg: 'Veuillez entrer un numéro de téléphone valide.',
-          backgroundColor: Colors.red,
-          toastLength: Toast.LENGTH_LONG);
+    final formValid = _formKey.currentState!.validate();
+    final errors = _collectErrors();
+
+    if (!formValid || errors.isNotEmpty) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOut,
+      );
+      _showValidationDialog(errors.isNotEmpty
+          ? errors
+          : ['Veuillez corriger les champs indiqués en rouge.']);
       return;
     }
+
     setState(() => _isLoading = true);
     try {
       // Upload pending photos to Supabase storage
@@ -248,6 +258,115 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
     }
   }
 
+  // ✅ Collecte toutes les erreurs de validation en langage clair
+  List<String> _collectErrors() {
+    final errors = <String>[];
+
+    if (_nomController.text.trim().isEmpty) errors.add('Le nom est requis');
+    if (_prenomController.text.trim().isEmpty) errors.add('Le prénom est requis');
+    if (_phoneE164 == null || _phoneE164!.isEmpty) {
+      errors.add('Un numéro de téléphone valide est requis');
+    }
+    if (_emailController.text.trim().isNotEmpty &&
+        !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
+            .hasMatch(_emailController.text.trim())) {
+      errors.add("L'adresse email est invalide");
+    }
+    if (_paysExpediteurController.text.trim().isEmpty) {
+      errors.add("Le pays d'expédition est requis");
+    }
+    if (_villeExpediteurController.text.trim().isEmpty) {
+      errors.add("La ville d'expédition est requise");
+    }
+    if (_adresseExpediteurController.text.trim().isEmpty) {
+      errors.add("L'adresse d'expédition est requise");
+    }
+    if (_paysDestController.text.trim().isEmpty) {
+      errors.add('Le pays de destination est requis');
+    }
+    if (_villeDestController.text.trim().isEmpty) {
+      errors.add('La ville de destination est requise');
+    }
+    if (_adresseDestController.text.trim().isEmpty) {
+      errors.add("L'adresse de destination est requise");
+    }
+    if (_typesMarchandiseController.text.trim().isEmpty) {
+      errors.add('Le type de marchandise est requis');
+    }
+    if (_descriptionController.text.trim().isEmpty) {
+      errors.add('La description détaillée est requise');
+    } else if (_descriptionController.text.trim().length < 10) {
+      errors.add('La description doit contenir au moins 10 caractères');
+    }
+    if (_valeurEstimeeController.text.trim().isEmpty) {
+      errors.add('La valeur estimée est requise');
+    } else {
+      final val = double.tryParse(
+          _valeurEstimeeController.text.trim().replaceAll(',', '.'));
+      if (val == null || val <= 0) {
+        errors.add('La valeur estimée est invalide');
+      }
+    }
+
+    return errors;
+  }
+
+  // ✅ Affiche un dialogue récapitulatif des erreurs de validation
+  void _showValidationDialog(List<String> errors) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(children: [
+          Icon(Icons.warning_amber_rounded, color: _amber),
+          SizedBox(width: 8),
+          Text('Corrections requises',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+        ]),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Veuillez corriger les points suivants avant de soumettre :',
+                style: TextStyle(color: _textMuted, fontSize: 13),
+              ),
+              const SizedBox(height: 12),
+              ...errors.map((e) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('• ',
+                            style: TextStyle(
+                                color: _red, fontWeight: FontWeight.w700)),
+                        Expanded(
+                            child: Text(e,
+                                style: const TextStyle(
+                                    fontSize: 13, color: _textMain))),
+                      ],
+                    ),
+                  )),
+            ],
+          ),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _appBlue,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('OK, je corrige'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.transport != null;
@@ -282,6 +401,7 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
       ),
       body: Center(
         child: SingleChildScrollView(
+          controller: _scrollController,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 640),

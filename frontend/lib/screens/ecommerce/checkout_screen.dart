@@ -35,6 +35,7 @@ class CheckoutScreen extends StatefulWidget {
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _scrollController = ScrollController();
   final _nomController = TextEditingController();
   final _prenomController = TextEditingController();
   final _emailController = TextEditingController();
@@ -58,6 +59,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _nomController.dispose();
     _prenomController.dispose();
     _emailController.dispose();
@@ -69,13 +71,21 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-    if (_phoneE164 == null || _phoneE164!.isEmpty) {
-      Fluttertoast.showToast(
-          msg: 'Téléphone requis',
-          backgroundColor: Colors.red);
+    final formValid = _formKey.currentState!.validate();
+    final errors = _collectErrors();
+
+    if (!formValid || errors.isNotEmpty) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOut,
+      );
+      _showValidationDialog(errors.isNotEmpty
+          ? errors
+          : ['Veuillez corriger les champs indiqués en rouge.']);
       return;
     }
+
     if (!AuthService.isLoggedIn()) {
       Fluttertoast.showToast(
         msg: 'Vous devez être connecté pour valider une commande. Veuillez vous reconnecter.',
@@ -252,6 +262,92 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
   }
 
+  // ✅ Collecte toutes les erreurs de validation en langage clair
+  List<String> _collectErrors() {
+    final errors = <String>[];
+
+    if (_nomController.text.trim().isEmpty) errors.add('Le nom est requis');
+    if (_prenomController.text.trim().isEmpty) errors.add('Le prénom est requis');
+    if (_phoneE164 == null || _phoneE164!.isEmpty) {
+      errors.add('Un numéro de téléphone valide est requis');
+    }
+    if (_emailController.text.trim().isNotEmpty &&
+        !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
+            .hasMatch(_emailController.text.trim())) {
+      errors.add("L'adresse email est invalide");
+    }
+    if (_paysController.text.trim().isEmpty) {
+      errors.add('Le pays de livraison est requis');
+    }
+    if (_villeController.text.trim().isEmpty) {
+      errors.add('La ville de livraison est requise');
+    }
+    if (_adresseController.text.trim().isEmpty) {
+      errors.add("L'adresse complète est requise");
+    } else if (_adresseController.text.trim().length < 5) {
+      errors.add("L'adresse complète doit contenir au moins 5 caractères");
+    }
+
+    return errors;
+  }
+
+  // ✅ Affiche un dialogue récapitulatif des erreurs de validation
+  void _showValidationDialog(List<String> errors) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(children: [
+          Icon(Icons.warning_amber_rounded, color: widget.accentColor),
+          const SizedBox(width: 8),
+          const Text('Corrections requises',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+        ]),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Veuillez corriger les points suivants avant de soumettre :',
+                style: TextStyle(fontSize: 13, color: Colors.black54),
+              ),
+              const SizedBox(height: 12),
+              ...errors.map((e) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('• ',
+                            style: TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.w700)),
+                        Expanded(
+                            child: Text(e,
+                                style: const TextStyle(
+                                    fontSize: 13, color: Colors.black87))),
+                      ],
+                    ),
+                  )),
+            ],
+          ),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: widget.accentColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('OK, je corrige'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = context.watch<AppThemeProvider>();
@@ -284,6 +380,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       ),
       body: Center(
         child: SingleChildScrollView(
+          controller: _scrollController,
           padding: const EdgeInsets.all(20),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 600),
