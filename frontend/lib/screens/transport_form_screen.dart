@@ -183,7 +183,7 @@ class _TransportFormScreenState extends State<TransportFormScreen> {
         final file = _pendingPhotos[i];
         final ext = _resolveExt(file);
         final path =
-            'transports/colis/${DateTime.now().millisecondsSinceEpoch}_$i.$ext';
+            'transports/colis/${DateTime.now().microsecondsSinceEpoch}_$i.$ext';
         final Uint8List bytes = await file.readAsBytes();
         await supa.storage.from('sama-postal').uploadBinary(
               path,

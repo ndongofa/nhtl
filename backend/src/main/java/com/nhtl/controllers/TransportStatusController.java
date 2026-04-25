@@ -150,25 +150,13 @@ public class TransportStatusController {
     }
 
     private String buildMessageDestinataire(String reference, String label, TransportStatus status) {
-        String detail = switch (status) {
-            case DEPART_CONFIRME   -> "Un colis vous est destiné et a été confirmé pour le prochain départ SAMA.";
-            case EN_TRANSIT        -> "Un colis qui vous est destiné est en transit vers votre destination.";
-            case EN_DOUANE         -> "Un colis qui vous est destiné est en traitement douanier.";
-            case ARRIVE            -> "Un colis qui vous est destiné est arrivé à destination.";
-            case PRET_RECUPERATION -> "Un colis vous attend et est prêt à être récupéré. Présentez-vous avec une pièce d'identité.";
-            case LIVRE             -> "Un colis qui vous était destiné a été remis.";
-            default                -> "Un transport vous concernant a été mis à jour.";
-        };
+        String detail = detailDestinataire(status);
 
         return "Bonjour,\n\n"
                 + "Transport " + reference + "\n"
                 + "Statut : " + label + "\n\n"
                 + detail + "\n\n"
-                + "Questions ?\n"
-                + "• WhatsApp France : +33 76 891 30 74\n"
-                + "• WhatsApp Dakar  : +221 78 304 28 38\n\n"
-                + "— L'équipe SAMA Services International\n"
-                + "sama-services-intl.com";
+                + footer();
     }
 
     private String buildMessage(String client, String reference,
@@ -177,7 +165,25 @@ public class TransportStatusController {
                 ? "Bonjour " + client + ","
                 : "Bonjour,";
 
-        String detail = switch (status) {
+        String detail = detailExpediteur(status);
+
+        return greeting + "\n\n"
+                + "Transport " + reference + "\n"
+                + "Nouveau statut : " + label + "\n\n"
+                + detail + "\n\n"
+                + footer();
+    }
+
+    private String footer() {
+        return "Questions ?\n"
+                + "• WhatsApp France : +33 76 891 30 74\n"
+                + "• WhatsApp Dakar  : +221 78 304 28 38\n\n"
+                + "— L'équipe SAMA Services International\n"
+                + "sama-services-intl.com";
+    }
+
+    private String detailExpediteur(TransportStatus status) {
+        return switch (status) {
             case DEPART_CONFIRME   -> "Votre transport a été confirmé pour le prochain départ SAMA.";
             case EN_TRANSIT        -> "Votre colis est en transit vers sa destination.";
             case EN_DOUANE         -> "Votre colis est en traitement douanier. Des délais peuvent survenir.";
@@ -186,16 +192,18 @@ public class TransportStatusController {
             case LIVRE             -> "Votre colis a été remis. Merci pour votre confiance !";
             default                -> "Votre transport a été mis à jour.";
         };
+    }
 
-        return greeting + "\n\n"
-                + "Transport " + reference + "\n"
-                + "Nouveau statut : " + label + "\n\n"
-                + detail + "\n\n"
-                + "Questions ?\n"
-                + "• WhatsApp France : +33 76 891 30 74\n"
-                + "• WhatsApp Dakar  : +221 78 304 28 38\n\n"
-                + "— L'équipe SAMA Services International\n"
-                + "sama-services-intl.com";
+    private String detailDestinataire(TransportStatus status) {
+        return switch (status) {
+            case DEPART_CONFIRME   -> "Un colis vous est destiné et a été confirmé pour le prochain départ SAMA.";
+            case EN_TRANSIT        -> "Un colis qui vous est destiné est en transit vers votre destination.";
+            case EN_DOUANE         -> "Un colis qui vous est destiné est en traitement douanier.";
+            case ARRIVE            -> "Un colis qui vous est destiné est arrivé à destination.";
+            case PRET_RECUPERATION -> "Un colis vous attend et est prêt à être récupéré. Présentez-vous avec une pièce d'identité.";
+            case LIVRE             -> "Un colis qui vous était destiné a été remis.";
+            default                -> "Un transport vous concernant a été mis à jour.";
+        };
     }
 
     private String label(TransportStatus s) {
