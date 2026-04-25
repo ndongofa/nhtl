@@ -196,6 +196,14 @@ public class Transport {
     public LocalDateTime getDateModification() { return dateModification; }
     public void setDateModification(LocalDateTime d) { this.dateModification = d; }
 
+    // Numéro de téléphone du destinataire
+    @Column(name = "telephone_destinataire")
+    private String telephoneDestinataire;
+
+    // Photos du colis envoyées par l'utilisateur (URLs JSON)
+    @Column(name = "photos_colis_json", columnDefinition = "TEXT")
+    private String photosColisJson;
+
     // ── Suivi postal ──────────────────────────────────────────────────────────
     @Column(name = "photo_colis_url")
     private String photoColisUrl;
@@ -222,4 +230,10 @@ public class Transport {
     public void setDeposePosteAt(LocalDateTime d) { this.deposePosteAt = d; }
 
     public boolean isDeposePoste() { return deposePosteAt != null; }
+
+    public String getTelephoneDestinataire() { return telephoneDestinataire; }
+    public void setTelephoneDestinataire(String t) { this.telephoneDestinataire = t; }
+
+    public String getPhotosColisJson() { return photosColisJson; }
+    public void setPhotosColisJson(String p) { this.photosColisJson = p; }
 }

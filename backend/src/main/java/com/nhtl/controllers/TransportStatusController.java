@@ -90,7 +90,7 @@ public class TransportStatusController {
             log.warn("[SUIVI] in-app FAILED transport={}: {}", id, e.getMessage());
         }
 
-        // 6 — SMS
+        // 6 — SMS expéditeur
         String phone = transport.getNumeroTelephone();
         if (phone != null && !phone.isBlank()) {
             try {
@@ -98,6 +98,24 @@ public class TransportStatusController {
                 log.info("[SUIVI] SMS OK transport={}", id);
             } catch (Exception e) {
                 log.warn("[SUIVI] SMS FAILED transport={}: {}", id, e.getMessage());
+            }
+        }
+
+        // 6b — SMS destinataire
+        String phoneDestinataire = transport.getTelephoneDestinataire();
+        if (phoneDestinataire != null && !phoneDestinataire.isBlank()) {
+            String msgDestinataire = buildMessageDestinataire(reference, label, newStatus);
+            try {
+                smsProvider.sendSms(phoneDestinataire, msgDestinataire);
+                log.info("[SUIVI] SMS destinataire OK transport={}", id);
+            } catch (Exception e) {
+                log.warn("[SUIVI] SMS destinataire FAILED transport={}: {}", id, e.getMessage());
+            }
+            try {
+                whatsAppProvider.sendWhatsApp(phoneDestinataire, msgDestinataire);
+                log.info("[SUIVI] WhatsApp destinataire OK transport={}", id);
+            } catch (Exception e) {
+                log.warn("[SUIVI] WhatsApp destinataire FAILED transport={}: {}", id, e.getMessage());
             }
         }
 
@@ -129,6 +147,28 @@ public class TransportStatusController {
                 "id",          id,
                 "statutSuivi", newStatus.name(),
                 "label",       label));
+    }
+
+    private String buildMessageDestinataire(String reference, String label, TransportStatus status) {
+        String detail = switch (status) {
+            case DEPART_CONFIRME   -> "Un colis vous est destiné et a été confirmé pour le prochain départ SAMA.";
+            case EN_TRANSIT        -> "Un colis qui vous est destiné est en transit vers votre destination.";
+            case EN_DOUANE         -> "Un colis qui vous est destiné est en traitement douanier.";
+            case ARRIVE            -> "Un colis qui vous est destiné est arrivé à destination.";
+            case PRET_RECUPERATION -> "Un colis vous attend et est prêt à être récupéré. Présentez-vous avec une pièce d'identité.";
+            case LIVRE             -> "Un colis qui vous était destiné a été remis.";
+            default                -> "Un transport vous concernant a été mis à jour.";
+        };
+
+        return "Bonjour,\n\n"
+                + "Transport " + reference + "\n"
+                + "Statut : " + label + "\n\n"
+                + detail + "\n\n"
+                + "Questions ?\n"
+                + "• WhatsApp France : +33 76 891 30 74\n"
+                + "• WhatsApp Dakar  : +221 78 304 28 38\n\n"
+                + "— L'équipe SAMA Services International\n"
+                + "sama-services-intl.com";
     }
 
     private String buildMessage(String client, String reference,
