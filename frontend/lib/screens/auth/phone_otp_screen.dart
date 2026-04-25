@@ -19,11 +19,17 @@ class PhoneOtpScreen extends StatefulWidget {
   /// au lieu d'afficher "Compte activé!" (flux reset password par téléphone).
   final bool isPasswordReset;
 
+  /// Quand true, le SMS était indisponible au moment du signup (ex: crédit Twilio
+  /// épuisé). On affiche directement un message explicatif et le bouton d'activation
+  /// sans code SMS, sans tenter d'envoyer un nouveau code.
+  final bool smsUnavailable;
+
   const PhoneOtpScreen({
     Key? key,
     required this.phoneE164,
     this.redirectTo,
     this.isPasswordReset = false,
+    this.smsUnavailable = false,
   }) : super(key: key);
 
   @override
@@ -51,6 +57,20 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
     if (widget.isPasswordReset) {
       // Password-reset flow: OTP was already sent by ForgotPasswordScreen via Supabase.
       _startResendCooldown();
+    } else if (widget.smsUnavailable) {
+      // SMS indisponible lors du signup (crédit épuisé, panne provider…).
+      // Le compte est créé dans Supabase. On affiche directement le bypass.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _errorMsg =
+                "Le service SMS est temporairement indisponible. "
+                "Votre compte a bien été créé.\n\n"
+                "Activez-le directement sans code SMS grâce au bouton ci-dessous.";
+            _showSkipButton = true;
+          });
+        }
+      });
     } else {
       // Signup flow: backend sends OTP via WhatsApp → SMS.
       WidgetsBinding.instance.addPostFrameCallback((_) => _sendInitialOtp());

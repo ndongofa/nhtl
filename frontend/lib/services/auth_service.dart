@@ -9,9 +9,13 @@ import '../config/api_config.dart';
 /// Résultat du signup:
 /// - signedIn: session créée (pas de confirmation requise ou auto-confirm)
 /// - confirmationRequired: signup OK, mais l'utilisateur doit confirmer email/phone
+/// - smsDeliveryFailed: compte créé dans Supabase mais l'envoi du SMS a échoué
+///   (crédit Twilio épuisé ou panne provider). L'utilisateur peut activer
+///   son compte via le bypass OTP (/api/auth/skip-phone-otp).
 enum SignupOutcome {
   signedIn,
   confirmationRequired,
+  smsDeliveryFailed,
 }
 
 class AuthService {
@@ -36,6 +40,48 @@ class AuthService {
       s.contains('cors') ||
       s.contains('failed to fetch') ||
       s.contains('network error');
+
+  /// Détecte si une erreur Supabase est due à une panne de livraison SMS
+  /// (crédit Twilio épuisé, provider indisponible, etc.).
+  /// Dans ce cas, le compte Supabase EST créé, seul l'envoi du code a échoué.
+  static bool _isSmsDeliveryFailure(String? message) {
+    if (message == null) return false;
+    final m = message.toLowerCase();
+    // SMS-specific failure patterns (exclude "send" alone to avoid false positives
+    // like "SMS send successful")
+    if (m.contains('sms') &&
+        (m.contains('fail') ||
+            m.contains('error') ||
+            m.contains('deliver') ||
+            m.contains('not sent'))) {
+      return true;
+    }
+    if (m.contains('phone message') &&
+        (m.contains('fail') || m.contains('error') || m.contains('not sent'))) {
+      return true;
+    }
+    if ((m.contains('twilio') || m.contains('messagebird') || m.contains('vonage')) &&
+        (m.contains('fail') ||
+            m.contains('error') ||
+            m.contains('credit') ||
+            m.contains('insufficient') ||
+            m.contains('not active') ||
+            m.contains('not authorized'))) {
+      return true;
+    }
+    if (m.contains('insufficient') &&
+        (m.contains('credit') || m.contains('fund') || m.contains('balance'))) {
+      return true;
+    }
+    // Supabase internal error codes
+    if (m.contains('otp_send_failed') ||
+        m.contains('phone_provider_disabled') ||
+        m.contains('sms_send_failed') ||
+        m.contains('error sending confirmation')) {
+      return true;
+    }
+    return false;
+  }
 
   /// Traduit un message d'erreur Supabase en message lisible en français.
   static String _friendlyAuthMessage(String? message) {
@@ -102,6 +148,10 @@ class AuthService {
     }
     if (m.contains('phone') && m.contains('invalid')) {
       return "Numéro de téléphone invalide.";
+    }
+    if (_isSmsDeliveryFailure(message)) {
+      return "Le service SMS est temporairement indisponible. "
+          "Votre compte a été créé. Vous pouvez l'activer sans code SMS.";
     }
     return "Une erreur s'est produite : $message";
   }
@@ -213,6 +263,18 @@ class AuthService {
           "Veuillez patienter quelques minutes puis réessayer.\n\n"
           "Si le problème persiste, contactez tech@ngom-holding.com.",
         );
+      }
+
+      // Quand Supabase crée le compte mais échoue à envoyer le SMS (ex: crédit
+      // Twilio épuisé), on retourne smsDeliveryFailed au lieu de bloquer le
+      // signup. Le compte existe dans Supabase ; l'utilisateur pourra activer
+      // son compte via le bouton bypass sur l'écran suivant.
+      // Guard: only applicable to phone signups – an email signup cannot trigger
+      // an SMS delivery failure, and we want to avoid misclassifying unrelated errors.
+      if (_looksLikeE164Phone(cleanIdentifier) && _isSmsDeliveryFailure(e.message)) {
+        // ignore: avoid_print
+        print("[AuthService][signup] SMS delivery failed – returning smsDeliveryFailed outcome");
+        return SignupOutcome.smsDeliveryFailed;
       }
 
       throw Exception(_friendlyAuthMessage(e.message));
