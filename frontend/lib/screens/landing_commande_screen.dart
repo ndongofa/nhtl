@@ -10,6 +10,7 @@ import '../widgets/sama_account_menu.dart';
 import '../providers/app_theme_provider.dart';
 import '../services/auth_service.dart';
 import 'auth/login_screen.dart';
+import 'auth/signup_screen.dart';
 import 'commande_hub_screen.dart';
 
 class LandingCommandeScreen extends StatelessWidget {
@@ -321,7 +322,13 @@ class LandingCommandeScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(
                           horizontal: 22, vertical: 14)),
-                  onPressed: () => Navigator.pushNamed(context, '/signup'),
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const SignupScreen(
+                          redirectTo: CommandeHubScreen()),
+                    ),
+                  ),
                 ),
             ],
           ),
