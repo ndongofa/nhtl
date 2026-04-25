@@ -57,6 +57,17 @@ public class TransportAdminController {
         return ResponseEntity.ok(transportService.getTransportsArchives());
     }
 
+    // ── PUT modification complète ─────────────────────────────────────────────
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> update(
+            @PathVariable Long id,
+            @RequestBody TransportDTO dto) {
+        TransportDTO updated = transportService.updateTransportAdmin(id, dto);
+        if (updated == null) return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(updated);
+    }
+
     // ── PATCH statut administratif ────────────────────────────────────────────
 
     @PatchMapping("/{id}/statut")
