@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/gp_agent.dart';
+import 'phone_input_field.dart';
 
 Future<Map<String, dynamic>?> showGpFormDialog({
   required BuildContext context,
@@ -8,7 +9,7 @@ Future<Map<String, dynamic>?> showGpFormDialog({
 }) {
   final prenomCtrl = TextEditingController(text: gp?.prenom ?? '');
   final nomCtrl = TextEditingController(text: gp?.nom ?? '');
-  final phoneCtrl = TextEditingController(text: gp?.phoneNumber ?? '');
+  String? phoneE164 = gp?.phoneNumber;
   final emailCtrl = TextEditingController(text: gp?.email ?? '');
   bool isActive = gp?.isActive ?? true;
 
@@ -29,15 +30,12 @@ Future<Map<String, dynamic>?> showGpFormDialog({
                 controller: nomCtrl,
                 decoration: const InputDecoration(labelText: "Nom"),
               ),
-              TextField(
-                controller: phoneCtrl,
-                decoration: const InputDecoration(
-                  labelText: "Téléphone (E.164 recommandé)",
-                  hintText: "+221783042838",
-                ),
-                keyboardType: TextInputType.phone,
-                autocorrect: false,
-                enableSuggestions: false,
+              const SizedBox(height: 8),
+              PhoneInputField(
+                label: 'Téléphone',
+                required: false,
+                initialValue: gp?.phoneNumber,
+                onChanged: (e164) => phoneE164 = e164,
               ),
               TextField(
                 controller: emailCtrl,
@@ -69,9 +67,7 @@ Future<Map<String, dynamic>?> showGpFormDialog({
               Navigator.pop(context, {
                 'prenom': prenom,
                 'nom': nom,
-                'phoneNumber': phoneCtrl.text.trim().isEmpty
-                    ? null
-                    : phoneCtrl.text.trim(),
+                'phoneNumber': phoneE164,
                 'email': emailCtrl.text.trim().isEmpty
                     ? null
                     : emailCtrl.text.trim(),

@@ -91,7 +91,24 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
   void initState() {
     super.initState();
     _countryCode = widget.initialCountryCode;
-    final initialText = _formatForDisplay(widget.initialValue ?? '');
+
+    // Accepte aussi bien les chiffres locaux seuls que le format E.164 complet
+    // (ex : +221783042838 ou 00221783042838) passé en initialValue.
+    String initialText = widget.initialValue ?? '';
+    if (initialText.startsWith('+') || initialText.startsWith('00')) {
+      final detected = _detectInternational(initialText);
+      if (detected != null) {
+        _countryCode = detected.countryCode;
+        initialText = _formatForDisplay(detected.localNumber);
+      } else {
+        // Indicatif non reconnu : conserver uniquement les chiffres
+        initialText =
+            _formatForDisplay(initialText.replaceAll(RegExp(r'[^\d]'), ''));
+      }
+    } else {
+      initialText = _formatForDisplay(initialText);
+    }
+
     _controller = TextEditingController(text: initialText);
     _hasContent = initialText.isNotEmpty;
     _controller.addListener(_onTextChanged);
