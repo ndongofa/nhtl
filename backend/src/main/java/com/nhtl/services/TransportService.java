@@ -131,7 +131,7 @@ public class TransportService {
 
     public TransportDTO updateTransport(Long id, TransportDTO dto, String userId) {
         Optional<Transport> opt = transportRepo.findById(id);
-        if (opt.isPresent() && opt.get().getUserId().equals(userId)) {
+        if (opt.isPresent() && userId.equals(opt.get().getUserId())) {
             Transport t = opt.get();
             updateFromDto(t, dto);
             t.setDateModification(java.time.LocalDateTime.now());
@@ -338,7 +338,9 @@ public class TransportService {
         t.setDevise(dto.getDevise());
         t.setStatut(parseOrDefault(dto.getStatut(), TransportStatus.EN_ATTENTE).name());
         t.setTypeTransport(dto.getTypeTransport());
-        t.setArchived(dto.getArchived());
+        if (dto.getArchived() != null) {
+            t.setArchived(dto.getArchived());
+        }
         t.setTelephoneDestinataire(dto.getTelephoneDestinataire());
         t.setPhotosColisJson(dto.getPhotosColisJson());
     }
