@@ -28,87 +28,161 @@ ON CONFLICT (id) DO NOTHING;
 
 -- ============================================
 -- POLITIQUES RLS: storage.objects (sama-postal)
+-- NOTE: CREATE POLICY IF NOT EXISTS n'existe qu'en PG17+.
+--       On utilise des blocs DO $$ pour rester compatible PG15 (Supabase).
 -- ============================================
 
 -- Lecture publique : les URLs publiques doivent être accessibles à tous
 -- (nécessaire pour afficher les photos dans l'app sans authentification)
-CREATE POLICY IF NOT EXISTS "sama-postal: public read"
-  ON storage.objects FOR SELECT
-  USING (bucket_id = 'sama-postal');
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage' AND tablename = 'objects'
+      AND policyname = 'sama-postal: public read'
+  ) THEN
+    CREATE POLICY "sama-postal: public read"
+      ON storage.objects FOR SELECT
+      USING (bucket_id = 'sama-postal');
+  END IF;
+END $$;
 
 -- ── Sous-dossier commandes/produits ──────────────────────────────────────────
 
 -- Upload : utilisateur authentifié peut uploader ses photos commande
-CREATE POLICY IF NOT EXISTS "sama-postal commandes: authenticated insert"
-  ON storage.objects FOR INSERT
-  WITH CHECK (
-    bucket_id = 'sama-postal'
-    AND (storage.foldername(name))[1] = 'commandes'
-    AND auth.role() = 'authenticated'
-  );
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage' AND tablename = 'objects'
+      AND policyname = 'sama-postal commandes: authenticated insert'
+  ) THEN
+    CREATE POLICY "sama-postal commandes: authenticated insert"
+      ON storage.objects FOR INSERT
+      WITH CHECK (
+        bucket_id = 'sama-postal'
+        AND (storage.foldername(name))[1] = 'commandes'
+        AND auth.role() = 'authenticated'
+      );
+  END IF;
+END $$;
 
 -- Mise à jour / remplacement (upsert)
-CREATE POLICY IF NOT EXISTS "sama-postal commandes: authenticated update"
-  ON storage.objects FOR UPDATE
-  USING (
-    bucket_id = 'sama-postal'
-    AND (storage.foldername(name))[1] = 'commandes'
-    AND auth.role() = 'authenticated'
-  );
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage' AND tablename = 'objects'
+      AND policyname = 'sama-postal commandes: authenticated update'
+  ) THEN
+    CREATE POLICY "sama-postal commandes: authenticated update"
+      ON storage.objects FOR UPDATE
+      USING (
+        bucket_id = 'sama-postal'
+        AND (storage.foldername(name))[1] = 'commandes'
+        AND auth.role() = 'authenticated'
+      );
+  END IF;
+END $$;
 
 -- ── Sous-dossier achats/produits ─────────────────────────────────────────────
 
-CREATE POLICY IF NOT EXISTS "sama-postal achats: authenticated insert"
-  ON storage.objects FOR INSERT
-  WITH CHECK (
-    bucket_id = 'sama-postal'
-    AND (storage.foldername(name))[1] = 'achats'
-    AND auth.role() = 'authenticated'
-  );
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage' AND tablename = 'objects'
+      AND policyname = 'sama-postal achats: authenticated insert'
+  ) THEN
+    CREATE POLICY "sama-postal achats: authenticated insert"
+      ON storage.objects FOR INSERT
+      WITH CHECK (
+        bucket_id = 'sama-postal'
+        AND (storage.foldername(name))[1] = 'achats'
+        AND auth.role() = 'authenticated'
+      );
+  END IF;
+END $$;
 
-CREATE POLICY IF NOT EXISTS "sama-postal achats: authenticated update"
-  ON storage.objects FOR UPDATE
-  USING (
-    bucket_id = 'sama-postal'
-    AND (storage.foldername(name))[1] = 'achats'
-    AND auth.role() = 'authenticated'
-  );
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage' AND tablename = 'objects'
+      AND policyname = 'sama-postal achats: authenticated update'
+  ) THEN
+    CREATE POLICY "sama-postal achats: authenticated update"
+      ON storage.objects FOR UPDATE
+      USING (
+        bucket_id = 'sama-postal'
+        AND (storage.foldername(name))[1] = 'achats'
+        AND auth.role() = 'authenticated'
+      );
+  END IF;
+END $$;
 
 -- ── Sous-dossier transports/colis (NOUVEAU) ───────────────────────────────────
 
 -- Upload : utilisateur authentifié peut uploader les photos de son colis
-CREATE POLICY IF NOT EXISTS "sama-postal transports: authenticated insert"
-  ON storage.objects FOR INSERT
-  WITH CHECK (
-    bucket_id = 'sama-postal'
-    AND (storage.foldername(name))[1] = 'transports'
-    AND auth.role() = 'authenticated'
-  );
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage' AND tablename = 'objects'
+      AND policyname = 'sama-postal transports: authenticated insert'
+  ) THEN
+    CREATE POLICY "sama-postal transports: authenticated insert"
+      ON storage.objects FOR INSERT
+      WITH CHECK (
+        bucket_id = 'sama-postal'
+        AND (storage.foldername(name))[1] = 'transports'
+        AND auth.role() = 'authenticated'
+      );
+  END IF;
+END $$;
 
 -- Mise à jour / remplacement (upsert activé dans le code Flutter)
-CREATE POLICY IF NOT EXISTS "sama-postal transports: authenticated update"
-  ON storage.objects FOR UPDATE
-  USING (
-    bucket_id = 'sama-postal'
-    AND (storage.foldername(name))[1] = 'transports'
-    AND auth.role() = 'authenticated'
-  );
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage' AND tablename = 'objects'
+      AND policyname = 'sama-postal transports: authenticated update'
+  ) THEN
+    CREATE POLICY "sama-postal transports: authenticated update"
+      ON storage.objects FOR UPDATE
+      USING (
+        bucket_id = 'sama-postal'
+        AND (storage.foldername(name))[1] = 'transports'
+        AND auth.role() = 'authenticated'
+      );
+  END IF;
+END $$;
 
 -- ── Sous-dossier postal (suivi postal admin) ─────────────────────────────────
 
 -- Upload : utilisateurs authentifiés (admin dépose les photos de suivi)
-CREATE POLICY IF NOT EXISTS "sama-postal postal: authenticated insert"
-  ON storage.objects FOR INSERT
-  WITH CHECK (
-    bucket_id = 'sama-postal'
-    AND (storage.foldername(name))[1] = 'postal'
-    AND auth.role() = 'authenticated'
-  );
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage' AND tablename = 'objects'
+      AND policyname = 'sama-postal postal: authenticated insert'
+  ) THEN
+    CREATE POLICY "sama-postal postal: authenticated insert"
+      ON storage.objects FOR INSERT
+      WITH CHECK (
+        bucket_id = 'sama-postal'
+        AND (storage.foldername(name))[1] = 'postal'
+        AND auth.role() = 'authenticated'
+      );
+  END IF;
+END $$;
 
-CREATE POLICY IF NOT EXISTS "sama-postal postal: authenticated update"
-  ON storage.objects FOR UPDATE
-  USING (
-    bucket_id = 'sama-postal'
-    AND (storage.foldername(name))[1] = 'postal'
-    AND auth.role() = 'authenticated'
-  );
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage' AND tablename = 'objects'
+      AND policyname = 'sama-postal postal: authenticated update'
+  ) THEN
+    CREATE POLICY "sama-postal postal: authenticated update"
+      ON storage.objects FOR UPDATE
+      USING (
+        bucket_id = 'sama-postal'
+        AND (storage.foldername(name))[1] = 'postal'
+        AND auth.role() = 'authenticated'
+      );
+  END IF;
+END $$;
