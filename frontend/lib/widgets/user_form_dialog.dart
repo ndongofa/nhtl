@@ -148,7 +148,7 @@ Future<Map<String, dynamic>?> showUserFormDialog({
                   'prenom': prenom,
                   'nom': nom,
                   'email': email.isEmpty ? null : email,
-                  'phone': phoneE164,
+                  'phone': (phoneE164?.isEmpty ?? true) ? null : phoneE164,
                   'role': selectedRole,
                 });
               }

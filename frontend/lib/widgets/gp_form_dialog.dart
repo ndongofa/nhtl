@@ -67,7 +67,7 @@ Future<Map<String, dynamic>?> showGpFormDialog({
               Navigator.pop(context, {
                 'prenom': prenom,
                 'nom': nom,
-                'phoneNumber': phoneE164,
+                'phoneNumber': (phoneE164?.isEmpty ?? true) ? null : phoneE164,
                 'email': emailCtrl.text.trim().isEmpty
                     ? null
                     : emailCtrl.text.trim(),
