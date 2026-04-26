@@ -72,8 +72,13 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
         }
       });
     } else {
-      // Signup flow: backend sends OTP via WhatsApp → SMS.
-      WidgetsBinding.instance.addPostFrameCallback((_) => _sendInitialOtp());
+      // Signup flow: Supabase already sent the OTP during signUp(phone:…).
+      // Do NOT send a second OTP here – that would create two independent codes
+      // arriving from two different SMS senders.
+      // Just start the resend cooldown; the user already received the code.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _startResendCooldown();
+      });
     }
   }
 
@@ -100,27 +105,6 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
         }
       });
     });
-  }
-
-  /// Initial OTP send for the signup flow (backend: WhatsApp → SMS).
-  Future<void> _sendInitialOtp() async {
-    setState(() {
-      _loading = true;
-      _errorMsg = null;
-    });
-    try {
-      await AuthService.sendSignupPhoneOtp(widget.phoneE164);
-      if (!mounted) return;
-      _startResendCooldown();
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _errorMsg = e.toString().replaceFirst('Exception: ', '');
-        _showSkipButton = true; // OTP couldn't be sent → offer bypass
-      });
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
   }
 
   Future<void> _verify() async {
@@ -151,8 +135,10 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
         return;
       }
 
-      // Signup flow: verify via backend (WhatsApp/SMS OTP) → backend confirms phone.
-      await AuthService.verifySignupPhoneOtp(
+      // Signup flow: verify via Supabase (OTP was sent during signUp).
+      // verifyPhoneOtp() calls supabase.auth.verifyOTP(type: sms) which
+      // automatically confirms the phone number in Supabase on success.
+      await AuthService.verifyPhoneOtp(
         phoneE164: widget.phoneE164,
         token: code,
       );
@@ -250,13 +236,8 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
     });
 
     try {
-      if (widget.isPasswordReset) {
-        // Password-reset flow: resend via Supabase.
-        await AuthService.sendPhoneOtp(widget.phoneE164);
-      } else {
-        // Signup flow: resend via backend (WhatsApp → SMS).
-        await AuthService.sendSignupPhoneOtp(widget.phoneE164);
-      }
+      // Both signup and password-reset resend via Supabase (signInWithOtp).
+      await AuthService.sendPhoneOtp(widget.phoneE164);
       if (!mounted) return;
       _startResendCooldown();
       Fluttertoast.showToast(

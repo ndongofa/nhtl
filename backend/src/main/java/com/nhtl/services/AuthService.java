@@ -204,13 +204,14 @@ public class AuthService {
 					System.out.println("4️⃣ 📱 OTP envoyé via WhatsApp/SMS au téléphone: " + identifier);
 				}
 
-				// ✅ 4bis. Notification in-app uniquement (sans le code OTP pour éviter le double envoi)
+				// ✅ 4bis. Notification in-app + email uniquement.
+				// On passe null pour phone afin d'éviter un second envoi
+				// WhatsApp/SMS alors que le code a déjà été envoyé directement.
 				try {
 					String userId = (String) userInfo.get("id");
 					String email = (String) userInfo.get("email");
-					String phone = (String) userInfo.get("phone");
 
-					notificationDispatcher.dispatch(templates.passwordResetOtpSent(userId, email, phone));
+					notificationDispatcher.dispatch(templates.passwordResetOtpSent(userId, email, null));
 				} catch (Exception e) {
 					System.out.println("⚠️ Notification reset OTP échouée: " + e.getMessage());
 				}

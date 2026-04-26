@@ -69,9 +69,16 @@ public class TwilioWhatsAppProvider implements WhatsAppProvider {
         String waTo = to.startsWith("whatsapp:") ? to : "whatsapp:" + normalizePhone(to);
 
         boolean useTemplate = contentSid != null && !contentSid.isBlank();
-        log.info("[TWILIO-WA] Sending to='{}' from='{}' mode='{}' msg='{}'",
-                waTo, fromNumber, useTemplate ? "template(" + contentSid + ")" : "freeform",
-                truncate(message, 140));
+        if (useTemplate) {
+            log.info("[TWILIO-WA] Sending to='{}' from='{}' template='{}' msg='{}'",
+                    waTo, fromNumber, contentSid, truncate(message, 140));
+        } else {
+            log.warn("[TWILIO-WA] Sending FREE-FORM WhatsApp to='{}' – TWILIO_WHATSAPP_CONTENT_SID is not set. "
+                    + "Free-form messages are only delivered inside the 24-hour reply window or the Twilio sandbox. "
+                    + "Set TWILIO_WHATSAPP_CONTENT_SID (Meta-approved template) for production use, "
+                    + "or unset TWILIO_WHATSAPP_FROM to fall back directly to SMS.",
+                    waTo);
+        }
 
         try {
             Message msg;

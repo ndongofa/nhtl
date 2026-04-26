@@ -373,6 +373,14 @@ serve(async (req: Request): Promise<Response> => {
 
     // ── 1. Try WhatsApp first (if configured) ──────────────────────────────
     if (whatsappFrom) {
+      if (!whatsappContentSid) {
+        console.warn(
+          `[send-sms-twilio] TWILIO_WHATSAPP_FROM is set but TWILIO_WHATSAPP_CONTENT_SID is missing. ` +
+          `Free-form WhatsApp messages are only delivered inside the 24-hour reply window or the Twilio sandbox. ` +
+          `Set TWILIO_WHATSAPP_CONTENT_SID to a Meta-approved template SID for production use, ` +
+          `or unset TWILIO_WHATSAPP_FROM to skip WhatsApp and send directly via SMS.`,
+        );
+      }
       const waResult = await sendViaWhatsApp(
         to,
         messageBody,
