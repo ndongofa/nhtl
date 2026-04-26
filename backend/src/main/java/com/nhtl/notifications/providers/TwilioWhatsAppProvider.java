@@ -74,9 +74,8 @@ public class TwilioWhatsAppProvider implements WhatsAppProvider {
                     waTo, fromNumber, contentSid, truncate(message, 140));
         } else {
             log.warn("[TWILIO-WA] Sending FREE-FORM WhatsApp to='{}' – TWILIO_WHATSAPP_CONTENT_SID is not set. "
-                    + "Free-form messages are only delivered inside the 24-hour reply window or the Twilio sandbox. "
-                    + "Set TWILIO_WHATSAPP_CONTENT_SID (Meta-approved template) for production use, "
-                    + "or unset TWILIO_WHATSAPP_FROM to fall back directly to SMS.",
+                    + "Free-form messages require the recipient to be inside the 24-hour reply window or Twilio sandbox. "
+                    + "If delivery fails, SMS fallback will be attempted automatically.",
                     waTo);
         }
 

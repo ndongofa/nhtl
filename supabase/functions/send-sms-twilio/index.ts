@@ -397,16 +397,11 @@ serve(async (req: Request): Promise<Response> => {
         });
       }
 
-      if (!waResult.fallback) {
-        // Non-recoverable WhatsApp error – surface it instead of silently using SMS.
-        return new Response(
-          JSON.stringify({ error: waResult.reason }),
-          { status: 502, headers: { "Content-Type": "application/json" } },
-        );
-      }
-
-      console.log(
-        `[send-sms-twilio] WhatsApp not available for ${to} – falling back to SMS`,
+      // WhatsApp failed for any reason (number not on WhatsApp, template rejected,
+      // template pending approval, channel error, etc.) – always fall back to SMS
+      // so the OTP is never silently lost.
+      console.warn(
+        `[send-sms-twilio] WhatsApp failed for ${to} (${waResult.reason}) – falling back to SMS`,
       );
     }
 
