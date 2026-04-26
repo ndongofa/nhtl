@@ -84,8 +84,11 @@ const WHATSAPP_FALLBACK_CODES = new Set([63001, 63003]);
  * Attempt to send an OTP via WhatsApp.
  *
  * @param to           Destination in E.164 format (e.g. "+221XXXXXXXXX").
- * @param messageBody  Plain-text OTP message (used as free-form body or as the
- *                     {{1}} template variable when a ContentSid is configured).
+ * @param messageBody  Plain-text OTP message used as the free-form body (no template).
+ * @param otpCode      Raw OTP digits injected into the {{1}} variable of the Meta template.
+ *                     The template body must include static surrounding text, e.g.:
+ *                     "Sama Services : {{1}} est votre code de vérification. Valable 10 minutes."
+ *                     Passing only digits (not the full sentence) is required for Meta approval.
  * @param accountSid   Twilio Account SID.
  * @param authToken    Twilio Auth Token.
  * @param whatsappFrom WhatsApp-enabled sender number in E.164 format (without prefix).
@@ -97,6 +100,7 @@ const WHATSAPP_FALLBACK_CODES = new Set([63001, 63003]);
 async function sendViaWhatsApp(
   to: string,
   messageBody: string,
+  otpCode: string,
   accountSid: string,
   authToken: string,
   whatsappFrom: string,
@@ -107,8 +111,10 @@ async function sendViaWhatsApp(
 
   let bodyParams: string;
   if (contentSid) {
-    // Meta-approved template: pass the full OTP text as the {{1}} variable.
-    const contentVariables = JSON.stringify({ "1": messageBody });
+    // Meta-approved template: inject only the OTP digits as {{1}}.
+    // The template body must contain the surrounding static text, e.g.:
+    //   "Sama Services : {{1}} est votre code de vérification. Valable 10 minutes."
+    const contentVariables = JSON.stringify({ "1": otpCode });
     bodyParams =
       `From=${encodeURIComponent(waFrom)}` +
       `&To=${encodeURIComponent(waTo)}` +
@@ -384,6 +390,7 @@ serve(async (req: Request): Promise<Response> => {
       const waResult = await sendViaWhatsApp(
         to,
         messageBody,
+        otp,
         accountSid,
         authToken,
         whatsappFrom,

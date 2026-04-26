@@ -46,23 +46,36 @@ proactivement par l'application, sans que l'utilisateur n'ait écrit en premier)
 
 ## Étape 2 — Créer un Content Template dans Twilio
 
-Les notifications de l'application utilisent un **template générique à une variable** (`{{1}}`),
-qui sera remplacée par le texte de la notification au moment de l'envoi.
+> ⚠️ **Règle Meta critique** : un template dont le corps est uniquement `{{1}}` (variable seule,
+> sans texte statique autour) est **systématiquement rejeté** par Meta. Le corps doit contenir
+> du texte fixe suffisant pour que Meta puisse évaluer la nature du message.
+
+Le template OTP utilise **une seule variable** (`{{1}}`) qui reçoit uniquement les chiffres du code.
+Le texte de contexte est dans le corps statique du template.
 
 1. Aller dans **Twilio Console → Content Template Builder** (ou rechercher "Content").
 2. Cliquer sur **"Create new Content Template"**.
 3. Configurer le template :
-   - **Friendly name** : `nhtl_notification` (ou similaire)
-   - **Language** : `French (fr)` *(ou la langue principale de vos utilisateurs)*
+   - **Friendly name** : `sama_notification` (ou tout autre nom)
+   - **Language** : `French (fr)`
    - **Category** : `UTILITY` (pour les notifications transactionnelles)
-   - **Body** : `{{1}}`
+   - **Body** (copier-coller exactement) :
+     ```
+     Sama Services : {{1}} est votre code de vérification. Valable 10 minutes.
+     ```
    
-   > Le body `{{1}}` permet d'envoyer n'importe quel texte de notification sans créer un
-   > template séparé pour chaque type d'événement.
+   > `{{1}}` sera remplacé **uniquement par les chiffres OTP** (ex : `482917`), jamais par
+   > une phrase entière. Cela respecte les exigences Meta : texte statique + variable unique.
 
 4. Cliquer sur **"Submit for WhatsApp Approval"**.
-5. Attendre l'approbation de Meta (généralement 24–48 h).
+5. Attendre l'approbation de Meta (généralement 24–48 h pour la catégorie UTILITY).
 6. Une fois approuvé, copier le **Content SID** du template (format `HXxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`).
+
+**Conseils pour éviter un rejet Meta :**
+- Ne pas mentionner "OTP", "mot de passe", "password" dans le template (connotation AUTHENTICATION)
+- Garder un ratio texte statique / variable élevé
+- La catégorie UTILITY est appropriée pour les codes de vérification liés à une transaction
+- Ne pas inclure de liens, d'emojis ou de mise en forme Markdown
 
 ---
 
@@ -103,6 +116,16 @@ Avant d'utiliser votre numéro de production :
 ## Architecture dans le code
 
 ```
+sendViaWhatsApp(to, messageBody, otpCode, ...)
+  ├─ Si TWILIO_WHATSAPP_CONTENT_SID configuré :
+  │    → POST Twilio Messages API
+  │         ContentSid=HX…
+  │         ContentVariables={"1": "<otpCode>"}   ← chiffres seuls (ex: "482917")
+  │    Template body (Twilio/Meta) :
+  │         "Sama Services : {{1}} est votre code de vérification. Valable 10 minutes."
+  └─ Sinon (sandbox) :
+       → Body=messageBody (texte libre, ex: "Votre code Sama Services est: 482917")
+
 NotificationDispatcher
   └─ sendWhatsAppWithSmsFallback(to, message)
        ├─ TwilioWhatsAppProvider.sendWhatsApp(to, message)
