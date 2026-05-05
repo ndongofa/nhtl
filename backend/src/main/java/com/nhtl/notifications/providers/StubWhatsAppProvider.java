@@ -14,4 +14,10 @@ public class StubWhatsAppProvider implements WhatsAppProvider {
         if (to == null || to.isBlank()) return;
         log.info("[WHATSAPP-STUB] to={} message={}", to, message);
     }
+
+    @Override
+    public void sendAdminWhatsApp(String to, String message) {
+        if (to == null || to.isBlank()) return;
+        log.info("[WHATSAPP-STUB][ADMIN] to={} message={}", to, message);
+    }
 }

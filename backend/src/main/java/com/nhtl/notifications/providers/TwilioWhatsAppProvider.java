@@ -27,18 +27,20 @@ public class TwilioWhatsAppProvider implements WhatsAppProvider {
 
     /**
      * Twilio Content API SID (starts with HX…) for a Meta-approved WhatsApp Business message template.
-     * Required for business-initiated messages sent outside the 24-hour customer service window.
-     *
-     * How to obtain:
-     *   1. Go to Twilio Console → Content Template Builder and create a template
-     *      with a single variable {{1}} that will contain the notification text.
-     *   2. Submit the template to Meta for approval (category: UTILITY).
-     *   3. Once approved, copy the Content SID (HX…) and set it as TWILIO_WHATSAPP_CONTENT_SID.
+     * Used for user-facing notifications. Template body: "Sama Services vous informe : {{1}}"
      *
      * Leave blank to use free-form text (Twilio sandbox only or within the 24-hour service window).
      */
     @Value("${twilio.whatsapp.contentSid:}")
     private String contentSid;
+
+    /**
+     * Twilio Content SID for the admin notification template.
+     * Template body: "Sama Services (Admin) : {{1}}"
+     * Falls back to contentSid when blank.
+     */
+    @Value("${twilio.whatsapp.adminContentSid:}")
+    private String adminContentSid;
 
     private volatile boolean initialized = false;
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
@@ -54,6 +56,16 @@ public class TwilioWhatsAppProvider implements WhatsAppProvider {
 
     @Override
     public void sendWhatsApp(String to, String message) {
+        doSend(to, message, contentSid);
+    }
+
+    @Override
+    public void sendAdminWhatsApp(String to, String message) {
+        String sid = (adminContentSid != null && !adminContentSid.isBlank()) ? adminContentSid : contentSid;
+        doSend(to, message, sid);
+    }
+
+    private void doSend(String to, String message, String sid) {
         if (to == null || to.isBlank()) {
             log.info("[TWILIO-WA] Skipped: empty recipient");
             return;
@@ -68,12 +80,12 @@ public class TwilioWhatsAppProvider implements WhatsAppProvider {
 
         String waTo = to.startsWith("whatsapp:") ? to : "whatsapp:" + normalizePhone(to);
 
-        boolean useTemplate = contentSid != null && !contentSid.isBlank();
+        boolean useTemplate = sid != null && !sid.isBlank();
         if (useTemplate) {
             log.info("[TWILIO-WA] Sending to='{}' from='{}' template='{}' msg='{}'",
-                    waTo, fromNumber, contentSid, truncate(message, 140));
+                    waTo, fromNumber, sid, truncate(message, 140));
         } else {
-            log.warn("[TWILIO-WA] Sending FREE-FORM WhatsApp to='{}' – TWILIO_WHATSAPP_CONTENT_SID is not set. "
+            log.warn("[TWILIO-WA] Sending FREE-FORM WhatsApp to='{}' – no Content SID configured. "
                     + "Free-form messages require the recipient to be inside the 24-hour reply window or Twilio sandbox. "
                     + "If delivery fails, SMS fallback will be attempted automatically.",
                     waTo);
@@ -82,15 +94,12 @@ public class TwilioWhatsAppProvider implements WhatsAppProvider {
         try {
             Message msg;
             if (useTemplate) {
-                // Business-initiated message via Meta-approved Content Template.
-                // Variable {{1}} in the template is replaced with the notification text.
                 String variables = buildContentVariables(message);
                 msg = Message.creator(new PhoneNumber(waTo), new PhoneNumber(fromNumber), "")
-                        .setContentSid(contentSid)
+                        .setContentSid(sid)
                         .setContentVariables(variables)
                         .create();
             } else {
-                // Free-form text — Twilio sandbox or within the 24-hour customer service window.
                 msg = Message.creator(new PhoneNumber(waTo), new PhoneNumber(fromNumber), message)
                         .create();
             }

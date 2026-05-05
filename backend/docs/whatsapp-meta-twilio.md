@@ -44,55 +44,65 @@ proactivement par l'application, sans que l'utilisateur n'ait écrit en premier)
 
 ---
 
-## Étape 2 — Créer un Content Template dans Twilio
+## Étape 2 — Créer les 2 Content Templates dans Twilio
+
+L'application utilise **2 templates** (au lieu d'un par type de notification), ce qui
+minimise le nombre de soumissions à Meta tout en respectant ses exigences :
 
 > ⚠️ **Règle Meta critique** : un template dont le corps est uniquement `{{1}}` (variable seule,
 > sans texte statique autour) est **systématiquement rejeté** par Meta. Le corps doit contenir
 > du texte fixe suffisant pour que Meta puisse évaluer la nature du message.
 
-Le template OTP utilise **une seule variable** (`{{1}}`) qui reçoit uniquement les chiffres du code.
-Le texte de contexte est dans le corps statique du template.
+La variable `{{1}}` reçoit le texte complet de la notification. Le préfixe de marque
+constitue le texte statique requis par Meta.
 
-1. Aller dans **Twilio Console → Content Template Builder** (ou rechercher "Content").
+### Template 1 — Notifications utilisateur (`sama_notification`)
+
+1. Aller dans **Twilio Console → Content Template Builder**.
 2. Cliquer sur **"Create new Content Template"**.
-3. Configurer le template :
-   - **Friendly name** : `sama_notification` (ou tout autre nom)
+3. Configurer :
+   - **Friendly name** : `sama_notification`
    - **Language** : `French (fr)`
-   - **Category** : `UTILITY` (pour les notifications transactionnelles)
+   - **Category** : `UTILITY`
    - **Body** (copier-coller exactement) :
      ```
-     Sama Services : {{1}} est votre code de vérification. Valable 10 minutes.
+     Sama Services vous informe : {{1}}
      ```
-   
-   > `{{1}}` sera remplacé **uniquement par les chiffres OTP** (ex : `482917`), jamais par
-   > une phrase entière. Cela respecte les exigences Meta : texte statique + variable unique.
-
 4. Cliquer sur **"Submit for WhatsApp Approval"**.
-5. Attendre l'approbation de Meta (généralement 24–48 h pour la catégorie UTILITY).
-6. Une fois approuvé, copier le **Content SID** du template (format `HXxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`).
+5. Une fois approuvé, copier le **Content SID** (`HXxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`) → `TWILIO_WHATSAPP_CONTENT_SID`.
+
+### Template 2 — Notifications admin (`sama_admin_notification`)
+
+Mêmes étapes, avec :
+- **Friendly name** : `sama_admin_notification`
+- **Body** :
+  ```
+  Sama Services (Admin) : {{1}}
+  ```
+- Content SID → `TWILIO_WHATSAPP_ADMIN_CONTENT_SID`.
+
+> Si `TWILIO_WHATSAPP_ADMIN_CONTENT_SID` est laissé vide, les notifications admin
+> utilisent automatiquement le template utilisateur (`sama_notification`).
 
 **Conseils pour éviter un rejet Meta :**
-- Ne pas mentionner "OTP", "mot de passe", "password" dans le template (connotation AUTHENTICATION)
 - Garder un ratio texte statique / variable élevé
-- La catégorie UTILITY est appropriée pour les codes de vérification liés à une transaction
+- La catégorie UTILITY est appropriée pour les notifications transactionnelles
 - Ne pas inclure de liens, d'emojis ou de mise en forme Markdown
+
+Délai d'approbation habituel : 24–48 h pour la catégorie UTILITY.
 
 ---
 
 ## Étape 3 — Configurer les variables d'environnement
 
-Dans votre environnement de production (Railway, Docker, serveur), configurer les variables :
-
 ```env
 TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_AUTH_TOKEN=your-auth-token
-TWILIO_WHATSAPP_FROM=whatsapp:+XXXXXXXXXXX      # votre numéro sender approuvé par Meta
-TWILIO_WHATSAPP_CONTENT_SID=HXxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx  # SID du template approuvé
-ADMIN_WHATSAPP_NUMBER=+XXXXXXXXXXX              # numéro admin en E.164 (sans préfixe whatsapp:)
+TWILIO_WHATSAPP_FROM=whatsapp:+XXXXXXXXXXX           # votre numéro sender approuvé par Meta
+TWILIO_WHATSAPP_CONTENT_SID=HXxxx...                 # SID du template sama_notification
+TWILIO_WHATSAPP_ADMIN_CONTENT_SID=HXxxx...           # SID du template sama_admin_notification (optionnel)
+ADMIN_WHATSAPP_NUMBER=+XXXXXXXXXXX                   # numéro admin en E.164 (sans préfixe whatsapp:)
 ```
-
-> `TWILIO_WHATSAPP_CONTENT_SID` est la clé ajoutée pour activer le mode template.
-> Sans elle, l'application envoie du texte libre (sandbox uniquement).
 
 ---
 
@@ -109,35 +119,37 @@ Avant d'utiliser votre numéro de production :
    TWILIO_WHATSAPP_CONTENT_SID=   # laisser vide pour le sandbox (free-form)
    ```
 4. Tester les notifications via l'application.
-5. Une fois validé, passer au sender de production et configurer `TWILIO_WHATSAPP_CONTENT_SID`.
+5. Une fois validé, passer au sender de production et configurer les deux Content SIDs.
 
 ---
 
 ## Architecture dans le code
 
 ```
-sendViaWhatsApp(to, messageBody, otpCode, ...)
-  ├─ Si TWILIO_WHATSAPP_CONTENT_SID configuré :
-  │    → POST Twilio Messages API
-  │         ContentSid=HX…
-  │         ContentVariables={"1": "<otpCode>"}   ← chiffres seuls (ex: "482917")
-  │    Template body (Twilio/Meta) :
-  │         "Sama Services : {{1}} est votre code de vérification. Valable 10 minutes."
-  └─ Sinon (sandbox) :
-       → Body=messageBody (texte libre, ex: "Votre code Sama Services est: 482917")
+NotificationDispatcher.dispatch(event)
+  ├─ dispatchUser(event)
+  │    └─ sendWhatsAppWithSmsFallback(phone, message, type, isAdmin=false)
+  │         └─ whatsAppProvider.sendWhatsApp(to, message)
+  │              ├─ Si TWILIO_WHATSAPP_CONTENT_SID configuré :
+  │              │    → ContentSid=HX…, ContentVariables={"1": "<message>"}
+  │              │    Template: "Sama Services vous informe : {{1}}"
+  │              └─ Sinon (sandbox) : Body=message (texte libre)
+  │
+  └─ dispatchAdmin(event)
+       └─ sendWhatsAppWithSmsFallback(adminPhone, message, type, isAdmin=true)
+            └─ whatsAppProvider.sendAdminWhatsApp(to, message)
+                 ├─ Si TWILIO_WHATSAPP_ADMIN_CONTENT_SID configuré :
+                 │    → ContentSid=HX…(admin), ContentVariables={"1": "<message>"}
+                 │    Template: "Sama Services (Admin) : {{1}}"
+                 ├─ Sinon si TWILIO_WHATSAPP_CONTENT_SID configuré :
+                 │    → utilise le template utilisateur (fallback)
+                 └─ Sinon (sandbox) : Body=message (texte libre)
 
-NotificationDispatcher
-  └─ sendWhatsAppWithSmsFallback(to, message)
-       ├─ TwilioWhatsAppProvider.sendWhatsApp(to, message)
-       │    ├─ Si TWILIO_WHATSAPP_CONTENT_SID configuré :
-       │    │    → Message.creator(to, from, "")
-       │    │         .setContentSid(HX…)
-       │    │         .setContentVariables({"1": "<message>"})
-       │    │         .create()
-       │    └─ Sinon (sandbox) :
-       │         → Message.creator(to, from, message).create()
-       └─ En cas d'échec : TwilioSmsProvider.sendSms(to, message)
+En cas d'échec WhatsApp : TwilioSmsProvider.sendSms(to, message)
 ```
+
+> Note : La Edge Function Supabase `send-sms-twilio` (OTP auth) a son propre template
+> `sama_otp_verification` — indépendant de ce système.
 
 ---
 
