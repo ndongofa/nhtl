@@ -15,8 +15,10 @@ import com.nhtl.admin.dto.AdminResetPasswordRequest;
 import com.nhtl.admin.dto.AdminUpdateUserRequest;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class SupabaseAdminAuthClient {
@@ -81,7 +83,12 @@ public class SupabaseAdminAuthClient {
 			body.put("email", req.getEmail().trim().toLowerCase());
 		}
 		if (req.getPhone() != null && !req.getPhone().isBlank()) {
-			body.put("phone", req.getPhone().trim());
+			String phone = req.getPhone().trim();
+			if (!looksLikeE164Phone(phone)) {
+				return Mono.error(new IllegalArgumentException(
+						"Téléphone invalide. Format attendu E.164, ex: +221783042838"));
+			}
+			body.put("phone", phone);
 			body.put("phone_confirm", true);
 		}
 
@@ -99,9 +106,47 @@ public class SupabaseAdminAuthClient {
 			body.put("user_metadata", userMeta);
 		}
 
+		if (body.isEmpty()) {
+			return Mono.just("{}");
+		}
+
 		return client().put().uri("/auth/v1/admin/users/{id}", userId).bodyValue(body).retrieve()
-				.bodyToMono(String.class).onErrorResume(WebClientResponseException.class,
-						e -> Mono.error(new RuntimeException("Supabase error: " + e.getResponseBodyAsString(), e)));
+				.bodyToMono(String.class)
+				.onErrorResume(WebClientResponseException.class,
+						e -> Mono.error(new RuntimeException("Supabase error: " + e.getResponseBodyAsString(), e)))
+				.flatMap(result -> syncUtilisateurs(userId, req).thenReturn(result));
+	}
+
+	private Mono<Void> syncUtilisateurs(String userId, AdminUpdateUserRequest req) {
+		Map<String, Object> patch = new HashMap<>();
+		if (req.getPhone() != null && !req.getPhone().isBlank()) {
+			patch.put("phone", req.getPhone().trim());
+		}
+		if (req.getPrenom() != null && !req.getPrenom().isBlank()) {
+			patch.put("prenom", req.getPrenom().trim());
+		}
+		if (req.getNom() != null && !req.getNom().isBlank()) {
+			patch.put("nom", req.getNom().trim());
+		}
+		if (req.getRole() != null && !req.getRole().isBlank()) {
+			patch.put("role", req.getRole().trim());
+		}
+		if (patch.isEmpty()) {
+			return Mono.empty();
+		}
+		return client().patch()
+				.uri(uriBuilder -> uriBuilder.path("/rest/v1/utilisateurs")
+						.queryParam("id", "eq." + userId)
+						.build())
+				.header("Prefer", "return=minimal")
+				.bodyValue(patch)
+				.retrieve()
+				.bodyToMono(Void.class)
+				.onErrorResume(e -> {
+					log.warn("[syncUtilisateurs] Échec de la synchronisation de public.utilisateurs pour userId={} ({}): {}",
+							userId, e.getClass().getSimpleName(), e.getMessage());
+					return Mono.empty();
+				});
 	}
 
 	public Mono<Void> deleteUser(String userId) {
