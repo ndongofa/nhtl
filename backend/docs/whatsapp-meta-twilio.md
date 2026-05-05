@@ -44,17 +44,17 @@ proactivement par l'application, sans que l'utilisateur n'ait écrit en premier)
 
 ---
 
-## Étape 2 — Créer les 2 Content Templates dans Twilio
+## Étape 2 — Créer les Content Templates dans Twilio
 
-L'application utilise **2 templates** (au lieu d'un par type de notification), ce qui
-minimise le nombre de soumissions à Meta tout en respectant ses exigences :
+L'application utilise **3 templates** au total :
 
-> ⚠️ **Règle Meta critique** : un template dont le corps est uniquement `{{1}}` (variable seule,
-> sans texte statique autour) est **systématiquement rejeté** par Meta. Le corps doit contenir
-> du texte fixe suffisant pour que Meta puisse évaluer la nature du message.
-
-La variable `{{1}}` reçoit le texte complet de la notification. Le préfixe de marque
-constitue le texte statique requis par Meta.
+> ⚠️ **Règles Meta critiques** :
+> - La variable `{{1}}` **ne peut pas être au début ni à la fin** du corps du template
+>   (subCode 2388299). Elle doit toujours être entourée de texte statique des deux côtés.
+> - Le corps ne peut pas être **uniquement** `{{1}}` (variable seule).
+> - La **catégorie** doit correspondre à l'usage réel : `AUTHENTICATION` pour les OTP,
+>   `UTILITY` pour les notifications transactionnelles. Un mauvais choix entraîne
+>   le rejet `INCORRECT_CATEGORY`.
 
 ### Template 1 — Notifications utilisateur (`sama_notification`)
 
@@ -66,7 +66,7 @@ constitue le texte statique requis par Meta.
    - **Category** : `UTILITY`
    - **Body** (copier-coller exactement) :
      ```
-     Sama Services vous informe : {{1}}
+     Sama Services vous informe : {{1}}. Pour toute question, contactez-nous.
      ```
 4. Cliquer sur **"Submit for WhatsApp Approval"**.
 5. Une fois approuvé, copier le **Content SID** (`HXxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`) → `TWILIO_WHATSAPP_CONTENT_SID`.
@@ -75,21 +75,41 @@ constitue le texte statique requis par Meta.
 
 Mêmes étapes, avec :
 - **Friendly name** : `sama_admin_notification`
+- **Category** : `UTILITY`
 - **Body** :
   ```
-  Sama Services (Admin) : {{1}}
+  Sama Services (Admin) : {{1}}. Merci de traiter cette demande.
   ```
 - Content SID → `TWILIO_WHATSAPP_ADMIN_CONTENT_SID`.
 
 > Si `TWILIO_WHATSAPP_ADMIN_CONTENT_SID` est laissé vide, les notifications admin
 > utilisent automatiquement le template utilisateur (`sama_notification`).
 
-**Conseils pour éviter un rejet Meta :**
-- Garder un ratio texte statique / variable élevé
-- La catégorie UTILITY est appropriée pour les notifications transactionnelles
-- Ne pas inclure de liens, d'emojis ou de mise en forme Markdown
+### Template 3 — Vérification OTP (`sama_otp_verification`)
 
-Délai d'approbation habituel : 24–48 h pour la catégorie UTILITY.
+Utilisé par la Edge Function Supabase `send-sms-twilio` pour envoyer les codes
+d'authentification. Ce template est **indépendant** du backend Java.
+
+- **Friendly name** : `sama_otp_verification`
+- **Language** : `French (fr)`
+- **Category** : `AUTHENTICATION` ← obligatoire pour les codes OTP
+- **Body** :
+  ```
+  Sama Services : {{1}} est votre code de vérification. Valable 10 minutes.
+  ```
+- Content SID → variable d'environnement Supabase `TWILIO_WHATSAPP_CONTENT_SID`
+  (dans **Dashboard → Edge Functions → send-sms-twilio → Secrets**).
+
+> La Edge Function injecte uniquement les **chiffres bruts** du code OTP dans `{{1}}`,
+> pas la phrase complète. Le texte statique du template constitue le message final.
+
+**Conseils pour éviter un rejet Meta :**
+- La variable `{{1}}` doit toujours être entourée de texte des deux côtés
+- Garder un ratio texte statique / variable élevé
+- Ne pas inclure de liens, d'emojis ou de mise en forme Markdown
+- Utiliser `AUTHENTICATION` pour les OTP, `UTILITY` pour les notifications
+
+Délai d'approbation habituel : quelques minutes à 24 h.
 
 ---
 
@@ -132,7 +152,7 @@ NotificationDispatcher.dispatch(event)
   │         └─ whatsAppProvider.sendWhatsApp(to, message)
   │              ├─ Si TWILIO_WHATSAPP_CONTENT_SID configuré :
   │              │    → ContentSid=HX…, ContentVariables={"1": "<message>"}
-  │              │    Template: "Sama Services vous informe : {{1}}"
+  │              │    Template: "Sama Services vous informe : {{1}}. Pour toute question, contactez-nous."
   │              └─ Sinon (sandbox) : Body=message (texte libre)
   │
   └─ dispatchAdmin(event)
@@ -140,7 +160,7 @@ NotificationDispatcher.dispatch(event)
             └─ whatsAppProvider.sendAdminWhatsApp(to, message)
                  ├─ Si TWILIO_WHATSAPP_ADMIN_CONTENT_SID configuré :
                  │    → ContentSid=HX…(admin), ContentVariables={"1": "<message>"}
-                 │    Template: "Sama Services (Admin) : {{1}}"
+                 │    Template: "Sama Services (Admin) : {{1}}. Merci de traiter cette demande."
                  ├─ Sinon si TWILIO_WHATSAPP_CONTENT_SID configuré :
                  │    → utilise le template utilisateur (fallback)
                  └─ Sinon (sandbox) : Body=message (texte libre)
@@ -148,8 +168,9 @@ NotificationDispatcher.dispatch(event)
 En cas d'échec WhatsApp : TwilioSmsProvider.sendSms(to, message)
 ```
 
-> Note : La Edge Function Supabase `send-sms-twilio` (OTP auth) a son propre template
-> `sama_otp_verification` — indépendant de ce système.
+> Note : La Edge Function Supabase `send-sms-twilio` (OTP auth) utilise le template
+> `sama_otp_verification` (catégorie `AUTHENTICATION`) — indépendant du backend Java.
+> La variable `{{1}}` reçoit uniquement les chiffres bruts du code OTP.
 
 ---
 
