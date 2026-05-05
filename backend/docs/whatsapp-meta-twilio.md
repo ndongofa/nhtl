@@ -44,55 +44,104 @@ proactivement par l'application, sans que l'utilisateur n'ait écrit en premier)
 
 ---
 
-## Étape 2 — Créer un Content Template dans Twilio
+## Étape 2 — Créer les Content Templates dans Twilio
 
-> ⚠️ **Règle Meta critique** : un template dont le corps est uniquement `{{1}}` (variable seule,
-> sans texte statique autour) est **systématiquement rejeté** par Meta. Le corps doit contenir
-> du texte fixe suffisant pour que Meta puisse évaluer la nature du message.
+L'application utilise **3 templates** au total :
 
-Le template OTP utilise **une seule variable** (`{{1}}`) qui reçoit uniquement les chiffres du code.
-Le texte de contexte est dans le corps statique du template.
+> ⚠️ **Règles Meta critiques** :
+> - La variable `{{1}}` **ne peut pas être au début ni à la fin** du corps du template
+>   (subCode 2388299). Elle doit toujours être entourée de texte statique des deux côtés.
+> - Le corps ne peut pas être **uniquement** `{{1}}` (variable seule).
+> - **Ne jamais utiliser le type de contenu natif "Authentication"** de Twilio/WhatsApp pour
+>   ces templates. Ce type nécessite des autorisations WABA spéciales et échoue avec
+>   subCode 2388185 ("does not have permission to create message template"). Utiliser
+>   **exclusivement le type "Text"**.
+> - La catégorie `AUTHENTICATION` n'est **pas disponible sur tous les comptes WABA**. Si le
+>   sélecteur de catégorie de Twilio ne propose que "Marketing" et "Utility", utiliser
+>   **`UTILITY`** pour tous les templates (OTP inclus). Meta accepte les OTP sous Utility
+>   pour les comptes sans la catégorie Authentication débloquée.
 
-1. Aller dans **Twilio Console → Content Template Builder** (ou rechercher "Content").
+### Template 1 — Notifications utilisateur (`sama_notification`)
+
+1. Aller dans **Twilio Console → Content Template Builder**.
 2. Cliquer sur **"Create new Content Template"**.
-3. Configurer le template :
-   - **Friendly name** : `sama_notification` (ou tout autre nom)
+3. Configurer :
+   - **Friendly name** : `sama_notification`
    - **Language** : `French (fr)`
-   - **Category** : `UTILITY` (pour les notifications transactionnelles)
+   - **Category** : `UTILITY`
+   - **Body** (copier-coller exactement) :
+     ```
+     Sama Services vous informe : {{1}}. Pour toute question, contactez-nous.
+     ```
+4. Cliquer sur **"Submit for WhatsApp Approval"**.
+5. Une fois approuvé, copier le **Content SID** (`HXxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`) → `TWILIO_WHATSAPP_CONTENT_SID`.
+
+### Template 2 — Notifications admin (`sama_admin_notification`)
+
+Mêmes étapes, avec :
+- **Friendly name** : `sama_admin_notification`
+- **Category** : `UTILITY`
+- **Body** :
+  ```
+  Sama Services (Admin) : {{1}}. Merci de traiter cette demande.
+  ```
+- Content SID → `TWILIO_WHATSAPP_ADMIN_CONTENT_SID`.
+
+> Si `TWILIO_WHATSAPP_ADMIN_CONTENT_SID` est laissé vide, les notifications admin
+> utilisent automatiquement le template utilisateur (`sama_notification`).
+
+### Template 3 — Vérification OTP (`sama_otp_verification_v2`)
+
+Utilisé par la Edge Function Supabase `send-sms-twilio` pour envoyer les codes
+d'authentification. Ce template est **indépendant** du backend Java.
+
+> ⚠️ **Deux problèmes connus sur ce compte WABA :**
+> 1. Le type de contenu natif "WA Authentication" est refusé (subCode 2388185) — utiliser **Text**.
+> 2. La catégorie `AUTHENTICATION` n'apparaît **pas** dans le sélecteur Twilio pour ce compte.
+>    Utiliser **`UTILITY`** à la place — Meta accepte les OTP sous cette catégorie.
+
+> ⚠️ **Nom différent obligatoire** : le template `sama_otp_verification` (SID `HXabd32d…`) est
+> marqué "Rejected" et ne peut pas être ressoumis. Utiliser un nouveau nom, par exemple
+> `sama_otp_verification_v2`.
+
+1. Aller dans **Twilio Console → Content Template Builder**.
+2. Cliquer sur **"Create new Content Template"**.
+3. Choisir le type de contenu **Text** (pas "Authentication").
+4. Configurer :
+   - **Friendly name** : `sama_otp_verification_v2`
+   - **Language** : `French (fr)`
    - **Body** (copier-coller exactement) :
      ```
      Sama Services : {{1}} est votre code de vérification. Valable 10 minutes.
      ```
-   
-   > `{{1}}` sera remplacé **uniquement par les chiffres OTP** (ex : `482917`), jamais par
-   > une phrase entière. Cela respecte les exigences Meta : texte statique + variable unique.
+5. Cliquer sur **"Submit for WhatsApp Approval"**.
+6. Dans le sélecteur de catégorie → choisir **Utility**.
+7. Une fois approuvé, copier le **Content SID** → variable d'environnement Supabase
+   `TWILIO_WHATSAPP_CONTENT_SID` (dans **Dashboard → Edge Functions → send-sms-twilio → Secrets**).
 
-4. Cliquer sur **"Submit for WhatsApp Approval"**.
-5. Attendre l'approbation de Meta (généralement 24–48 h pour la catégorie UTILITY).
-6. Une fois approuvé, copier le **Content SID** du template (format `HXxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`).
+> La Edge Function injecte uniquement les **chiffres bruts** du code OTP dans `{{1}}`,
+> pas la phrase complète. Le texte statique du template constitue le message final.
 
 **Conseils pour éviter un rejet Meta :**
-- Ne pas mentionner "OTP", "mot de passe", "password" dans le template (connotation AUTHENTICATION)
+- La variable `{{1}}` doit toujours être entourée de texte des deux côtés
 - Garder un ratio texte statique / variable élevé
-- La catégorie UTILITY est appropriée pour les codes de vérification liés à une transaction
 - Ne pas inclure de liens, d'emojis ou de mise en forme Markdown
+- Utiliser `UTILITY` pour tous les templates sur ce compte (catégorie `AUTHENTICATION` non disponible)
+
+Délai d'approbation habituel : quelques minutes à 24 h.
 
 ---
 
 ## Étape 3 — Configurer les variables d'environnement
 
-Dans votre environnement de production (Railway, Docker, serveur), configurer les variables :
-
 ```env
 TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_AUTH_TOKEN=your-auth-token
-TWILIO_WHATSAPP_FROM=whatsapp:+XXXXXXXXXXX      # votre numéro sender approuvé par Meta
-TWILIO_WHATSAPP_CONTENT_SID=HXxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx  # SID du template approuvé
-ADMIN_WHATSAPP_NUMBER=+XXXXXXXXXXX              # numéro admin en E.164 (sans préfixe whatsapp:)
+TWILIO_WHATSAPP_FROM=whatsapp:+XXXXXXXXXXX           # votre numéro sender approuvé par Meta
+TWILIO_WHATSAPP_CONTENT_SID=HXxxx...                 # SID du template sama_notification
+TWILIO_WHATSAPP_ADMIN_CONTENT_SID=HXxxx...           # SID du template sama_admin_notification (optionnel)
+ADMIN_WHATSAPP_NUMBER=+XXXXXXXXXXX                   # numéro admin en E.164 (sans préfixe whatsapp:)
 ```
-
-> `TWILIO_WHATSAPP_CONTENT_SID` est la clé ajoutée pour activer le mode template.
-> Sans elle, l'application envoie du texte libre (sandbox uniquement).
 
 ---
 
@@ -109,47 +158,54 @@ Avant d'utiliser votre numéro de production :
    TWILIO_WHATSAPP_CONTENT_SID=   # laisser vide pour le sandbox (free-form)
    ```
 4. Tester les notifications via l'application.
-5. Une fois validé, passer au sender de production et configurer `TWILIO_WHATSAPP_CONTENT_SID`.
+5. Une fois validé, passer au sender de production et configurer les deux Content SIDs.
 
 ---
 
 ## Architecture dans le code
 
 ```
-sendViaWhatsApp(to, messageBody, otpCode, ...)
-  ├─ Si TWILIO_WHATSAPP_CONTENT_SID configuré :
-  │    → POST Twilio Messages API
-  │         ContentSid=HX…
-  │         ContentVariables={"1": "<otpCode>"}   ← chiffres seuls (ex: "482917")
-  │    Template body (Twilio/Meta) :
-  │         "Sama Services : {{1}} est votre code de vérification. Valable 10 minutes."
-  └─ Sinon (sandbox) :
-       → Body=messageBody (texte libre, ex: "Votre code Sama Services est: 482917")
+NotificationDispatcher.dispatch(event)
+  ├─ dispatchUser(event)
+  │    └─ sendWhatsAppWithSmsFallback(phone, message, type, isAdmin=false)
+  │         └─ whatsAppProvider.sendWhatsApp(to, message)
+  │              ├─ Si TWILIO_WHATSAPP_CONTENT_SID configuré :
+  │              │    → ContentSid=HX…, ContentVariables={"1": "<message>"}
+  │              │    Template: "Sama Services vous informe : {{1}}. Pour toute question, contactez-nous."
+  │              └─ Sinon (sandbox) : Body=message (texte libre)
+  │
+  └─ dispatchAdmin(event)
+       └─ sendWhatsAppWithSmsFallback(adminPhone, message, type, isAdmin=true)
+            └─ whatsAppProvider.sendAdminWhatsApp(to, message)
+                 ├─ Si TWILIO_WHATSAPP_ADMIN_CONTENT_SID configuré :
+                 │    → ContentSid=HX…(admin), ContentVariables={"1": "<message>"}
+                 │    Template: "Sama Services (Admin) : {{1}}. Merci de traiter cette demande."
+                 ├─ Sinon si TWILIO_WHATSAPP_CONTENT_SID configuré :
+                 │    → utilise le template utilisateur (fallback)
+                 └─ Sinon (sandbox) : Body=message (texte libre)
 
-NotificationDispatcher
-  └─ sendWhatsAppWithSmsFallback(to, message)
-       ├─ TwilioWhatsAppProvider.sendWhatsApp(to, message)
-       │    ├─ Si TWILIO_WHATSAPP_CONTENT_SID configuré :
-       │    │    → Message.creator(to, from, "")
-       │    │         .setContentSid(HX…)
-       │    │         .setContentVariables({"1": "<message>"})
-       │    │         .create()
-       │    └─ Sinon (sandbox) :
-       │         → Message.creator(to, from, message).create()
-       └─ En cas d'échec : TwilioSmsProvider.sendSms(to, message)
+En cas d'échec WhatsApp : TwilioSmsProvider.sendSms(to, message)
 ```
+
+> Note : La Edge Function Supabase `send-sms-twilio` (OTP auth) utilise le template
+> `sama_otp_verification` (catégorie `AUTHENTICATION`) — indépendant du backend Java.
+> La variable `{{1}}` reçoit uniquement les chiffres bruts du code OTP.
 
 ---
 
 ## Codes d'erreur Twilio WhatsApp fréquents
 
-| Code  | Description | Solution |
-|-------|-------------|----------|
+| Code / subCode | Description | Solution |
+|---|---|---|
 | 63001 | Channel injoignable / numéro non WhatsApp | Vérifier que le destinataire a WhatsApp |
 | 63003 | Template non approuvé ou catégorie incorrecte | Vérifier le statut du template dans Twilio Console |
 | 63007 | Fenêtre de 24h expirée sans template | Configurer `TWILIO_WHATSAPP_CONTENT_SID` |
 | 63016 | Message trop long pour le template | Tronquer le texte de notification |
 | 21211 | Numéro destinataire invalide | Vérifier le format E.164 |
+| subCode 2388185 | WABA sans permission pour le type "Authentication" natif | Utiliser le type **Text** à la place |
+| subCode 2388299 | Variable `{{1}}` en début ou fin de corps | Entourer `{{1}}` de texte statique des deux côtés |
+| INCORRECT_CATEGORY | Catégorie soumise ne correspond pas à l'usage détecté | Si `AUTHENTICATION` n'est pas disponible, soumettre sous `UTILITY` |
+| Catégorie manquante | Le sélecteur Twilio ne propose que Marketing / Utility | Ce WABA n'a pas `AUTHENTICATION` activé — utiliser `UTILITY` pour les OTP |
 
 ---
 

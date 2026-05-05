@@ -48,8 +48,15 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
   Timer? _resendTimer;
 
   // Whether to show the "activate without SMS code" bypass button.
-  // Only displayed when an OTP send attempt has failed (signup flow).
+  // Shown immediately when smsUnavailable, after a resend failure, or after
+  // _skipButtonDelaySeconds have elapsed without the user receiving the code.
   bool _showSkipButton = false;
+
+  // Delay (in seconds) before the skip button is auto-revealed in the signup
+  // flow even when Supabase reports a successful OTP send. This covers the
+  // case where Supabase queues the message but the carrier silently drops it.
+  static const int _skipButtonDelaySeconds = 90;
+  Timer? _skipButtonTimer;
 
   @override
   void initState() {
@@ -77,7 +84,19 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
       // arriving from two different SMS senders.
       // Just start the resend cooldown; the user already received the code.
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _startResendCooldown();
+        if (mounted) {
+          _startResendCooldown();
+          // Reveal the bypass button after a delay in case the SMS is silently
+          // dropped by Supabase / the carrier (Supabase returns OK even then).
+          _skipButtonTimer = Timer(
+            const Duration(seconds: _skipButtonDelaySeconds),
+            () {
+              if (mounted && !_showSkipButton) {
+                setState(() => _showSkipButton = true);
+              }
+            },
+          );
+        }
       });
     }
   }
@@ -86,6 +105,7 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
   void dispose() {
     _codeController.dispose();
     _resendTimer?.cancel();
+    _skipButtonTimer?.cancel();
     super.dispose();
   }
 
@@ -250,6 +270,7 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
       setState(() {
         _errorMsg = e.toString().replaceFirst('Exception: ', '');
         if (!widget.isPasswordReset) {
+          _skipButtonTimer?.cancel();
           _showSkipButton = true; // Resend also failed → offer bypass
         }
       });

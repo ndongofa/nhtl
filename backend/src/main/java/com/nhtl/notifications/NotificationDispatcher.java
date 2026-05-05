@@ -71,7 +71,7 @@ public class NotificationDispatcher {
 
 		// WhatsApp utilisateur, SMS en fallback
 		if (evt.getPhoneNumber() != null && !evt.getPhoneNumber().isBlank()) {
-			sendWhatsAppWithSmsFallback(evt.getPhoneNumber(), evt.getMessage(), evt.getType().name());
+			sendWhatsAppWithSmsFallback(evt.getPhoneNumber(), evt.getMessage(), evt.getType().name(), false);
 		}
 	}
 
@@ -96,16 +96,20 @@ public class NotificationDispatcher {
 
 		// WhatsApp admin, SMS en fallback
 		if (adminWhatsAppNumber != null && !adminWhatsAppNumber.isBlank()) {
-			sendWhatsAppWithSmsFallback(adminWhatsAppNumber, evt.getMessage(), evt.getType().name());
+			sendWhatsAppWithSmsFallback(adminWhatsAppNumber, evt.getMessage(), evt.getType().name(), true);
 		}
 	}
 
 	/**
 	 * Tente d'envoyer via WhatsApp. En cas d'échec, bascule automatiquement sur SMS.
 	 */
-	private void sendWhatsAppWithSmsFallback(String to, String message, String type) {
+	private void sendWhatsAppWithSmsFallback(String to, String message, String type, boolean isAdmin) {
 		try {
-			whatsAppProvider.sendWhatsApp(to, message);
+			if (isAdmin) {
+				whatsAppProvider.sendAdminWhatsApp(to, message);
+			} else {
+				whatsAppProvider.sendWhatsApp(to, message);
+			}
 		} catch (Exception waEx) {
 			log.warn("WhatsApp failed type={} to='{}', falling back to SMS. err='{}'", type, to, waEx.getMessage());
 			try {

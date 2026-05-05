@@ -430,9 +430,9 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     // ── Handle SMS errors ──────────────────────────────────────────────────
-    const { status: smsStatus, twilioCode, rawBody } = smsResult;
+    const { status: smsStatus, twilioCode, rawBody: smsErrorBody } = smsResult;
     console.error(
-      `[send-sms-twilio] Twilio SMS API error status=${smsStatus} body=${rawBody}`,
+      `[send-sms-twilio] Twilio SMS API error status=${smsStatus} body=${smsErrorBody}`,
     );
 
     if (smsStatus === 400) {
@@ -458,7 +458,7 @@ serve(async (req: Request): Promise<Response> => {
 
       return new Response(
         JSON.stringify({
-          error: `Twilio error 400 (code ${twilioCode ?? "unknown"}): ${rawBody}`,
+          error: `Twilio error 400 (code ${twilioCode ?? "unknown"}): ${smsErrorBody}`,
         }),
         { status: 502, headers: { "Content-Type": "application/json" } },
       );
@@ -466,7 +466,7 @@ serve(async (req: Request): Promise<Response> => {
 
     return new Response(
       JSON.stringify({
-        error: `Twilio error ${smsStatus}: ${rawBody}`,
+        error: `Twilio error ${smsStatus}: ${smsErrorBody}`,
       }),
       { status: 502, headers: { "Content-Type": "application/json" } },
     );
