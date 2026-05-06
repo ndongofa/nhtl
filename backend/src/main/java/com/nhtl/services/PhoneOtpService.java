@@ -30,6 +30,8 @@ import lombok.extern.slf4j.Slf4j;
 public class PhoneOtpService {
 
     static final int OTP_EXPIRY_MINUTES = 10;
+    /** Intervalle de purge des tokens expirés en ms (1 heure). */
+    private static final long PURGE_INTERVAL_MS = 60 * 60 * 1_000L;
 
     private final PhoneOtpTokenRepository otpTokenRepository;
     private final WhatsAppProvider whatsAppProvider;
@@ -100,7 +102,7 @@ public class PhoneOtpService {
     /**
      * Purge automatique des tokens expirés toutes les heures.
      */
-    @Scheduled(fixedRate = 3_600_000)
+    @Scheduled(fixedRate = PURGE_INTERVAL_MS)
     @Transactional
     public void purgeExpiredTokens() {
         int deleted = otpTokenRepository.deleteAllExpiredBefore(Instant.now());

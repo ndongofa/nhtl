@@ -40,7 +40,6 @@ public class PhoneOtpToken {
         this.phone = phone;
         this.otp = otp;
         this.expiresAt = expiresAt;
-        this.createdAt = Instant.now();
     }
 
     public String getPhone() { return phone; }
