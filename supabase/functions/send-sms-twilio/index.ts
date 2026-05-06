@@ -48,6 +48,7 @@
  *
  * ── Common Twilio error codes ─────────────────────────────────────────────────
  *   21211 – Invalid 'To' phone number (bad format, user typo) → logged, signup allowed
+ *   21212 – Invalid 'From' phone number for WhatsApp (TWILIO_WHATSAPP_FROM not WA-enabled) → SMS fallback
  *   21408 – Geographic permission not enabled for this country  → error returned
  *   21614 – Not a valid mobile number (landline)               → error returned
  *   30006 – Landline or unreachable carrier                    → error returned
@@ -76,9 +77,10 @@ interface SMSHookPayload {
 }
 
 // ── WhatsApp-specific error codes that should trigger an SMS fallback ─────────
+// 21212 – From number is not WhatsApp-enabled (TWILIO_WHATSAPP_FROM config error)
 // 63001 – WhatsApp number not found (number not registered on WhatsApp)
 // 63003 – WhatsApp channel returned an error (unreachable, opt-out, etc.)
-const WHATSAPP_FALLBACK_CODES = new Set([63001, 63003]);
+const WHATSAPP_FALLBACK_CODES = new Set([21212, 63001, 63003]);
 
 /**
  * Attempt to send an OTP via WhatsApp.
@@ -165,6 +167,14 @@ async function sendViaWhatsApp(
   console.warn(
     `[send-sms-twilio] WhatsApp failed: status=${res.status} code=${twilioCode ?? "unknown"} fallback=${fallback} body=${rawBody}`,
   );
+  if (twilioCode === 21212) {
+    console.error(
+      `[send-sms-twilio] TWILIO_WHATSAPP_FROM '${whatsappFrom}' is not enabled for WhatsApp (Twilio 21212). ` +
+      "Fix: either enable WhatsApp on this number at console.twilio.com/phone-numbers, " +
+      "or remove the TWILIO_WHATSAPP_FROM secret in Supabase Dashboard → Edge Functions → Secrets " +
+      "to skip WhatsApp and deliver OTPs via SMS only.",
+    );
+  }
   return {
     ok: false,
     fallback,
