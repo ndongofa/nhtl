@@ -81,8 +81,11 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
       });
     } else {
       // Signup flow: send OTP via the backend (WhatsApp → SMS fallback).
-      // Failure is detected immediately from the first API call and the bypass
-      // button is shown right away, with no 90-second wait.
+      // _loading is set to true here (before the first build) so the spinner
+      // is shown on the very first frame instead of the OTP form, which would
+      // display "Entrez le code envoyé via WhatsApp ou SMS" before delivery
+      // is confirmed.
+      _loading = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _sendInitialOtp();
       });
