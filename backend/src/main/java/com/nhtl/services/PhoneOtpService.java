@@ -1,13 +1,16 @@
 package com.nhtl.services;
 
 import java.time.Instant;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
+import java.time.temporal.ChronoUnit;
 
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import com.nhtl.models.PhoneOtpToken;
 import com.nhtl.notifications.providers.SmsProvider;
 import com.nhtl.notifications.providers.WhatsAppProvider;
+import com.nhtl.repositories.PhoneOtpTokenRepository;
 import com.nhtl.security.OtpUtil;
 
 import lombok.extern.slf4j.Slf4j;
@@ -15,44 +18,47 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Service OTP pour la confirmation du numéro de téléphone lors du signup.
  *
- * <p>Génère un code à 6 chiffres, le stocke en mémoire avec une expiration,
- * puis l'envoie via WhatsApp en priorité, avec fallback automatique sur SMS Twilio.
+ * <p>Génère un code à 6 chiffres, le persiste en base de données avec une
+ * expiration, puis l'envoie via WhatsApp en priorité, avec fallback automatique
+ * sur SMS Twilio.
  *
- * <p>Le store en mémoire suffit pour des OTP de courte durée (10 min) ; il ne
- * survit pas aux redémarrages du serveur, ce qui est acceptable pour ce cas d'usage.
+ * <p>Le stockage en base survit aux redémarrages du serveur et fonctionne
+ * correctement en mode multi-instance.
  */
 @Slf4j
 @Service
 public class PhoneOtpService {
 
-    private static final int OTP_EXPIRY_MINUTES = 10;
+    static final int OTP_EXPIRY_MINUTES = 10;
 
-    private record OtpEntry(String otp, long expiryMs) {}
-
-    private final ConcurrentHashMap<String, OtpEntry> store = new ConcurrentHashMap<>();
-
+    private final PhoneOtpTokenRepository otpTokenRepository;
     private final WhatsAppProvider whatsAppProvider;
     private final SmsProvider smsProvider;
 
-    public PhoneOtpService(WhatsAppProvider whatsAppProvider, SmsProvider smsProvider) {
+    public PhoneOtpService(PhoneOtpTokenRepository otpTokenRepository,
+                           WhatsAppProvider whatsAppProvider,
+                           SmsProvider smsProvider) {
+        this.otpTokenRepository = otpTokenRepository;
         this.whatsAppProvider = whatsAppProvider;
         this.smsProvider = smsProvider;
     }
 
     /**
-     * Génère un OTP pour le numéro donné et l'envoie via WhatsApp → SMS.
+     * Génère un OTP pour le numéro donné, le persiste en base et l'envoie via WhatsApp → SMS.
      *
      * @param phone numéro E.164 (ex: +221783042838)
      * @throws RuntimeException si ni WhatsApp ni SMS ne fonctionnent
      */
+    @Transactional
     public void sendOtp(String phone) {
         if (phone == null || phone.isBlank()) {
             throw new IllegalArgumentException("Numéro de téléphone requis.");
         }
         final String normalizedPhone = phone.trim();
         final String otp = OtpUtil.generateOtp();
-        final long expiry = Instant.now().toEpochMilli() + TimeUnit.MINUTES.toMillis(OTP_EXPIRY_MINUTES);
-        store.put(normalizedPhone, new OtpEntry(otp, expiry));
+        final Instant expiresAt = Instant.now().plus(OTP_EXPIRY_MINUTES, ChronoUnit.MINUTES);
+
+        otpTokenRepository.save(new PhoneOtpToken(normalizedPhone, otp, expiresAt));
 
         log.info("[PhoneOtpService] OTP generated for phone={}", maskPhone(normalizedPhone));
 
@@ -66,27 +72,41 @@ public class PhoneOtpService {
      *
      * @return {@code true} si le code est correct et non expiré ; {@code false} sinon
      */
+    @Transactional
     public boolean verifyOtp(String phone, String otp) {
         if (phone == null || otp == null) return false;
         final String normalizedPhone = phone.trim();
-        final OtpEntry entry = store.get(normalizedPhone);
+
+        PhoneOtpToken entry = otpTokenRepository.findById(normalizedPhone).orElse(null);
 
         if (entry == null) {
             log.info("[PhoneOtpService] No OTP found for phone={}", maskPhone(normalizedPhone));
             return false;
         }
-        if (Instant.now().toEpochMilli() > entry.expiryMs()) {
-            store.remove(normalizedPhone);
+        if (Instant.now().isAfter(entry.getExpiresAt())) {
+            otpTokenRepository.deleteById(normalizedPhone);
             log.info("[PhoneOtpService] OTP expired for phone={}", maskPhone(normalizedPhone));
             return false;
         }
-        if (!entry.otp().equals(otp.trim())) {
+        if (!entry.getOtp().equals(otp.trim())) {
             log.info("[PhoneOtpService] Wrong OTP for phone={}", maskPhone(normalizedPhone));
             return false;
         }
-        store.remove(normalizedPhone);
+        otpTokenRepository.deleteById(normalizedPhone);
         log.info("[PhoneOtpService] OTP verified for phone={}", maskPhone(normalizedPhone));
         return true;
+    }
+
+    /**
+     * Purge automatique des tokens expirés toutes les heures.
+     */
+    @Scheduled(fixedRate = 3_600_000)
+    @Transactional
+    public void purgeExpiredTokens() {
+        int deleted = otpTokenRepository.deleteAllExpiredBefore(Instant.now());
+        if (deleted > 0) {
+            log.info("[PhoneOtpService] Purged {} expired OTP token(s)", deleted);
+        }
     }
 
     // ── Internal helpers ──────────────────────────────────────────────────────
