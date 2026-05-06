@@ -48,15 +48,9 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
   Timer? _resendTimer;
 
   // Whether to show the "activate without SMS code" bypass button.
-  // Shown immediately when smsUnavailable, after a resend failure, or after
-  // _skipButtonDelaySeconds have elapsed without the user receiving the code.
+  // Shown immediately when smsUnavailable, when the initial OTP send fails, or
+  // after a resend failure.
   bool _showSkipButton = false;
-
-  // Delay (in seconds) before the skip button is auto-revealed in the signup
-  // flow even when Supabase reports a successful OTP send. This covers the
-  // case where Supabase queues the message but the carrier silently drops it.
-  static const int _skipButtonDelaySeconds = 90;
-  Timer? _skipButtonTimer;
 
   @override
   void initState() {
@@ -79,24 +73,11 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
         }
       });
     } else {
-      // Signup flow: Supabase already sent the OTP during signUp(phone:…).
-      // Do NOT send a second OTP here – that would create two independent codes
-      // arriving from two different SMS senders.
-      // Just start the resend cooldown; the user already received the code.
+      // Signup flow: send OTP via the backend (WhatsApp → SMS fallback).
+      // Failure is detected immediately from the first API call and the bypass
+      // button is shown right away, with no 90-second wait.
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _startResendCooldown();
-          // Reveal the bypass button after a delay in case the SMS is silently
-          // dropped by Supabase / the carrier (Supabase returns OK even then).
-          _skipButtonTimer = Timer(
-            const Duration(seconds: _skipButtonDelaySeconds),
-            () {
-              if (mounted && !_showSkipButton) {
-                setState(() => _showSkipButton = true);
-              }
-            },
-          );
-        }
+        if (mounted) _sendInitialOtp();
       });
     }
   }
@@ -105,7 +86,6 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
   void dispose() {
     _codeController.dispose();
     _resendTimer?.cancel();
-    _skipButtonTimer?.cancel();
     super.dispose();
   }
 
@@ -125,6 +105,29 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
         }
       });
     });
+  }
+
+  /// Envoie le premier code OTP via le backend (WhatsApp → SMS).
+  /// Appelé dès l'ouverture de l'écran dans le flux signup.
+  /// En cas d'échec immédiat des deux canaux, affiche le bouton bypass.
+  Future<void> _sendInitialOtp() async {
+    setState(() {
+      _loading = true;
+      _errorMsg = null;
+    });
+    try {
+      await AuthService.sendSignupPhoneOtp(widget.phoneE164);
+      if (!mounted) return;
+      _startResendCooldown();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMsg = e.toString().replaceFirst('Exception: ', '');
+        _showSkipButton = true;
+      });
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   Future<void> _verify() async {
@@ -155,10 +158,10 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
         return;
       }
 
-      // Signup flow: verify via Supabase (OTP was sent during signUp).
-      // verifyPhoneOtp() calls supabase.auth.verifyOTP(type: sms) which
-      // automatically confirms the phone number in Supabase on success.
-      await AuthService.verifyPhoneOtp(
+      // Signup flow: verify via the backend OTP service.
+      // The backend checks the code and confirms the phone in Supabase via the
+      // admin API, so no Supabase session is required here.
+      await AuthService.verifySignupPhoneOtp(
         phoneE164: widget.phoneE164,
         token: code,
       );
@@ -256,8 +259,13 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
     });
 
     try {
-      // Both signup and password-reset resend via Supabase (signInWithOtp).
-      await AuthService.sendPhoneOtp(widget.phoneE164);
+      // Password-reset uses Supabase directly; signup uses the backend
+      // (WhatsApp → SMS fallback) for immediate delivery-failure detection.
+      if (widget.isPasswordReset) {
+        await AuthService.sendPhoneOtp(widget.phoneE164);
+      } else {
+        await AuthService.sendSignupPhoneOtp(widget.phoneE164);
+      }
       if (!mounted) return;
       _startResendCooldown();
       Fluttertoast.showToast(
@@ -270,7 +278,6 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
       setState(() {
         _errorMsg = e.toString().replaceFirst('Exception: ', '');
         if (!widget.isPasswordReset) {
-          _skipButtonTimer?.cancel();
           _showSkipButton = true; // Resend also failed → offer bypass
         }
       });
