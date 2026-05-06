@@ -1,5 +1,7 @@
 package com.nhtl.controllers;
 
+import com.nhtl.models.Achat;
+import com.nhtl.models.AchatStatus;
 import com.nhtl.models.Commande;
 import com.nhtl.models.Transport;
 import com.nhtl.models.TransportStatus;
@@ -7,6 +9,7 @@ import com.nhtl.models.CommandeStatus;
 import com.nhtl.notifications.providers.EmailProvider;
 import com.nhtl.notifications.providers.SmsProvider;
 import com.nhtl.notifications.providers.WhatsAppProvider;
+import com.nhtl.repositories.AchatRepository;
 import com.nhtl.repositories.CommandeRepository;
 import com.nhtl.repositories.TransportRepository;
 import com.nhtl.services.NotificationService;
@@ -23,6 +26,7 @@ import java.util.Map;
  *
  * PATCH /api/admin/transports/{id}/postal
  * PATCH /api/admin/commandes/{id}/postal
+ * PATCH /api/admin/achats/{id}/postal
  *
  * Corps attendu :
  * {
@@ -33,7 +37,7 @@ import java.util.Map;
  *
  * Effets :
  * - Enregistre les URLs et le numéro de bordereau
- * - Met le statutSuivi à PRET_RECUPERATION (transport) / PRET_LIVRAISON (commande)
+ * - Met le statutSuivi à PRET_RECUPERATION (transport) / PRET_LIVRAISON (commande, achat)
  * - Envoie notifications in-app + SMS + email + WhatsApp
  */
 @Slf4j
@@ -43,6 +47,7 @@ public class PostalTrackingController {
 
     private final TransportRepository  transportRepo;
     private final CommandeRepository   commandeRepo;
+    private final AchatRepository      achatRepo;
     private final NotificationService  notifService;
     private final SmsProvider          smsProvider;
     private final EmailProvider        emailProvider;
@@ -51,12 +56,14 @@ public class PostalTrackingController {
     public PostalTrackingController(
             TransportRepository  transportRepo,
             CommandeRepository   commandeRepo,
+            AchatRepository      achatRepo,
             NotificationService  notifService,
             SmsProvider          smsProvider,
             EmailProvider        emailProvider,
             WhatsAppProvider     whatsAppProvider) {
         this.transportRepo   = transportRepo;
         this.commandeRepo    = commandeRepo;
+        this.achatRepo       = achatRepo;
         this.notifService    = notifService;
         this.smsProvider     = smsProvider;
         this.emailProvider   = emailProvider;
@@ -143,6 +150,46 @@ public class PostalTrackingController {
         }).orElse(ResponseEntity.notFound().build());
     }
 
+    // ── ACHAT ─────────────────────────────────────────────────────────────────
+
+    @PatchMapping("/api/admin/achats/{id}/postal")
+    public ResponseEntity<?> postalAchat(
+            @PathVariable Long id,
+            @RequestBody  Map<String, String> body) {
+
+        return achatRepo.findById(id).map(a -> {
+            // 1 — Enregistrer les infos postales
+            a.setPhotoColisUrl(body.get("photoColisUrl"));
+            a.setPhotoBordereauUrl(body.get("photoBordereauUrl"));
+            a.setNumeroBordereau(body.getOrDefault("numeroBordereau", ""));
+            a.setDeposePosteAt(LocalDateTime.now());
+
+            // 2 — Faire avancer le statut logistique → PRET_LIVRAISON
+            a.setStatutSuivi(AchatStatus.PRET_LIVRAISON);
+            achatRepo.save(a);
+
+            // 3 — Notifications
+            String client    = a.getClientFullName();
+            String reference = a.getReference();
+            String bordereau = a.getNumeroBordereau();
+            String message   = buildMessageAchat(client, reference, bordereau);
+            String subject   = "SAMA — Votre achat est en route ! " + reference;
+
+            notify(a.getUserId(), "📬 Colis déposé à la poste",
+                    message, subject, a.getNumeroTelephone(), a.getEmail(), "achat", id);
+
+            log.info("[POSTAL] Achat {} déposé à la poste — bordereau={}",
+                    id, bordereau);
+
+            return ResponseEntity.ok(Map.of(
+                    "success",          true,
+                    "id",               id,
+                    "statutSuivi",      "PRET_LIVRAISON",
+                    "numeroBordereau",  bordereau,
+                    "deposePosteAt",    a.getDeposePosteAt().toString()));
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private void notify(String userId, String title, String message,
@@ -198,6 +245,23 @@ public class PostalTrackingController {
                 + "📬 Votre commande " + reference + " a été déposée à la poste "
                 + "et est en cours de livraison vers votre domicile." + b + "\n\n"
                 + "Vous pouvez suivre votre commande directement sur l'application SAMA.\n\n"
+                + "Questions ?\n"
+                + "• WhatsApp France : +33 76 891 30 74\n"
+                + "• WhatsApp Dakar  : +221 78 304 28 38\n\n"
+                + "— L'équipe SAMA Services International\n"
+                + "sama-services-intl.com";
+    }
+
+    private String buildMessageAchat(String client, String reference,
+                                      String bordereau) {
+        String g = (client != null && !client.isBlank())
+                ? "Bonjour " + client + "," : "Bonjour,";
+        String b = (bordereau != null && !bordereau.isBlank())
+                ? "\nNuméro de suivi postal : " + bordereau : "";
+        return g + "\n\n"
+                + "📬 Votre achat " + reference + " a été déposé à la poste "
+                + "et est en cours de livraison vers votre domicile." + b + "\n\n"
+                + "Vous pouvez suivre votre achat directement sur l'application SAMA.\n\n"
                 + "Questions ?\n"
                 + "• WhatsApp France : +33 76 891 30 74\n"
                 + "• WhatsApp Dakar  : +221 78 304 28 38\n\n"
