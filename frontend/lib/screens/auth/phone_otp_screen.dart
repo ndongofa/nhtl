@@ -52,11 +52,18 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
   // after a resend failure.
   bool _showSkipButton = false;
 
+  // True once the initial OTP has been confirmed as delivered.
+  // The OTP form is only shown after this is true, so the message
+  // "Entrez le code envoyé via WhatsApp ou SMS" is never displayed
+  // before the code is actually on its way to the user.
+  bool _otpSent = false;
+
   @override
   void initState() {
     super.initState();
     if (widget.isPasswordReset) {
       // Password-reset flow: OTP was already sent by ForgotPasswordScreen via Supabase.
+      _otpSent = true;
       _startResendCooldown();
     } else if (widget.smsUnavailable) {
       // SMS indisponible lors du signup (crédit épuisé, panne provider…).
@@ -114,15 +121,21 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
     setState(() {
       _loading = true;
       _errorMsg = null;
+      _showSkipButton = false;
+      _otpSent = false;
     });
     try {
       await AuthService.sendSignupPhoneOtp(widget.phoneE164);
       if (!mounted) return;
+      setState(() => _otpSent = true);
       _startResendCooldown();
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMsg = e.toString().replaceFirst('Exception: ', '');
+        _errorMsg =
+            "L'envoi du code de vérification a échoué "
+            "(${e.toString().replaceFirst('Exception: ', '')}).\n\n"
+            "Vous pouvez activer votre compte directement sans code SMS.";
         _showSkipButton = true;
       });
     } finally {
@@ -410,6 +423,20 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    // ── Determine which view to render ──────────────────────────────────────
+    // Signup flow only: while the initial OTP is being sent, show a dedicated
+    // loading screen so that the "code envoyé via WhatsApp ou SMS" message is
+    // never displayed before delivery is confirmed.
+    // True iff: signup, no prior failure, OTP not yet confirmed, and currently loading.
+    final bool isSendingInitialOtp =
+        !widget.isPasswordReset && !widget.smsUnavailable && !_otpSent && _loading && !_showSkipButton;
+
+    // True iff the initial OTP send (or a retry) definitively failed for a signup
+    // user — the code was never delivered so the bypass should be shown up-front,
+    // not buried at the bottom of the form.  Never true for password-reset flow.
+    final bool isOtpSendFailed =
+        !widget.isPasswordReset && _showSkipButton && !_otpSent;
+
     return Scaffold(
       appBar: AppBar(title: Text(AppBrand.appName)),
       body: Center(
@@ -421,7 +448,16 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const Icon(Icons.sms_outlined, size: 48, color: Colors.blue),
+                // ── Header icon + title (always visible) ─────────────────────
+                Icon(
+                  isSendingInitialOtp
+                      ? Icons.send_outlined
+                      : isOtpSendFailed
+                          ? Icons.sms_failed_outlined
+                          : Icons.sms_outlined,
+                  size: 48,
+                  color: isOtpSendFailed ? Colors.orange : Colors.blue,
+                ),
                 const SizedBox(height: 16),
                 Text(
                   widget.isPasswordReset
@@ -431,143 +467,259 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  widget.isPasswordReset
-                      ? "Entrez le code envoyé au :"
-                      : "Entrez le code envoyé via WhatsApp ou SMS au :",
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  widget.phoneE164,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                TextField(
-                  controller: _codeController,
-                  keyboardType: TextInputType.number,
-                  textAlign: TextAlign.center,
-                  maxLength: 6,
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    letterSpacing: 8,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  decoration: const InputDecoration(
-                    labelText: "Code SMS",
-                    border: OutlineInputBorder(),
-                    counterText: '',
-                  ),
-                ),
-                const SizedBox(height: 16),
 
-                // Message d'erreur
-                if (_errorMsg != null)
+                // ── Loading state: initial OTP send in progress ───────────────
+                if (isSendingInitialOtp) ...[
+                  Text(
+                    "Envoi du code de vérification en cours…",
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    widget.phoneE164,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 24),
+                  Text(
+                    "Support: ${AppBrand.supportEmail}",
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: Colors.grey),
+                  ),
+                ]
+
+                // ── Failure state: OTP never sent, show bypass immediately ────
+                else if (isOtpSendFailed) ...[
+                  Text(
+                    "Le code n'a pas pu être envoyé au :",
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    widget.phoneE164,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.red.shade50,
+                      color: Colors.orange.shade50,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red.shade200),
+                      border: Border.all(color: Colors.orange.shade200),
                     ),
                     child: Text(
-                      _errorMsg!,
+                      _errorMsg ??
+                          "Le service SMS est temporairement indisponible. "
+                          "Activez votre compte directement sans code.",
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.red.shade700),
+                      style: TextStyle(color: Colors.orange.shade800),
                     ),
                   ),
-
-                const SizedBox(height: 16),
-
-                // Bouton valider
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: _loading ? null : _verify,
-                    child: _loading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: _loading ? null : _skipOtp,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: _loading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text(
+                              "Activer le compte sans code SMS",
+                              style: TextStyle(fontSize: 16),
                             ),
-                          )
-                        : Text(
-                            widget.isPasswordReset
-                                ? "Vérifier le code"
-                                : "Valider le code",
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Minuteur + bouton renvoyer
-                // During initial OTP send (_loading && _resendCountdown == 0), show nothing extra.
-                if (_resendCountdown > 0)
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
-                    child: Row(
-                      key: const ValueKey('countdown'),
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.timer_outlined,
-                            size: 16, color: Colors.grey),
-                        const SizedBox(width: 6),
-                        Text(
-                          "Renvoyer le code dans ${_resendCountdown}s",
-                          style: theme.textTheme.bodySmall
-                              ?.copyWith(color: Colors.grey),
-                        ),
-                      ],
                     ),
-                  )
-                else if (!_loading)
-                  TextButton.icon(
-                    onPressed: _resend,
-                    icon: const Icon(Icons.refresh, size: 16),
-                    label: const Text("Renvoyer le code"),
                   ),
-
-                const SizedBox(height: 24),
-                Text(
-                  "Support: ${AppBrand.supportEmail}",
-                  textAlign: TextAlign.center,
-                  style:
-                      theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
-                ),
-
-                // ── Bypass OTP (signup uniquement, uniquement après échec d'envoi) ──
-                if (!widget.isPasswordReset && _showSkipButton) ...[
-                  const SizedBox(height: 20),
-                  const Divider(),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
+                  TextButton.icon(
+                    onPressed: _loading ? null : _sendInitialOtp,
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: const Text("Réessayer l'envoi du code"),
+                  ),
+                  const SizedBox(height: 24),
                   Text(
-                    "Toujours pas de code SMS après plusieurs tentatives ?",
+                    "Support: ${AppBrand.supportEmail}",
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodySmall
-                        ?.copyWith(color: Colors.grey.shade600),
+                        ?.copyWith(color: Colors.grey),
                   ),
-                  const SizedBox(height: 8),
-                  TextButton(
-                    onPressed: _loading ? null : _skipOtp,
-                    child: const Text(
-                      "Activer le compte sans code SMS",
+                ]
+
+                // ── Normal state: OTP confirmed sent (or password-reset / smsUnavailable) ──
+                else ...[
+                  if (!widget.smsUnavailable) ...[
+                    Text(
+                      widget.isPasswordReset
+                          ? "Entrez le code envoyé au :"
+                          : "Entrez le code envoyé via WhatsApp ou SMS au :",
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.orange,
-                        fontWeight: FontWeight.w600,
-                        decoration: TextDecoration.underline,
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      widget.phoneE164,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
+                    const SizedBox(height: 24),
+                    TextField(
+                      controller: _codeController,
+                      keyboardType: TextInputType.number,
+                      textAlign: TextAlign.center,
+                      maxLength: 6,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        letterSpacing: 8,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: "Code SMS",
+                        border: OutlineInputBorder(),
+                        counterText: '',
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Message d'erreur ou d'information
+                  if (_errorMsg != null)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: widget.smsUnavailable
+                            ? Colors.orange.shade50
+                            : Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: widget.smsUnavailable
+                              ? Colors.orange.shade200
+                              : Colors.red.shade200,
+                        ),
+                      ),
+                      child: Text(
+                        _errorMsg!,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: widget.smsUnavailable
+                              ? Colors.orange.shade800
+                              : Colors.red.shade700,
+                        ),
+                      ),
+                    ),
+
+                  const SizedBox(height: 16),
+
+                  // Bouton valider (masqué quand smsUnavailable et pas encore de bypass)
+                  if (!widget.smsUnavailable)
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: _loading ? null : _verify,
+                        child: _loading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Text(
+                                widget.isPasswordReset
+                                    ? "Vérifier le code"
+                                    : "Valider le code",
+                                style: const TextStyle(fontSize: 16),
+                              ),
+                      ),
+                    ),
+
+                  const SizedBox(height: 16),
+
+                  // Minuteur + bouton renvoyer
+                  if (!widget.smsUnavailable) ...[
+                    if (_resendCountdown > 0)
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        child: Row(
+                          key: const ValueKey('countdown'),
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.timer_outlined,
+                                size: 16, color: Colors.grey),
+                            const SizedBox(width: 6),
+                            Text(
+                              "Renvoyer le code dans ${_resendCountdown}s",
+                              style: theme.textTheme.bodySmall
+                                  ?.copyWith(color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                      )
+                    else if (!_loading)
+                      TextButton.icon(
+                        onPressed: _resend,
+                        icon: const Icon(Icons.refresh, size: 16),
+                        label: const Text("Renvoyer le code"),
+                      ),
+                  ],
+
+                  const SizedBox(height: 24),
+                  Text(
+                    "Support: ${AppBrand.supportEmail}",
+                    textAlign: TextAlign.center,
+                    style:
+                        theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
                   ),
+
+                  // ── Bypass OTP (signup uniquement, uniquement après échec de renvoi) ──
+                  if (!widget.isPasswordReset && _showSkipButton) ...[
+                    const SizedBox(height: 20),
+                    const Divider(),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Toujours pas de code SMS après plusieurs tentatives ?",
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(color: Colors.grey.shade600),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: _loading ? null : _skipOtp,
+                      child: const Text(
+                        "Activer le compte sans code SMS",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.orange,
+                          fontWeight: FontWeight.w600,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ],
             ),
