@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SAMA — Flyer VTC</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Poppins', Arial, sans-serif;
+      background: #e8edf2;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    /* A5 portrait: 148mm × 210mm ≈ 559px × 794px @96dpi */
+    .flyer {
+      width: 559px;
+      height: 794px;
+      background: linear-gradient(170deg, #0a1628 0%, #0d2d20 55%, #0a1628 100%);
+      border-radius: 14px;
+      overflow: hidden;
+      position: relative;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Subtle background decoration */
+    .flyer::before {
+      content: '';
+      position: absolute;
+      width: 380px;
+      height: 380px;
+      background: radial-gradient(circle, rgba(0,200,120,0.12) 0%, transparent 70%);
+      border-radius: 50%;
+      top: -80px;
+      right: -80px;
+      pointer-events: none;
+    }
+    .flyer::after {
+      content: '';
+      position: absolute;
+      width: 280px;
+      height: 280px;
+      background: radial-gradient(circle, rgba(255,215,0,0.07) 0%, transparent 70%);
+      border-radius: 50%;
+      bottom: 60px;
+      left: -60px;
+      pointer-events: none;
+    }
+
+    /* ── TOP GREEN BAR ── */
+    .top-bar {
+      width: 100%;
+      background: linear-gradient(90deg, #00c878, #00a86b);
+      padding: 16px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      z-index: 1;
+      flex-shrink: 0;
+    }
+
+    .brand-name {
+      font-size: 58px;
+      font-weight: 900;
+      color: white;
+      letter-spacing: -2px;
+      line-height: 1;
+      text-shadow: 1px 3px 8px rgba(0,0,0,0.25);
+    }
+
+    .brand-sub {
+      font-size: 10px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.9);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .flags { font-size: 32px; letter-spacing: 4px; }
+
+    /* ── HEADLINE ── */
+    .headline {
+      text-align: center;
+      padding: 22px 28px 8px;
+      position: relative;
+      z-index: 1;
+      flex-shrink: 0;
+    }
+
+    .headline h1 {
+      font-size: 22px;
+      font-weight: 900;
+      line-height: 1.25;
+      color: #fff;
+    }
+
+    .headline h1 em {
+      font-style: normal;
+      color: #00e68a;
+    }
+
+    .headline p {
+      font-size: 12px;
+      color: rgba(255,255,255,0.65);
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+
+    /* ── SERVICES STRIP ── */
+    .services {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+      flex-shrink: 0;
+    }
+
+    .svc {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(0,200,120,0.25);
+      border-radius: 20px;
+      padding: 5px 12px;
+      font-size: 10.5px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.85);
+      white-space: nowrap;
+    }
+
+    /* ── QR ZONE ── */
+    .qr-zone {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+      padding: 0 24px;
+    }
+
+    .qr-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.55);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .qr-wrapper {
+      background: white;
+      border-radius: 14px;
+      padding: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 4px rgba(0,200,120,0.4);
+    }
+
+    #qrcode canvas, #qrcode img { display: block; }
+
+    .qr-hint {
+      font-size: 10.5px;
+      color: rgba(255,255,255,0.45);
+      font-style: italic;
+    }
+
+    /* ── URL BOX ── */
+    .url-box {
+      position: relative;
+      z-index: 1;
+      background: rgba(0,200,120,0.15);
+      border: 2px solid #00c878;
+      border-radius: 40px;
+      padding: 10px 32px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .url-label {
+      font-size: 9.5px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.5);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 3px;
+    }
+
+    .url-text {
+      font-size: 21px;
+      font-weight: 900;
+      color: #00e68a;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── FOOTER ── */
+    .footer {
+      width: 100%;
+      background: rgba(0,0,0,0.35);
+      padding: 11px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+      flex-shrink: 0;
+    }
+
+    .footer-brand {
+      font-size: 9px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.4);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .footer-contact {
+      font-size: 9px;
+      color: rgba(255,255,255,0.4);
+    }
+
+    /* ── PRINT ── */
+    @media print {
+      body { background: white; padding: 0; margin: 0; }
+      .flyer {
+        border-radius: 0;
+        width: 148mm;
+        height: 210mm;
+        page-break-after: avoid;
+        break-after: avoid;
+      }
+    }
+
+    @page {
+      size: A5 portrait;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+
+<div class="flyer">
+
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <div>
+      <div class="brand-name">SAMA</div>
+      <div class="brand-sub">Services Internationaux</div>
+    </div>
+    <div class="flags">🇫🇷🇲🇦🇸🇳</div>
+  </div>
+
+  <!-- HEADLINE -->
+  <div class="headline">
+    <h1>La plateforme <em>tout‑en‑un</em><br>de la diaspora sénégalaise</h1>
+    <p>Commandes, groupage, produits sénégalais — accessibles depuis votre téléphone, partout en Europe.</p>
+  </div>
+
+  <!-- SERVICES -->
+  <div class="services">
+    <div class="svc">✈️ Sama GP</div>
+    <div class="svc">🛒 Sama Commande</div>
+    <div class="svc">🏪 Sama Achat</div>
+    <div class="svc">🌿 Sama Maad</div>
+    <div class="svc">🍹 Téranga Apéro</div>
+    <div class="svc">⭐ Best Seller</div>
+  </div>
+
+  <!-- QR CODE -->
+  <div class="qr-zone">
+    <div class="qr-label">📱 Scannez pour accéder</div>
+    <div class="qr-wrapper">
+      <div id="qrcode"></div>
+    </div>
+    <div class="qr-hint">ou tapez l'adresse ci-dessous dans votre navigateur</div>
+  </div>
+
+  <!-- URL -->
+  <div class="url-box">
+    <div class="url-label">Accès direct</div>
+    <div class="url-text">sama-services-intl.com</div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-brand">Ngom Holding — Transport &amp; Logistics</div>
+    <div class="footer-contact">tech@ngom-holding.com</div>
+  </div>
+
+</div>
+
+<script>
+  new QRCode(document.getElementById("qrcode"), {
+    text: "https://www.sama-services-intl.com/",
+    width: 180,
+    height: 180,
+    colorDark: "#0a1628",
+    colorLight: "#ffffff",
+    correctLevel: QRCode.CorrectLevel.H
+  });
+</script>
+
+</body>
+</html>
