@@ -80,15 +80,12 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
         }
       });
     } else {
-      // Signup flow: send OTP via the backend (WhatsApp → SMS fallback).
-      // _loading is set to true here (before the first build) so the spinner
-      // is shown on the very first frame instead of the OTP form, which would
-      // display "Entrez le code envoyé via WhatsApp ou SMS" before delivery
-      // is confirmed.
-      _loading = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _sendInitialOtp();
-      });
+      // Signup flow: Supabase already sent the OTP via SMS during signUp().
+      // Show the entry form immediately; do NOT call the backend custom OTP
+      // endpoint, which would generate a different code and cause a 400 when
+      // the user enters the Supabase-issued code.
+      _otpSent = true;
+      _startResendCooldown();
     }
   }
 
@@ -174,10 +171,10 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
         return;
       }
 
-      // Signup flow: verify via the backend OTP service.
-      // The backend checks the code and confirms the phone in Supabase via the
-      // admin API, so no Supabase session is required here.
-      await AuthService.verifySignupPhoneOtp(
+      // Signup flow: verify via Supabase (same issuer that sent the OTP during
+      // signUp()). Using the backend custom endpoint would fail because it
+      // tracks a different OTP code generated independently.
+      await AuthService.verifyPhoneOtp(
         phoneE164: widget.phoneE164,
         token: code,
       );
@@ -275,13 +272,10 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
     });
 
     try {
-      // Password-reset uses Supabase directly; signup uses the backend
-      // (WhatsApp → SMS fallback) for immediate delivery-failure detection.
-      if (widget.isPasswordReset) {
-        await AuthService.sendPhoneOtp(widget.phoneE164);
-      } else {
-        await AuthService.sendSignupPhoneOtp(widget.phoneE164);
-      }
+      // Both flows use Supabase to resend: password-reset uses signInWithOtp
+      // and signup re-triggers the same Supabase OTP channel that was used
+      // during signUp(), keeping a single OTP source of truth.
+      await AuthService.sendPhoneOtp(widget.phoneE164);
       if (!mounted) return;
       _startResendCooldown();
       Fluttertoast.showToast(
